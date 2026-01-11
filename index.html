@@ -2037,14 +2037,15 @@ document.addEventListener("DOMContentLoaded", async ()=>{
     document.body.innerHTML = `<h1 style="color:red;padding:16px">Błąd aplikacji: ${esc(e?.message||String(e))}</h1>`;
   }
 });
-</script>
+<script>
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("./sw.js");
 }
-
+</script>
 
 </body>
 </html>
+
 
 
 
