@@ -399,7 +399,10 @@ Zasady użycia określa plik LICENSE.
 
 <script>
 /* ===== Helpers ===== */
-const $ = (id)=>document.getElementById(id);
+const $ = (id) => {
+  const el = document.getElementById(id);
+  return el ? el : { addEventListener: () => {} };
+};
 const uid = ()=> (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36)+Math.random().toString(36).slice(2));
 const esc = (s)=> String(s??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
 const todayISO = ()=> new Date().toISOString().slice(0,10);
@@ -2040,5 +2043,6 @@ if ("serviceWorker" in navigator) {
 
 </body>
 </html>
+
 
 
