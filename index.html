@@ -613,7 +613,7 @@ async function save(key){ await dbSet(key, State[key]); }
 function hideAll(){ document.querySelectorAll("main > section").forEach(s=>s.classList.add("hidden")); }
 function setTitle(){
   const v=State.view;
-  $("backBtn").classList.toggle("hidden", v!=="details");
+  document.getElementById("backBtn").classList.toggle("hidden", v!=="details");
   const map={
     hives:"PASIECZNIK",
     details:"UL",
@@ -622,7 +622,7 @@ function setTitle(){
     inventory:"MAGAZYN",
     knowledge:"WIEDZA"
   };
-  $("appTitle").textContent = (v==="details" && State.currentHive) ? ("UL " + State.currentHive) : (map[v]||"PASIECZNIK");
+  document.getElementById("appTitle").textContent = (v==="details" && State.currentHive) ? ("UL " + State.currentHive) : (map[v]||"PASIECZNIK");
 }
 function renderView(view, hiveId=null, push=true){
   State.view=view;
@@ -709,8 +709,8 @@ function applyFilterFlags(btn, isOn, style){
   if(style==="red") btn.classList.toggle("active-red", !!isOn);
 }
 function renderFilterButtons(){
-  applyFilterFlags($("fltReviewBtn"), Filters.review);
-  applyFilterFlags($("fltQueenBtn"), Filters.queen, "red");
+  applyFilterFlags(document.getElementById("fltReviewBtn"), Filters.review);
+  applyFilterFlags(document.getElementById("fltQueenBtn"), Filters.queen, "red");
 }
 function filterHives(list){
   let out=[...list];
@@ -727,7 +727,7 @@ function filterHives(list){
 function renderHives(){
   renderFilterButtons();
 
-  const grid=$("hivesGrid");
+  const grid=document.getElementById("hivesGrid");
   grid.innerHTML="";
 
   const sorted=[...State.hives].sort((a,b)=>String(a.label).localeCompare(String(b.label),undefined,{numeric:true}));
@@ -816,11 +816,11 @@ async function renderDetails(){
   const hive=State.hives.find(x=>x.id===hiveId);
   if(!hive){ renderView("hives", null, true); return; }
 
-  $("hLabel").value = hive.label || hive.id || "";
-  $("hPlace").value = hive.place || "";
-  $("hType").value  = hive.kind || "rodzina";
-  $("hYear").value  = hive.year || thisYear;
-  $("hNextVisit").value = hive.nextVisitDate || "";
+  document.getElementById("hLabel").value = hive.label || hive.id || "";
+  document.getElementById("hPlace").value = hive.place || "";
+  document.getElementById("hType").value  = hive.kind || "rodzina";
+  document.getElementById("hYear").value  = hive.year || thisYear;
+  document.getElementById("hNextVisit").value = hive.nextVisitDate || "";
 
   const qs=State.queens.filter(q=>q.hiveId===hiveId).sort((a,b)=>b.dateAddedTS-a.dateAddedTS);
   const hs=State.honey.filter(h=>h.hiveId===hiveId).sort((a,b)=> (b.harvestDate||"").localeCompare(a.harvestDate||""));
@@ -839,7 +839,7 @@ async function renderDetails(){
   const lastFd=fs[0]?.date || "";
   const due = needsReview(hive);
 
-  $("hiveQuickInfo").innerHTML=`
+  document.getElementById("hiveQuickInfo").innerHTML=`
     <div>
       <div class="muted">UL</div>
       <div style="font-size:18px;font-weight:1000">${esc(hive.label)}
@@ -876,7 +876,7 @@ async function renderDetails(){
     </div>
   `;
 
-  $("listQueens").innerHTML=qs.map(q=>{
+  document.getElementById("listQueens").innerHTML=qs.map(q=>{
     const old=queenOldFlag(q);
     return `
       <div class="flex justify-between items-center" style="padding:8px 0;border-bottom:1px solid var(--border);gap:10px">
@@ -892,7 +892,7 @@ async function renderDetails(){
     `;
   }).join("");
 
-  $("listHoney").innerHTML=hs.map(h=>`
+  document.getElementById("listHoney").innerHTML=hs.map(h=>`
     <div class="flex justify-between items-center" style="padding:8px 0;border-bottom:1px solid var(--border);gap:10px">
       <div style="flex:1">
         <div style="font-weight:1000">${isoToPL(h.harvestDate)} – ${esc(h.type)}</div>
@@ -905,7 +905,7 @@ async function renderDetails(){
     </div>
   `).join("");
 
-  $("listTreat").innerHTML=ts.map(t=>`
+  document.getElementById("listTreat").innerHTML=ts.map(t=>`
     <div class="flex justify-between items-center" style="padding:8px 0;border-bottom:1px solid var(--border);gap:10px">
       <div style="flex:1">
         <div style="font-weight:1000">${isoToPL(t.date)} – ${esc(t.substance)}</div>
@@ -918,7 +918,7 @@ async function renderDetails(){
     </div>
   `).join("");
 
-  $("listFeed").innerHTML=fs.map(f=>`
+  document.getElementById("listFeed").innerHTML=fs.map(f=>`
     <div class="flex justify-between items-center" style="padding:8px 0;border-bottom:1px solid var(--border);gap:10px">
       <div style="flex:1">
         <div style="font-weight:1000">${isoToPL(f.date)} – ${Number(f.liters).toFixed(1)} L</div>
@@ -931,7 +931,7 @@ async function renderDetails(){
     </div>
   `).join("");
 
-  const pGrid=$("listPhotos"); pGrid.innerHTML="";
+  const pGrid=document.getElementById("listPhotos"); pGrid.innerHTML="";
   for(const p of ps){
     const data=await mediaGet(p.mediaKey);
     if(!data) continue;
@@ -943,7 +943,7 @@ async function renderDetails(){
     pGrid.appendChild(wrap);
   }
 
-  const rList=$("listReviews"); rList.innerHTML="";
+  const rList=document.getElementById("listReviews"); rList.innerHTML="";
   for(const r of rs){
     const card=document.createElement("div");
     card.className="card";
@@ -982,7 +982,7 @@ async function renderDetails(){
 function ensureCalendarYear(y){ if(!State.calendar[y]) State.calendar[y]={}; }
 async function renderCalendar(){
   const months=["Styczeń","Luty","Marzec","Kwiecień","Maj","Czerwiec","Lipiec","Sierpień","Wrzesień","Październik","Listopad","Grudzień"];
-  const yearSel=$("calYear");
+  const yearSel=document.getElementById("calYear");
   if(!yearSel.options.length){
     for(let y=2022;y<=2027;y++){
       const o=document.createElement("option");
@@ -994,7 +994,7 @@ async function renderCalendar(){
   yearSel.value = (Number(current)>=2022 && Number(current)<=2027) ? current : String(thisYear);
   ensureCalendarYear(yearSel.value);
 
-  const grid=$("calendarGrid"); grid.innerHTML="";
+  const grid=document.getElementById("calendarGrid"); grid.innerHTML="";
   months.forEach((m,idx)=>{
     const card=document.createElement("div");
     card.className="card";
@@ -1016,7 +1016,7 @@ async function renderCalendar(){
 
 /* ===== Finance ===== */
 function renderFinance(){
-  const list=$("finList");
+  const list=document.getElementById("finList");
   list.innerHTML="";
 
   let inc=0, exp=0;
@@ -1047,11 +1047,11 @@ function renderFinance(){
     list.appendChild(el);
   });
 
-  $("finInc").textContent = inc.toFixed(2);
-  $("finExp").textContent = exp.toFixed(2);
+  document.getElementById("finInc").textContent = inc.toFixed(2);
+  document.getElementById("finExp").textContent = exp.toFixed(2);
   const bal=inc-exp;
-  $("finBalance").textContent = bal.toFixed(2)+" PLN";
-  $("finBalance").style.color = bal>=0 ? "var(--success)" : "var(--danger)";
+  document.getElementById("finBalance").textContent = bal.toFixed(2)+" PLN";
+  document.getElementById("finBalance").style.color = bal>=0 ? "var(--success)" : "var(--danger)";
 }
 
 /* ===== Inventory (history) ===== */
@@ -1072,8 +1072,8 @@ function invCalcCurrentQty(itemId){
 }
 function refreshInvSelectors(){
   const items=[...State.invItems].sort((a,b)=>String(a.name).localeCompare(String(b.name)));
-  const sel=$("invItemSel");
-  const qsel=$("invQueryItem");
+  const sel=document.getElementById("invItemSel");
+  const qsel=document.getElementById("invQueryItem");
   sel.innerHTML=`<option value="">Wybierz produkt…</option>`;
   qsel.innerHTML=`<option value="">Wybierz produkt…</option>`;
   for(const it of items){
@@ -1087,10 +1087,10 @@ function refreshInvSelectors(){
 }
 function renderInventory(){
   refreshInvSelectors();
-  $("invMoveDate").value = $("invMoveDate").value || todayISO();
-  $("invQueryDate").value = $("invQueryDate").value || todayISO();
+  document.getElementById("invMoveDate").value = document.getElementById("invMoveDate").value || todayISO();
+  document.getElementById("invQueryDate").value = document.getElementById("invQueryDate").value || todayISO();
 
-  const list=$("invList");
+  const list=document.getElementById("invList");
   list.innerHTML="";
 
   const items=[...State.invItems].sort((a,b)=>String(a.name).localeCompare(String(b.name)));
@@ -1143,11 +1143,11 @@ function renderInventory(){
   }
 }
 async function invAddMove(){
-  const selId=$("invItemSel").value;
-  const newName=($("invNewName").value||"").trim();
-  const date=$("invMoveDate").value || todayISO();
-  const delta=Number($("invMoveDelta").value);
-  const note=($("invMoveNote").value||"").trim();
+  const selId=document.getElementById("invItemSel").value;
+  const newName=(document.getElementById("invNewName").value||"").trim();
+  const date=document.getElementById("invMoveDate").value || todayISO();
+  const delta=Number(document.getElementById("invMoveDelta").value);
+  const note=(document.getElementById("invMoveNote").value||"").trim();
 
   if(!Number.isFinite(delta) || delta===0) return alert("Podaj ilość (różną od 0).");
   if(!date) return alert("Podaj datę.");
@@ -1169,10 +1169,10 @@ async function invAddMove(){
   State.invMoves.push({id:uid(), itemId, date, delta, note, ts:Date.now()});
   await save("invMoves");
 
-  $("invMoveDelta").value="";
-  $("invMoveNote").value="";
-  $("invNewName").value="";
-  $("invItemSel").value="";
+  document.getElementById("invMoveDelta").value="";
+  document.getElementById("invMoveNote").value="";
+  document.getElementById("invNewName").value="";
+  document.getElementById("invItemSel").value="";
 
   renderInventory();
 }
@@ -1182,9 +1182,9 @@ async function invQuickDelta(itemId, delta){
   renderInventory();
 }
 function invQuery(){
-  const itemId=$("invQueryItem").value;
-  const date=$("invQueryDate").value || todayISO();
-  const box=$("invQueryResult");
+  const itemId=document.getElementById("invQueryItem").value;
+  const date=document.getElementById("invQueryDate").value || todayISO();
+  const box=document.getElementById("invQueryResult");
   box.innerHTML="";
   if(!itemId) return alert("Wybierz produkt do sprawdzenia.");
   const qty=invCalcQtyAtDate(itemId, date);
@@ -1220,7 +1220,7 @@ function invQuery(){
 
 /* ===== Knowledge (topics) ===== */
 function refreshTopicSelect(){
-  const sel=$("knowTopic");
+  const sel=document.getElementById("knowTopic");
   sel.innerHTML="";
   (State.topics.length?State.topics:["Ogólne"]).forEach(t=>{
     const o=document.createElement("option");
@@ -1230,7 +1230,7 @@ function refreshTopicSelect(){
 }
 function renderKnowledge(){
   refreshTopicSelect();
-  const wrap=$("knowList");
+  const wrap=document.getElementById("knowList");
   wrap.innerHTML="";
 
   const byTopic={};
@@ -1313,9 +1313,9 @@ async function saveHiveMeta(){
   const hive = State.hives.find(h=>h.id===oldId);
   if(!hive) return;
 
-  const newLabel = ($("hLabel").value || "").trim();
-  const newPlace = ($("hPlace").value || "").trim();
-  const newNext = ($("hNextVisit").value || "").trim();
+  const newLabel = (document.getElementById("hLabel").value || "").trim();
+  const newPlace = (document.getElementById("hPlace").value || "").trim();
+  const newNext = (document.getElementById("hNextVisit").value || "").trim();
 
   if(!newLabel) return alert("Numer / nazwa ula nie może być pusta.");
   const newId = newLabel;
@@ -1324,8 +1324,8 @@ async function saveHiveMeta(){
     return alert("Taki numer/nazwa ula już istnieje. Wpisz inny.");
   }
 
-  hive.kind  = $("hType").value;
-  hive.year  = Number($("hYear").value) || thisYear;
+  hive.kind  = document.getElementById("hType").value;
+  hive.year  = Number(document.getElementById("hYear").value) || thisYear;
   hive.place = newPlace;
   hive.nextVisitDate = newNext;
 
@@ -1347,52 +1347,52 @@ async function saveHiveMeta(){
 
 async function addQueen(){
   const hiveId=State.currentHive;
-  const y=Number($("qYear").value);
-  const m=Number($("qMonth").value);
-  const b=($("qBreed").value||"").trim();
+  const y=Number(document.getElementById("qYear").value);
+  const m=Number(document.getElementById("qMonth").value);
+  const b=(document.getElementById("qBreed").value||"").trim();
   if(!y || y<1900 || y>3000) return alert("Podaj poprawny rok.");
   if(!m || m<1 || m>12) return alert("Wybierz miesiąc.");
   if(!b) return alert("Podaj rasę / linię.");
 
   State.queens.push({id:uid(), hiveId, year:y, month:m, breed:b, dateAddedTS:Date.now()});
   await save("queens");
-  $("qYear").value=""; $("qBreed").value="";
+  document.getElementById("qYear").value=""; document.getElementById("qBreed").value="";
   renderDetails(); renderHives();
 }
 
 async function addHoney(){
   const hiveId=State.currentHive;
-  const harvestDate = $("mHarvestDate").value || todayISO();
-  const t=$("mType").value;
-  const w=Number($("mWeight").value);
+  const harvestDate = document.getElementById("mHarvestDate").value || todayISO();
+  const t=document.getElementById("mType").value;
+  const w=Number(document.getElementById("mWeight").value);
   if(!w || w<=0) return alert("Podaj wagę.");
   State.honey.push({id:uid(), hiveId, harvestDate, type:t, weight:w});
   await save("honey");
-  $("mWeight").value="";
+  document.getElementById("mWeight").value="";
   renderDetails(); renderHives();
 }
 
 async function addTreatment(){
   const hiveId=State.currentHive;
-  const date=$("treatDate").value || todayISO();
-  const substance=($("treatSubstance").value||"").trim();
-  const dose=($("treatDose").value||"").trim();
+  const date=document.getElementById("treatDate").value || todayISO();
+  const substance=(document.getElementById("treatSubstance").value||"").trim();
+  const dose=(document.getElementById("treatDose").value||"").trim();
   if(!substance) return alert("Wpisz substancję.");
   State.treatments.push({id:uid(), hiveId, date, substance, dose});
   await save("treatments");
-  $("treatSubstance").value=""; $("treatDose").value="";
+  document.getElementById("treatSubstance").value=""; document.getElementById("treatDose").value="";
   renderDetails(); renderHives();
 }
 
 async function addFeeding(){
   const hiveId=State.currentHive;
-  const date=$("feedDate").value || todayISO();
-  const liters=Number($("feedLiters").value);
-  const note=($("feedNote").value||"").trim();
+  const date=document.getElementById("feedDate").value || todayISO();
+  const liters=Number(document.getElementById("feedLiters").value);
+  const note=(document.getElementById("feedNote").value||"").trim();
   if(!Number.isFinite(liters) || liters<=0) return alert("Podaj ilość w litrach.");
   State.feeding.push({id:uid(), hiveId, date, liters, note});
   await save("feeding");
-  $("feedLiters").value=""; $("feedNote").value="";
+  document.getElementById("feedLiters").value=""; document.getElementById("feedNote").value="";
   renderDetails(); renderHives();
 }
 
@@ -1407,24 +1407,24 @@ async function startRec(){
     mediaRecorder.onstop=async ()=>{
       const blob=new Blob(audioChunks,{type:"audio/webm"});
       const key=await mediaPut(blob);
-      $("recBtn").dataset.audioKey=key;
-      $("recBtn").textContent="NAGRANO ✅";
-      $("recBtn").classList.remove("recording");
+      document.getElementById("recBtn").dataset.audioKey=key;
+      document.getElementById("recBtn").textContent="NAGRANO ✅";
+      document.getElementById("recBtn").classList.remove("recording");
       try{ currentStream.getTracks().forEach(t=>t.stop()); }catch{}
       currentStream=null;
     };
     mediaRecorder.start();
-    $("recBtn").textContent="SŁUCHAM... (STOP)";
-    $("recBtn").classList.add("recording");
+    document.getElementById("recBtn").textContent="SŁUCHAM... (STOP)";
+    document.getElementById("recBtn").classList.add("recording");
   }catch(e){ console.error(e); alert("Brak dostępu do mikrofonu."); }
 }
 function stopRec(){ if(mediaRecorder && mediaRecorder.state!=="inactive") mediaRecorder.stop(); }
 
 async function addReview(){
   const hiveId=State.currentHive;
-  const visitDate = $("rVisitDate").value || todayISO();
-  const note=($("vNote").value||"").trim();
-  const audioKey=$("recBtn").dataset.audioKey||null;
+  const visitDate = document.getElementById("rVisitDate").value || todayISO();
+  const note=(document.getElementById("vNote").value||"").trim();
+  const audioKey=document.getElementById("recBtn").dataset.audioKey||null;
   if(!note && !audioKey) return alert("Dodaj tekst lub nagranie.");
 
   State.reviews.push({id:uid(), hiveId, visitDate, note, audioKey});
@@ -1437,10 +1437,10 @@ async function addReview(){
     await save("hives");
   }
 
-  $("vNote").value="";
-  $("recBtn").textContent="🎤 NAGRAJ GŁOS";
-  $("recBtn").classList.remove("recording");
-  delete $("recBtn").dataset.audioKey;
+  document.getElementById("vNote").value="";
+  document.getElementById("recBtn").textContent="🎤 NAGRAJ GŁOS";
+  document.getElementById("recBtn").classList.remove("recording");
+  delete document.getElementById("recBtn").dataset.audioKey;
 
   renderDetails(); renderHives();
 }
@@ -1456,34 +1456,34 @@ async function addPhoto(file){
 
 /* ===== Finance action ===== */
 async function addFinance(){
-  const type=$("finType").value;
-  const date=$("finDate").value || todayISO();
-  const amount=Number($("finAmount").value);
-  const desc=($("finDesc").value||"").trim();
+  const type=document.getElementById("finType").value;
+  const date=document.getElementById("finDate").value || todayISO();
+  const amount=Number(document.getElementById("finAmount").value);
+  const desc=(document.getElementById("finDesc").value||"").trim();
   if(!desc || !Number.isFinite(amount) || amount<=0) return alert("Podaj opis i kwotę > 0.");
   State.finance.push({id:uid(), type, date, amount, desc});
   await save("finance");
-  $("finAmount").value=""; $("finDesc").value="";
+  document.getElementById("finAmount").value=""; document.getElementById("finDesc").value="";
   renderFinance();
 }
 
 /* ===== Knowledge actions ===== */
 async function addTopic(){
-  const t=($("knowNewTopic").value||"").trim();
+  const t=(document.getElementById("knowNewTopic").value||"").trim();
   if(!t) return;
   if(!State.topics.includes(t)) State.topics.push(t);
   await save("topics");
-  $("knowNewTopic").value="";
+  document.getElementById("knowNewTopic").value="";
   renderKnowledge();
 }
 async function addKnowledge(){
-  const topic=$("knowTopic").value || "Ogólne";
-  const title=($("knowTitle").value||"").trim();
-  const body=($("knowBody").value||"").trim();
+  const topic=document.getElementById("knowTopic").value || "Ogólne";
+  const title=(document.getElementById("knowTitle").value||"").trim();
+  const body=(document.getElementById("knowBody").value||"").trim();
   if(!title && !body) return alert("Wpisz tytuł lub treść.");
   State.knowledge.push({id:uid(), topic, title:title||"(bez tytułu)", body, dateTS:Date.now()});
   await save("knowledge");
-  $("knowTitle").value=""; $("knowBody").value="";
+  document.getElementById("knowTitle").value=""; document.getElementById("knowBody").value="";
   renderKnowledge();
 }
 
@@ -1921,12 +1921,12 @@ document.addEventListener("DOMContentLoaded", async ()=>{
     await loadAll();
 
     // modal refs
-    Modal.overlay=$("modalOverlay");
-    Modal.title=$("modalTitle");
-    Modal.body=$("modalBody");
-    Modal.btnSave=$("modalSave");
-    Modal.btnCancel=$("modalCancel");
-    Modal.btnClose=$("modalClose");
+    Modal.overlay=document.getElementById("modalOverlay");
+    Modal.title=document.getElementById("modalTitle");
+    Modal.body=document.getElementById("modalBody");
+    Modal.btnSave=document.getElementById("modalSave");
+    Modal.btnCancel=document.getElementById("modalCancel");
+    Modal.btnClose=document.getElementById("modalClose");
 
     Modal.btnCancel.addEventListener("click", modalClose);
     Modal.btnClose.addEventListener("click", modalClose);
@@ -1934,43 +1934,43 @@ document.addEventListener("DOMContentLoaded", async ()=>{
     Modal.btnSave.addEventListener("click", async ()=>{ if(Modal.onSave) await Modal.onSave(); });
 
     // nav
-    $("topNav").addEventListener("click",(e)=>{
+    document.getElementById("topNav").addEventListener("click",(e)=>{
       const btn=e.target.closest("button[data-view]");
       if(!btn) return;
       renderView(btn.dataset.view, null, true);
     });
 
-    $("addHiveBtn").addEventListener("click", addHive);
-    $("backBtn").addEventListener("click", ()=>renderView("hives", null, true));
+    document.getElementById("addHiveBtn").addEventListener("click", addHive);
+    document.getElementById("backBtn").addEventListener("click", ()=>renderView("hives", null, true));
 
     // home filters
-    $("fltReviewBtn").addEventListener("click", ()=>{
+    document.getElementById("fltReviewBtn").addEventListener("click", ()=>{
       Filters.review=!Filters.review;
       renderHives();
     });
-    $("fltQueenBtn").addEventListener("click", ()=>{
+    document.getElementById("fltQueenBtn").addEventListener("click", ()=>{
       Filters.queen=!Filters.queen;
       renderHives();
     });
-    $("fltClearBtn").addEventListener("click", ()=>{
+    document.getElementById("fltClearBtn").addEventListener("click", ()=>{
       Filters.review=false; Filters.queen=false;
       renderHives();
     });
 
     // details actions
-    $("saveHiveMetaBtn").addEventListener("click", saveHiveMeta);
-    $("addQueenBtn").addEventListener("click", addQueen);
-    $("addHoneyBtn").addEventListener("click", addHoney);
-    $("addTreatBtn").addEventListener("click", addTreatment);
-    $("addFeedBtn").addEventListener("click", addFeeding);
+    document.getElementById("saveHiveMetaBtn").addEventListener("click", saveHiveMeta);
+    document.getElementById("addQueenBtn").addEventListener("click", addQueen);
+    document.getElementById("addHoneyBtn").addEventListener("click", addHoney);
+    document.getElementById("addTreatBtn").addEventListener("click", addTreatment);
+    document.getElementById("addFeedBtn").addEventListener("click", addFeeding);
 
-    $("recBtn").addEventListener("click", async ()=>{
+    document.getElementById("recBtn").addEventListener("click", async ()=>{
       if(!mediaRecorder || mediaRecorder.state==="inactive") await startRec();
       else stopRec();
     });
-    $("addReviewBtn").addEventListener("click", addReview);
+    document.getElementById("addReviewBtn").addEventListener("click", addReview);
 
-    $("photoFile").addEventListener("change", async (e)=>{
+    document.getElementById("photoFile").addEventListener("change", async (e)=>{
       const f=e.target.files?.[0];
       e.target.value="";
       if(!f) return;
@@ -1978,20 +1978,20 @@ document.addEventListener("DOMContentLoaded", async ()=>{
     });
 
     // finance actions
-    $("addFinBtn").addEventListener("click", addFinance);
-    $("finDate").value = todayISO();
+    document.getElementById("addFinBtn").addEventListener("click", addFinance);
+    document.getElementById("finDate").value = todayISO();
 
     // inventory actions
-    $("invAddMoveBtn").addEventListener("click", invAddMove);
-    $("invQueryBtn").addEventListener("click", invQuery);
+    document.getElementById("invAddMoveBtn").addEventListener("click", invAddMove);
+    document.getElementById("invQueryBtn").addEventListener("click", invQuery);
 
     // knowledge actions
-    $("addTopicBtn").addEventListener("click", addTopic);
-    $("addKnowBtn").addEventListener("click", addKnowledge);
+    document.getElementById("addTopicBtn").addEventListener("click", addTopic);
+    document.getElementById("addKnowBtn").addEventListener("click", addKnowledge);
 
     // export / import
-    $("exportBtn").addEventListener("click", exportBackup);
-    $("importFile").addEventListener("change", async (e)=>{
+    document.getElementById("exportBtn").addEventListener("click", exportBackup);
+    document.getElementById("importFile").addEventListener("change", async (e)=>{
       const f=e.target.files?.[0];
       e.target.value="";
       if(!f) return;
@@ -2015,13 +2015,13 @@ document.addEventListener("DOMContentLoaded", async ()=>{
     });
 
     // defaults for details inputs
-    $("mHarvestDate").value=todayISO();
-    $("rVisitDate").value=todayISO();
-    $("treatDate").value=todayISO();
-    $("feedDate").value=todayISO();
-    $("invMoveDate").value=todayISO();
-    $("invQueryDate").value=todayISO();
-    $("qMonth").value="1";
+    document.getElementById("mHarvestDate").value=todayISO();
+    document.getElementById("rVisitDate").value=todayISO();
+    document.getElementById("treatDate").value=todayISO();
+    document.getElementById("feedDate").value=todayISO();
+    document.getElementById("invMoveDate").value=todayISO();
+    document.getElementById("invQueryDate").value=todayISO();
+    document.getElementById("qMonth").value="1";
 
     // router start
     const p=new URLSearchParams(location.search);
@@ -2043,6 +2043,7 @@ if ("serviceWorker" in navigator) {
 
 </body>
 </html>
+
 
 
 
