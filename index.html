@@ -2042,10 +2042,40 @@ document.addEventListener("DOMContentLoaded", async ()=>{
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("./sw.js");
 }
+// === FIX IMPORT BACKUP (PWA / GitHub Pages) ===
+window.addEventListener("load", () => {
+  const importBtn = document.getElementById("importBtn");
+  const importInput = document.getElementById("importFile");
+
+  if (!importBtn || !importInput) {
+    console.warn("Import elements not found");
+    return;
+  }
+
+  importBtn.onclick = () => importInput.click();
+
+  importInput.onchange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const text = await file.text();
+    const data = JSON.parse(text);
+
+    localStorage.clear();
+    Object.keys(data).forEach(k => {
+      localStorage.setItem(k, JSON.stringify(data[k]));
+    });
+
+    alert("Backup zaimportowany ✔️ Aplikacja zostanie odświeżona");
+    location.reload();
+  };
+});
+
 </script>
 
 </body>
 </html>
+
 
 
 
