@@ -1,0 +1,2034 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>Pasiecznik ULTRA PRO</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#ca8a04">
+
+  <style>
+    :root{
+      --primary:#ca8a04; --primary-dark:#854d0e;
+      --bg:#f1f5f9; --white:#fff; --text:#0f172a;
+      --danger:#dc2626; --success:#16a34a; --blue:#2563eb;
+      --slate:#334155; --purple:#7e22ce; --emerald:#059669; --orange:#f97316;
+      --border:#e2e8f0;
+    }
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text);margin:0;padding-bottom:90px}
+    .header{background:var(--primary);color:#fff;padding:12px;position:sticky;top:0;z-index:50;box-shadow:0 4px 6px -1px rgba(0,0,0,.1)}
+    .header-top{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}
+    .header-title{font-weight:1000;text-transform:uppercase;letter-spacing:1px;font-size:1.05rem}
+    .nav-scroll{display:flex;gap:8px;overflow-x:auto;padding-bottom:5px;scrollbar-width:none}
+    .nav-scroll::-webkit-scrollbar{display:none}
+    .container{max-width:1200px;margin:0 auto;padding:16px}
+    .grid{display:grid;gap:16px}
+    .cols-2{grid-template-columns:repeat(2,1fr)}
+    @media (min-width:640px){.grid-hives{grid-template-columns:repeat(3,1fr)}}
+    @media (min-width:768px){.grid-hives{grid-template-columns:repeat(4,1fr)}}
+    @media (min-width:1024px){.grid-hives{grid-template-columns:repeat(6,1fr)}}
+    @media (max-width:639px){.grid-hives{grid-template-columns:repeat(2,1fr)}}
+
+    .btn{border:none;padding:8px 16px;border-radius:10px;font-weight:1000;cursor:pointer;text-transform:uppercase;font-size:.75rem;transition:.2s;color:#fff;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
+    .btn:active{transform:scale(.96)}
+    .btn-nav{background:var(--primary-dark);border:1px solid rgba(255,255,255,.18)}
+    .btn-green{background:var(--success)}
+    .btn-red{background:var(--danger)}
+    .btn-blue{background:var(--blue)}
+    .btn-slate{background:var(--slate)}
+    .btn-orange{background:var(--orange)}
+    .btn-ghost{background:transparent;color:var(--text);border:1px solid var(--border)}
+    .btn-ghost:active{transform:scale(.98)}
+    .btn-chip{background:#0f172a;color:#fff;border:1px solid rgba(255,255,255,.12);padding:8px 10px}
+    .btn-chip.active{background:var(--blue)}
+    .btn-chip.active-red{background:var(--danger)}
+
+    .card{background:var(--white);border-radius:14px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.1);border:1px solid var(--border)}
+    .input{width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:10px;font-size:14px;box-sizing:border-box;background:#fff}
+    .input:focus{outline:2px solid var(--primary);border-color:transparent}
+    .hidden{display:none!important}
+    .flex{display:flex}
+    .gap-2{gap:8px}
+    .gap-3{gap:12px}
+    .justify-between{justify-content:space-between}
+    .items-center{align-items:center}
+    .w-full{width:100%}
+    .text-center{text-align:center}
+    .mb-2{margin-bottom:8px}
+    .mt-2{margin-top:8px}
+    .mt-3{margin-top:12px}
+
+    .hive-card{border-bottom:6px solid var(--primary);cursor:pointer;transition:transform .2s}
+    .hive-card:hover{transform:translateY(-2px)}
+    .hive-alert{border-color:var(--danger)!important}
+    .text-alert{color:var(--danger);font-weight:1000;animation:blink 2s infinite}
+    @keyframes blink{0%{opacity:1}50%{opacity:.55}100%{opacity:1}}
+
+    details{border:1px solid var(--border);border-radius:12px;margin-bottom:10px;overflow:hidden;background:#fff}
+    details>summary{background:#f8fafc;padding:12px;font-weight:1000;cursor:pointer;list-style:none;font-size:.8rem;text-transform:uppercase;color:#475569;display:flex;justify-content:space-between;align-items:center}
+    details[open]>summary{background:#e2e8f0}
+    .details-content{padding:12px;border-top:1px solid var(--border)}
+
+    .photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+    .photo-item{position:relative;aspect-ratio:1}
+    .photo-item img{width:100%;height:100%;object-fit:cover;border-radius:10px;border:1px solid var(--border)}
+    .del-btn-abs{position:absolute;top:4px;right:4px;background:rgba(0,0,0,.6);color:#fff;width:22px;height:22px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:12px;cursor:pointer;border:none}
+
+    .recording{animation:pulse 1.5s infinite;background-color:var(--danger)!important}
+    @keyframes pulse{0%{opacity:1}50%{opacity:.5}100%{opacity:1}}
+
+    .pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;font-weight:1000;font-size:11px;border:1px solid var(--border);background:#fff}
+    .muted{color:#64748b;font-weight:1000;font-size:11px;text-transform:uppercase;letter-spacing:1px}
+    .small{font-size:12px;color:#64748b;font-weight:700}
+    .kpi{font-weight:1000;font-size:18px}
+    .tag{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;background:#f1f5f9;border:1px solid var(--border);font-weight:900;font-size:12px;color:#334155}
+
+    /* Modal */
+    .modal-overlay{position:fixed;inset:0;background:rgba(15,23,42,.55);display:none;align-items:flex-end;justify-content:center;padding:16px;z-index:9999}
+    .modal-overlay.show{display:flex}
+    .modal{width:min(720px,100%);background:#fff;border-radius:18px;border:1px solid var(--border);box-shadow:0 12px 40px rgba(0,0,0,.25);overflow:hidden;animation:slideUp .18s ease-out}
+    @keyframes slideUp{from{transform:translateY(18px);opacity:.5}to{transform:translateY(0);opacity:1}}
+    .modal-header{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:10px}
+    .modal-title{font-weight:1000;text-transform:uppercase;letter-spacing:1px;font-size:14px}
+    .modal-body{padding:16px;display:grid;gap:10px}
+    .modal-footer{padding:12px 16px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px}
+    .row{display:grid;grid-template-columns:1fr;gap:10px}
+    @media(min-width:600px){.row.cols2{grid-template-columns:1fr 1fr}}
+
+    .hr{height:1px;background:var(--border);margin:10px 0}
+  </style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-top">
+    <div class="flex items-center gap-2">
+      <button id="backBtn" class="btn btn-nav hidden">⬅</button>
+      <div id="appTitle" class="header-title">PASIECZNIK ULTRA</div>
+    </div>
+    <div class="flex gap-2">
+      <button id="exportBtn" class="btn btn-green">⬇ KOPIA</button>
+      <label class="btn btn-slate" style="cursor:pointer">
+        ⬆ IMPORT
+        <input id="importFile" type="file" accept="application/json" hidden>
+      </label>
+    </div>
+  </div>
+
+  <div class="nav-scroll" id="topNav">
+    <button data-view="hives" class="btn btn-nav">🐝 Pasieka</button>
+    <button data-view="calendar" class="btn btn-nav" style="background:#4f46e5">📅 Kalendarz</button>
+    <button data-view="finance" class="btn btn-nav" style="background:var(--emerald)">💰 Finanse</button>
+    <button data-view="inventory" class="btn btn-nav" style="background:var(--slate)">📦 Magazyn</button>
+    <button data-view="knowledge" class="btn btn-nav" style="background:var(--purple)">🧠 Wiedza</button>
+    <button id="addHiveBtn" class="btn btn-green">+ UL</button>
+  </div>
+</header>
+
+<main class="container">
+
+  <!-- PASIEKA -->
+  <section id="viewHives" class="grid">
+    <div class="card" style="border-left:5px solid var(--blue)">
+      <div class="muted mb-2">FILTRY EKRANU GŁÓWNEGO</div>
+      <div class="flex gap-2" style="flex-wrap:wrap">
+        <button id="fltReviewBtn" class="btn btn-chip">🔎 DO PRZEGLĄDU</button>
+        <button id="fltQueenBtn" class="btn btn-chip">👑 WYMIENIĆ MATKĘ</button>
+        <button id="fltClearBtn" class="btn btn-ghost" style="padding:8px 10px">WYCZYŚĆ</button>
+      </div>
+      <div class="small mt-2">
+        „Do przeglądu” = ul z <b>terminem następnego przeglądu</b> na dziś / wstecz, albo (jeśli brak terminu) ostatni przegląd starszy niż <b>6 dni</b>.
+        „Wymienić matkę” = matka starsza niż <b>24 miesiące</b>.
+      </div>
+    </div>
+
+    <div id="hivesGrid" class="grid grid-hives"></div>
+  </section>
+
+  <!-- SZCZEGÓŁY ULA -->
+  <section id="viewDetails" class="hidden grid">
+    <div id="hiveQuickInfo" class="card" style="border-left:6px solid var(--primary);display:flex;justify-content:space-between;gap:12px;align-items:flex-start"></div>
+
+    <details open>
+      <summary>🧾 Dane ula <span>▼</span></summary>
+      <div class="details-content">
+        <div class="row cols2 mb-2">
+          <input id="hLabel" class="input" type="text" placeholder="Numer / nazwa ula (np. 12, A1)">
+          <input id="hPlace" class="input" type="text" placeholder="Położenie (np. Rząd 2 / 3 od lewej)">
+        </div>
+        <div class="row cols2 mb-2">
+          <select id="hType" class="input">
+            <option value="rodzina">Rodzina</option>
+            <option value="odklad">Odkład</option>
+          </select>
+          <input id="hYear" class="input" type="number" placeholder="Rok (np. 2025)">
+        </div>
+
+        <div class="row cols2 mb-2">
+          <input id="hNextVisit" class="input" type="date">
+          <button id="saveHiveMetaBtn" class="btn btn-blue">ZAPISZ</button>
+        </div>
+
+        <div class="small">
+          Możesz wpisać <b>datę kolejnego przeglądu</b>. Po zapisaniu przeglądu aplikacja automatycznie ustawi kolejny przegląd = <b>+6 dni</b> (możesz to potem zmienić ręcznie).
+        </div>
+      </div>
+    </details>
+
+    <details>
+      <summary>👑 Historia Matek <span>▼</span></summary>
+      <div class="details-content">
+        <div class="row cols2 mb-2">
+          <input id="qYear" type="number" placeholder="Rok (np. 2024)" class="input">
+          <select id="qMonth" class="input">
+            <option value="1">Styczeń</option><option value="2">Luty</option><option value="3">Marzec</option><option value="4">Kwiecień</option>
+            <option value="5">Maj</option><option value="6">Czerwiec</option><option value="7">Lipiec</option><option value="8">Sierpień</option>
+            <option value="9">Wrzesień</option><option value="10">Październik</option><option value="11">Listopad</option><option value="12">Grudzień</option>
+          </select>
+        </div>
+        <div class="row cols2 mb-2">
+          <input id="qBreed" type="text" placeholder="Rasa / Linia" class="input">
+          <button id="addQueenBtn" class="btn btn-red">DODAJ</button>
+        </div>
+        <div id="listQueens"></div>
+      </div>
+    </details>
+
+    <details>
+      <summary>🍯 Miodobrania <span>▼</span></summary>
+      <div class="details-content">
+        <div class="flex gap-2 mb-2">
+          <input id="mHarvestDate" type="date" class="input" style="width:190px">
+          <select id="mType" class="input">
+            <option>Wielokwiat</option><option>Rzepak</option><option>Akacja</option><option>Lipa</option><option>Gryka</option><option>Spadź</option><option>Wrzos</option>
+          </select>
+          <input id="mWeight" type="number" placeholder="kg" class="input" style="width:110px">
+          <button id="addHoneyBtn" class="btn btn-blue">+</button>
+        </div>
+        <div class="small mb-2">Wyświetlana jest <b>data miodobrania</b> (ręczna). Pozycje możesz edytować.</div>
+        <div id="listHoney"></div>
+      </div>
+    </details>
+
+    <details>
+      <summary>💉 Leczenie <span>▼</span></summary>
+      <div class="details-content">
+        <div class="row cols2 mb-2">
+          <input id="treatDate" type="date" class="input">
+          <input id="treatSubstance" type="text" class="input" placeholder="Substancja (np. kwas szczawiowy)">
+        </div>
+        <div class="row cols2 mb-2">
+          <input id="treatDose" type="text" class="input" placeholder="Dawka / forma (opcjonalnie)">
+          <button id="addTreatBtn" class="btn btn-blue">DODAJ</button>
+        </div>
+        <div id="listTreat"></div>
+      </div>
+    </details>
+
+    <details>
+      <summary>🍯 Karmienie zimowe <span>▼</span></summary>
+      <div class="details-content">
+        <div class="row cols2 mb-2">
+          <input id="feedDate" type="date" class="input">
+          <input id="feedLiters" type="number" class="input" placeholder="Ilość syropu (L)">
+        </div>
+        <div class="row cols2 mb-2">
+          <input id="feedNote" type="text" class="input" placeholder="Rodzaj (np. 3:2) / uwagi (opcjonalnie)">
+          <button id="addFeedBtn" class="btn btn-blue">DODAJ</button>
+        </div>
+        <div id="listFeed"></div>
+      </div>
+    </details>
+
+    <details>
+      <summary>📸 Galeria Zdjęć <span>▼</span></summary>
+      <div class="details-content">
+        <label class="btn w-full mb-2" style="background:#10b981;border:2px dashed #a7f3d0;color:#064e3b">
+          ➕ DODAJ ZDJĘCIE
+          <input id="photoFile" type="file" accept="image/*" hidden>
+        </label>
+        <div id="listPhotos" class="photo-grid"></div>
+      </div>
+    </details>
+
+    <details open>
+      <summary>📝 Przeglądy i Notatki <span>▼</span></summary>
+      <div class="details-content">
+        <div class="flex gap-2 mb-2">
+          <input id="rVisitDate" type="date" class="input" style="width:190px">
+          <button id="recBtn" class="btn btn-red w-full" style="padding:12px">🎤 NAGRAJ GŁOS</button>
+        </div>
+        <textarea id="vNote" placeholder="Opisz sytuację w ulu..." class="input mb-2" style="height:80px"></textarea>
+        <button id="addReviewBtn" class="btn btn-orange w-full">ZAPISZ PRZEGLĄD</button>
+        <div class="small mt-2">
+          Po zapisaniu przeglądu aplikacja ustawi termin następnego przeglądu na <b>+6 dni</b> (możesz zmienić w „Dane ula”).
+        </div>
+        <div id="listReviews" style="margin-top:12px;display:grid;gap:10px"></div>
+      </div>
+    </details>
+  </section>
+
+  <!-- KALENDARZ -->
+  <section id="viewCalendar" class="hidden">
+    <div class="flex gap-2 items-center mb-2">
+      <div class="pill">📅 KALENDARZ</div>
+      <select id="calYear" class="input" style="max-width:200px"></select>
+    </div>
+    <div id="calendarGrid" class="grid cols-2" style="gap:10px"></div>
+  </section>
+
+  <!-- FINANSE -->
+  <section id="viewFinance" class="hidden">
+    <div class="card text-center" style="border-top:5px solid var(--emerald);margin-bottom:16px">
+      <div class="muted">BILANS</div>
+      <div id="finBalance" style="font-weight:1000;margin:6px 0;font-size:30px">0.00 PLN</div>
+      <div class="flex justify-between" style="font-size:10px;font-weight:1000">
+        <span style="color:var(--success)">PRZYCHÓD: <span id="finInc">0</span></span>
+        <span style="color:var(--danger)">WYDATEK: <span id="finExp">0</span></span>
+      </div>
+    </div>
+
+    <div class="card mb-2">
+      <div class="row cols2">
+        <select id="finType" class="input">
+          <option value="expense">📉 WYDATEK</option>
+          <option value="income">📈 PRZYCHÓD</option>
+        </select>
+        <input id="finDate" type="date" class="input">
+      </div>
+      <div class="row cols2">
+        <input id="finAmount" type="number" placeholder="PLN" class="input">
+        <input id="finDesc" type="text" placeholder="Opis (np. Cukier)" class="input">
+      </div>
+      <div class="mt-2">
+        <button id="addFinBtn" class="btn btn-green w-full">DODAJ</button>
+        <div class="small mt-2">Data w finansach jest <b>Twoja (ręczna)</b>. Każdą pozycję możesz <b>edytować</b>.</div>
+      </div>
+    </div>
+
+    <div id="finList" class="grid" style="gap:10px"></div>
+  </section>
+
+  <!-- MAGAZYN -->
+  <section id="viewInventory" class="hidden">
+    <div class="card mb-2" style="border-top:5px solid var(--slate)">
+      <h3 style="margin:0 0 10px 0;font-weight:1000">Magazyn (historia stanów)</h3>
+
+      <div class="row cols2">
+        <select id="invItemSel" class="input"></select>
+        <input id="invNewName" type="text" placeholder="lub wpisz nowy produkt (np. Cukier)" class="input">
+      </div>
+
+      <div class="row cols2 mt-2">
+        <input id="invMoveDate" type="date" class="input">
+        <input id="invMoveDelta" type="number" step="0.01" placeholder="+ / − ilość (np. 25 lub -10)" class="input">
+      </div>
+
+      <div class="row cols2 mt-2">
+        <input id="invMoveNote" type="text" placeholder="Powód (np. zakup, karmienie, produkcja)" class="input">
+        <button id="invAddMoveBtn" class="btn btn-slate">DODAJ RUCH</button>
+      </div>
+
+      <div class="small mt-2">
+        Każdy wpis to <b>ruch magazynowy</b> z datą. Dzięki temu możesz sprawdzić, ile miałaś np. cukru w lipcu 2025.
+      </div>
+    </div>
+
+    <div class="card mb-2" style="border-left:5px solid var(--blue)">
+      <div class="muted mb-2">SPRAWDŹ STAN NA DZIEŃ</div>
+      <div class="row cols2">
+        <select id="invQueryItem" class="input"></select>
+        <input id="invQueryDate" type="date" class="input">
+      </div>
+      <button id="invQueryBtn" class="btn btn-blue w-full mt-2">POKAŻ</button>
+
+      <div id="invQueryResult" class="mt-2"></div>
+    </div>
+
+    <div class="card">
+      <div class="muted mb-2">AKTUALNE STANY</div>
+      <div id="invList" class="grid" style="gap:10px"></div>
+    </div>
+  </section>
+
+  <!-- WIEDZA -->
+  <section id="viewKnowledge" class="hidden">
+    <div class="card mb-2" style="border-top:5px solid var(--purple)">
+      <h3 style="margin:0 0 10px 0;font-weight:1000">Wiedza (tematy)</h3>
+
+      <div class="row cols2">
+        <input id="knowNewTopic" type="text" placeholder="Nowy temat (np. Odkłady)" class="input">
+        <button id="addTopicBtn" class="btn" style="background:var(--purple)">DODAJ TEMAT</button>
+      </div>
+
+      <div class="row cols2">
+        <select id="knowTopic" class="input"></select>
+        <input id="knowTitle" type="text" placeholder="Tytuł notatki" class="input">
+      </div>
+      <textarea id="knowBody" placeholder="Treść..." class="input" style="height:90px"></textarea>
+      <button id="addKnowBtn" class="btn w-full mt-2" style="background:var(--purple)">ZAPISZ NOTATKĘ</button>
+      <div class="small mt-2">Notatki są pogrupowane wg tematu. Każdą notatkę możesz <b>edytować</b>.</div>
+    </div>
+
+    <div id="knowList" class="grid" style="gap:10px"></div>
+  </section>
+</main>
+
+<!-- MODAL -->
+<div id="modalOverlay" class="modal-overlay" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-header">
+      <div id="modalTitle" class="modal-title">EDYCJA</div>
+      <button id="modalClose" class="btn btn-ghost" style="padding:6px 10px">✕</button>
+    </div>
+    <div id="modalBody" class="modal-body"></div>
+    <div class="modal-footer">
+      <button id="modalCancel" class="btn btn-slate" style="padding:10px 14px">ANULUJ</button>
+      <button id="modalSave" class="btn btn-green" style="padding:10px 14px">ZAPISZ</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===== Helpers ===== */
+const $ = (id)=>document.getElementById(id);
+const uid = ()=> (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36)+Math.random().toString(36).slice(2));
+const esc = (s)=> String(s??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
+const todayISO = ()=> new Date().toISOString().slice(0,10);
+const isoToPL = (iso)=> {
+  if(!iso) return "—";
+  const [y,m,d]=iso.split("-");
+  if(!y||!m||!d) return iso;
+  return `${d}.${m}.${y}`;
+};
+const thisYear = new Date().getFullYear();
+const parseISODate = (iso)=> {
+  if(!iso) return null;
+  const [y,m,d]=String(iso).split("-").map(Number);
+  if(!y||!m||!d) return null;
+  return new Date(y, m-1, d, 12, 0, 0, 0);
+};
+const addDaysISO = (iso, days)=> {
+  const dt=parseISODate(iso)||parseISODate(todayISO());
+  dt.setDate(dt.getDate()+days);
+  return dt.toISOString().slice(0,10);
+};
+const monthsPL = ["","Styczeń","Luty","Marzec","Kwiecień","Maj","Czerwiec","Lipiec","Sierpień","Wrzesień","Październik","Listopad","Grudzień"];
+const month2 = (m)=> String(m).padStart(2,"0");
+const ymToMonths = (y,m)=> (Number(y)*12 + (Number(m)-1));
+const nowYMMonths = ()=> {
+  const d=new Date();
+  return d.getFullYear()*12 + d.getMonth();
+};
+
+/* ===== IndexedDB ===== */
+const DB_NAME="pasiecznik_ultra_db";
+const DB_VER=5; // podbicie wersji pod nowy magazyn (historia)
+let db=null;
+
+function openDB(){
+  return new Promise((resolve,reject)=>{
+    const req=indexedDB.open(DB_NAME,DB_VER);
+    req.onupgradeneeded=(e)=>{
+      const d=e.target.result;
+      if(!d.objectStoreNames.contains("data")) d.createObjectStore("data",{keyPath:"key"});
+      if(!d.objectStoreNames.contains("media")) d.createObjectStore("media",{keyPath:"key"});
+    };
+    req.onsuccess=()=>{db=req.result; resolve(db);};
+    req.onerror=()=>reject(req.error);
+  });
+}
+function dbGet(key){
+  return new Promise((resolve)=>{
+    const tx=db.transaction("data","readonly");
+    const req=tx.objectStore("data").get(key);
+    req.onsuccess=()=>resolve(req.result?req.result.value:null);
+    req.onerror=()=>resolve(null);
+  });
+}
+function dbSet(key,value){
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction("data","readwrite");
+    tx.objectStore("data").put({key,value});
+    tx.oncomplete=()=>resolve();
+    tx.onerror=()=>reject(tx.error);
+  });
+}
+async function mediaPut(blob){
+  const key=uid();
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction("media","readwrite");
+    tx.objectStore("media").put({key,blob,type:blob.type||"application/octet-stream"});
+    tx.oncomplete=()=>resolve(key);
+    tx.onerror=()=>reject(tx.error);
+  });
+}
+function mediaGet(key){
+  return new Promise((resolve)=>{
+    const tx=db.transaction("media","readonly");
+    const req=tx.objectStore("media").get(key);
+    req.onsuccess=()=>resolve(req.result||null);
+    req.onerror=()=>resolve(null);
+  });
+}
+function mediaDel(key){
+  return new Promise((resolve)=>{
+    const tx=db.transaction("media","readwrite");
+    tx.objectStore("media").delete(key);
+    tx.oncomplete=()=>resolve();
+    tx.onerror=()=>resolve();
+  });
+}
+function mediaGetAll(){
+  return new Promise((resolve)=>{
+    const tx=db.transaction("media","readonly");
+    const req=tx.objectStore("media").getAll();
+    req.onsuccess=()=>resolve(req.result||[]);
+    req.onerror=()=>resolve([]);
+  });
+}
+function mediaClearAll(){
+  return new Promise((resolve)=>{
+    const tx=db.transaction("media","readwrite");
+    const req=tx.objectStore("media").clear();
+    req.onsuccess=()=>resolve();
+    req.onerror=()=>resolve();
+  });
+}
+
+/* ===== State ===== */
+const State={
+  view:"hives",
+  currentHive:null,
+
+  hives:[],       // {id,label,place,kind,year,nextVisitDate}
+  queens:[],      // {id,hiveId,year,month,breed,dateAddedTS}
+  honey:[],       // {id,hiveId,harvestDate,type,weight}
+  treatments:[],  // {id,hiveId,date,substance,dose}
+  feeding:[],     // {id,hiveId,date,liters,note}
+  photos:[],      // {id,hiveId,mediaKey,dateTS}
+  reviews:[],     // {id,hiveId,visitDate,note,audioKey?}
+  calendar:{},    // { [year]: {0:'',1:'',...} }
+  finance:[],     // {id,type,date,amount,desc}
+
+  // NOWY magazyn:
+  invItems:[],    // {id,name,unit}
+  invMoves:[],    // {id,itemId,date,delta,note,ts}
+
+  // stare pole zostawiamy tylko do migracji (jeśli ktoś miał starą wersję):
+  inventory:[],   // (stary) {id,name,qty,lastTS}
+
+  topics:[],      // ["Ogólne", ...]
+  knowledge:[]    // {id,topic,title,body,dateTS}
+};
+
+async function loadAll(){
+  State.hives = (await dbGet("hives")) || ["1","2","3"];
+  State.queens = (await dbGet("queens")) || [];
+  State.honey  = (await dbGet("honey"))  || [];
+  State.treatments = (await dbGet("treatments")) || [];
+  State.feeding = (await dbGet("feeding")) || [];
+  State.photos = (await dbGet("photos")) || [];
+  State.reviews= (await dbGet("reviews"))|| [];
+  State.calendar = (await dbGet("calendar")) || {};
+  State.finance  = (await dbGet("finance")) || [];
+
+  // nowy magazyn:
+  State.invItems = (await dbGet("invItems")) || [];
+  State.invMoves = (await dbGet("invMoves")) || [];
+
+  // stary magazyn (do migracji):
+  State.inventory= (await dbGet("inventory")) || [];
+
+  State.topics   = (await dbGet("topics")) || ["Ogólne"];
+  State.knowledge= (await dbGet("knowledge")) || [];
+
+  // migracja hives: string -> obiekt
+  if(State.hives.length && typeof State.hives[0] === "string"){
+    State.hives = State.hives.map(s=>({
+      id:String(s),
+      label:String(s),
+      place:"",
+      kind:"rodzina",
+      year:thisYear,
+      nextVisitDate:""
+    }));
+    await dbSet("hives", State.hives);
+  } else {
+    // uzupełnij brakujące pola
+    State.hives.forEach(h=>{
+      if(h.place===undefined) h.place="";
+      if(h.label===undefined) h.label=h.id;
+      if(h.kind===undefined) h.kind="rodzina";
+      if(h.year===undefined) h.year=thisYear;
+      if(h.nextVisitDate===undefined) h.nextVisitDate="";
+    });
+    await dbSet("hives", State.hives);
+  }
+
+  // migracja queens: dodaj month jeśli brak
+  State.queens.forEach(q=>{
+    if(q.month===undefined || q.month===null || q.month==="") q.month=1;
+  });
+  await dbSet("queens", State.queens);
+
+  // MIGRACJA MAGAZYNU: jeśli ktoś miał stare "inventory" (stany bez historii),
+  // przenosimy do invItems + invMoves jako "Stan początkowy".
+  const hasNewInv = Array.isArray(State.invItems) && State.invItems.length>0;
+  const hasOldInv = Array.isArray(State.inventory) && State.inventory.length>0;
+  if(!hasNewInv && hasOldInv){
+    const items=[];
+    const moves=[];
+    const dt = todayISO();
+    for(const old of State.inventory){
+      const name=(old.name||"").trim();
+      if(!name) continue;
+      const itemId=uid();
+      items.push({id:itemId, name, unit:""});
+      const qty=Number(old.qty||0);
+      if(Number.isFinite(qty) && qty!==0){
+        moves.push({id:uid(), itemId, date:dt, delta:qty, note:"Stan początkowy (migracja)", ts:Date.now()});
+      }
+    }
+    State.invItems = items;
+    State.invMoves = moves;
+    await dbSet("invItems", State.invItems);
+    await dbSet("invMoves", State.invMoves);
+  }
+}
+async function save(key){ await dbSet(key, State[key]); }
+
+/* ===== Router ===== */
+function hideAll(){ document.querySelectorAll("main > section").forEach(s=>s.classList.add("hidden")); }
+function setTitle(){
+  const v=State.view;
+  $("backBtn").classList.toggle("hidden", v!=="details");
+  const map={
+    hives:"PASIECZNIK",
+    details:"UL",
+    calendar:"KALENDARZ",
+    finance:"FINANSE",
+    inventory:"MAGAZYN",
+    knowledge:"WIEDZA"
+  };
+  $("appTitle").textContent = (v==="details" && State.currentHive) ? ("UL " + State.currentHive) : (map[v]||"PASIECZNIK");
+}
+function renderView(view, hiveId=null, push=true){
+  State.view=view;
+  State.currentHive=hiveId;
+
+  hideAll();
+  const secId="view"+view.charAt(0).toUpperCase()+view.slice(1);
+  const sec=$(secId);
+  if(sec) sec.classList.remove("hidden");
+
+  setTitle();
+
+  if(view==="hives") renderHives();
+  if(view==="details") renderDetails();
+  if(view==="calendar") renderCalendar();
+  if(view==="finance") renderFinance();
+  if(view==="inventory") renderInventory();
+  if(view==="knowledge") renderKnowledge();
+
+  if(push){
+    const p=new URLSearchParams();
+    p.set("v", view);
+    if(view==="details" && hiveId) p.set("id", hiveId);
+    history.pushState({view,hiveId},"","?"+p.toString());
+  }
+}
+window.onpopstate=(e)=>{
+  const st=e.state;
+  if(st?.view){ renderView(st.view, st.hiveId||null, false); return; }
+  const p=new URLSearchParams(location.search);
+  const v=p.get("v")||"hives";
+  const id=p.get("id");
+  renderView(v, v==="details"?id:null, false);
+};
+
+/* ===== Computed ===== */
+function lastQueenForHive(hiveId){
+  const qs=State.queens.filter(q=>q.hiveId===hiveId).sort((a,b)=>b.dateAddedTS-a.dateAddedTS);
+  return qs[0]||null;
+}
+function queenOldFlag(q){
+  if(!q) return false;
+  const y=Number(q.year);
+  const m=Number(q.month||1);
+  if(!Number.isFinite(y)||!Number.isFinite(m)) return false;
+  const ageMonths = nowYMMonths() - ymToMonths(y,m);
+  return ageMonths >= 24;
+}
+function lastReviewDateForHive(hiveId){
+  const rs=State.reviews.filter(r=>r.hiveId===hiveId && r.visitDate).sort((a,b)=> (b.visitDate||"").localeCompare(a.visitDate||""));
+  return rs[0]?.visitDate || "";
+}
+function lastHoneyDateForHive(hiveId){
+  const hs=State.honey.filter(h=>h.hiveId===hiveId && h.harvestDate).sort((a,b)=> (b.harvestDate||"").localeCompare(a.harvestDate||""));
+  return hs[0]?.harvestDate || "";
+}
+function lastTreatDateForHive(hiveId){
+  const ts=State.treatments.filter(t=>t.hiveId===hiveId && t.date).sort((a,b)=> (b.date||"").localeCompare(a.date||""));
+  return ts[0]?.date || "";
+}
+function lastFeedDateForHive(hiveId){
+  const fs=State.feeding.filter(f=>f.hiveId===hiveId && f.date).sort((a,b)=> (b.date||"").localeCompare(a.date||""));
+  return fs[0]?.date || "";
+}
+function needsReview(hive){
+  const t=todayISO();
+  // jeśli jest ustawiony nextVisitDate:
+  if(hive.nextVisitDate){
+    return hive.nextVisitDate <= t;
+  }
+  // jeśli brak nextVisitDate, patrzymy na ostatni przegląd:
+  const last=lastReviewDateForHive(hive.id);
+  if(!last) return true; // brak przeglądu -> traktuj jako "do przeglądu"
+  const lastDt=parseISODate(last);
+  const now=parseISODate(t);
+  const diffDays = Math.floor((now - lastDt) / (1000*60*60*24));
+  return diffDays >= 6;
+}
+
+/* ===== Home filters ===== */
+const Filters = { review:false, queen:false };
+function applyFilterFlags(btn, isOn, style){
+  btn.classList.toggle("active", !!isOn);
+  if(style==="red") btn.classList.toggle("active-red", !!isOn);
+}
+function renderFilterButtons(){
+  applyFilterFlags($("fltReviewBtn"), Filters.review);
+  applyFilterFlags($("fltQueenBtn"), Filters.queen, "red");
+}
+function filterHives(list){
+  let out=[...list];
+  if(Filters.review){
+    out = out.filter(h=>needsReview(h));
+  }
+  if(Filters.queen){
+    out = out.filter(h=>queenOldFlag(lastQueenForHive(h.id)));
+  }
+  return out;
+}
+
+/* ===== Render: Hives ===== */
+function renderHives(){
+  renderFilterButtons();
+
+  const grid=$("hivesGrid");
+  grid.innerHTML="";
+
+  const sorted=[...State.hives].sort((a,b)=>String(a.label).localeCompare(String(b.label),undefined,{numeric:true}));
+  const filtered=filterHives(sorted);
+
+  filtered.forEach(h=>{
+    const q=lastQueenForHive(h.id);
+    const isOldQueen=queenOldFlag(q);
+
+    const lastRev=lastReviewDateForHive(h.id);
+    const lastHar=lastHoneyDateForHive(h.id);
+    const lastTr=lastTreatDateForHive(h.id);
+    const lastFd=lastFeedDateForHive(h.id);
+
+    const due = needsReview(h);
+
+    const el=document.createElement("div");
+    el.className="card hive-card "+(isOldQueen?"hive-alert":"");
+    el.innerHTML=`
+      <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
+        <div>
+          <div style="font-size:22px;font-weight:1000;color:${isOldQueen?'var(--danger)':'var(--text)'}">${esc(h.label)}</div>
+          <div class="small" style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">
+            <span class="pill">${h.kind==="odklad"?"Odkład":"Rodzina"} ${esc(h.year)}</span>
+            ${h.place ? `<span class="pill">📍 ${esc(h.place)}</span>` : ``}
+            ${h.nextVisitDate ? `<span class="pill" style="border-color:${due?'#fecaca':'var(--border)'}">⏭ ${esc(isoToPL(h.nextVisitDate))}</span>` : (due?`<span class="pill" style="border-color:#fecaca">⏭ BRAK (DO PRZEGLĄDU)</span>`:``)}
+          </div>
+        </div>
+
+        <div style="text-align:right">
+          <div class="muted">Ostatni przegląd</div>
+          <div style="font-weight:1000">${lastRev?isoToPL(lastRev):"—"}</div>
+
+          <div class="muted" style="margin-top:8px">Miodobr.</div>
+          <div style="font-weight:1000">${lastHar?isoToPL(lastHar):"—"}</div>
+
+          <div class="muted" style="margin-top:8px">Leczenie</div>
+          <div style="font-weight:1000">${lastTr?isoToPL(lastTr):"—"}</div>
+
+          <div class="muted" style="margin-top:8px">Karmienie</div>
+          <div style="font-weight:1000">${lastFd?isoToPL(lastFd):"—"}</div>
+        </div>
+      </div>
+
+      <div style="margin-top:10px;font-size:12px">
+        <div class="${isOldQueen?'text-alert':''}" style="font-weight:1000">
+          ${isOldQueen ? '⚠️ WYMIENIĆ MATKĘ' : (q ? `Matka: ${esc(q.breed)} (${esc(q.year)}-${month2(q.month||1)})` : 'Matka: BRAK')}
+        </div>
+        <div class="${due?'text-alert':''}" style="margin-top:6px;font-weight:1000">
+          ${due ? '🔎 DO PRZEGLĄDU' : '✅ OK'}
+        </div>
+      </div>
+    `;
+    el.onclick=()=>renderView("details", h.id, true);
+    grid.appendChild(el);
+  });
+
+  if(filtered.length===0){
+    const empty=document.createElement("div");
+    empty.className="card text-center";
+    empty.innerHTML=`<div style="font-weight:1000">Brak uli w tym filtrze.</div><div class="small mt-2">Kliknij „Wyczyść”, żeby zobaczyć wszystkie.</div>`;
+    grid.appendChild(empty);
+  }
+}
+
+/* ===== Rename hive everywhere (ID change) ===== */
+async function renameHiveEverywhere(oldId, newId){
+  const upd = (arr, field="hiveId") => arr.forEach(x => { if(x[field] === oldId) x[field] = newId; });
+  upd(State.queens);
+  upd(State.honey);
+  upd(State.treatments);
+  upd(State.feeding);
+  upd(State.photos);
+  upd(State.reviews);
+  await save("queens");
+  await save("honey");
+  await save("treatments");
+  await save("feeding");
+  await save("photos");
+  await save("reviews");
+}
+
+/* ===== Render: Details ===== */
+async function renderDetails(){
+  const hiveId=State.currentHive;
+  const hive=State.hives.find(x=>x.id===hiveId);
+  if(!hive){ renderView("hives", null, true); return; }
+
+  $("hLabel").value = hive.label || hive.id || "";
+  $("hPlace").value = hive.place || "";
+  $("hType").value  = hive.kind || "rodzina";
+  $("hYear").value  = hive.year || thisYear;
+  $("hNextVisit").value = hive.nextVisitDate || "";
+
+  const qs=State.queens.filter(q=>q.hiveId===hiveId).sort((a,b)=>b.dateAddedTS-a.dateAddedTS);
+  const hs=State.honey.filter(h=>h.hiveId===hiveId).sort((a,b)=> (b.harvestDate||"").localeCompare(a.harvestDate||""));
+  const ts=State.treatments.filter(t=>t.hiveId===hiveId).sort((a,b)=> (b.date||"").localeCompare(a.date||""));
+  const fs=State.feeding.filter(f=>f.hiveId===hiveId).sort((a,b)=> (b.date||"").localeCompare(a.date||""));
+  const ps=State.photos.filter(p=>p.hiveId===hiveId).sort((a,b)=>b.dateTS-a.dateTS);
+  const rs=State.reviews.filter(r=>r.hiveId===hiveId).sort((a,b)=> (b.visitDate||"").localeCompare(a.visitDate||""));
+
+  const lastQ=qs[0]||null;
+  const isOldQueen=queenOldFlag(lastQ);
+  const totalHoney=hs.reduce((s,h)=>s+(Number(h.weight)||0),0);
+
+  const lastRev=rs[0]?.visitDate || "";
+  const lastHar=hs[0]?.harvestDate || "";
+  const lastTr=ts[0]?.date || "";
+  const lastFd=fs[0]?.date || "";
+  const due = needsReview(hive);
+
+  $("hiveQuickInfo").innerHTML=`
+    <div>
+      <div class="muted">UL</div>
+      <div style="font-size:18px;font-weight:1000">${esc(hive.label)}
+        <span class="pill">${hive.kind==="odklad"?"Odkład":"Rodzina"} ${esc(hive.year)}</span>
+        ${hive.place ? `<span class="pill">📍 ${esc(hive.place)}</span>` : ``}
+      </div>
+
+      <div class="muted" style="margin-top:10px">NASTĘPNY PRZEGLĄD</div>
+      <div style="font-size:16px;font-weight:1000;color:${due?'var(--danger)':'var(--text)'}">
+        ${hive.nextVisitDate ? isoToPL(hive.nextVisitDate) : "BRAK"}
+      </div>
+
+      <div class="muted" style="margin-top:10px">MATKA</div>
+      <div style="font-size:16px;font-weight:1000;color:${isOldQueen?'var(--danger)':'var(--text)'}">
+        ${lastQ ? `${esc(lastQ.breed)} (${esc(lastQ.year)}-${month2(lastQ.month||1)})` : "BRAK"}
+      </div>
+    </div>
+
+    <div style="text-align:right">
+      <div class="muted">OSTATNI PRZEGLĄD</div>
+      <div class="kpi">${lastRev?isoToPL(lastRev):"—"}</div>
+
+      <div class="muted" style="margin-top:8px">MIODOBRANIE</div>
+      <div class="kpi">${lastHar?isoToPL(lastHar):"—"}</div>
+
+      <div class="muted" style="margin-top:8px">LECZENIE</div>
+      <div class="kpi">${lastTr?isoToPL(lastTr):"—"}</div>
+
+      <div class="muted" style="margin-top:8px">KARMIENIE</div>
+      <div class="kpi">${lastFd?isoToPL(lastFd):"—"}</div>
+
+      <div class="muted" style="margin-top:10px">MIÓD ŁĄCZNIE</div>
+      <div class="kpi" style="color:var(--blue)">${totalHoney.toFixed(1)} kg</div>
+    </div>
+  `;
+
+  $("listQueens").innerHTML=qs.map(q=>{
+    const old=queenOldFlag(q);
+    return `
+      <div class="flex justify-between items-center" style="padding:8px 0;border-bottom:1px solid var(--border);gap:10px">
+        <div style="flex:1">
+          <div class="${old?'text-alert':''}" style="font-weight:1000">👑 ${esc(q.year)}-${month2(q.month||1)} – ${esc(q.breed)}</div>
+          <div class="small">${old?'⚠️ starsza niż 24 mies.': '—'}</div>
+        </div>
+        <div class="flex gap-2">
+          <button class="btn btn-blue" style="padding:6px 10px" data-edit="queen" data-id="${q.id}">EDYTUJ</button>
+          <button class="btn btn-slate" style="padding:6px 10px" data-del="queen" data-id="${q.id}">✕</button>
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  $("listHoney").innerHTML=hs.map(h=>`
+    <div class="flex justify-between items-center" style="padding:8px 0;border-bottom:1px solid var(--border);gap:10px">
+      <div style="flex:1">
+        <div style="font-weight:1000">${isoToPL(h.harvestDate)} – ${esc(h.type)}</div>
+        <div class="small">${Number(h.weight).toFixed(1)} kg</div>
+      </div>
+      <div class="flex gap-2">
+        <button class="btn btn-blue" style="padding:6px 10px" data-edit="honey" data-id="${h.id}">EDYTUJ</button>
+        <button class="btn btn-slate" style="padding:6px 10px" data-del="honey" data-id="${h.id}">✕</button>
+      </div>
+    </div>
+  `).join("");
+
+  $("listTreat").innerHTML=ts.map(t=>`
+    <div class="flex justify-between items-center" style="padding:8px 0;border-bottom:1px solid var(--border);gap:10px">
+      <div style="flex:1">
+        <div style="font-weight:1000">${isoToPL(t.date)} – ${esc(t.substance)}</div>
+        <div class="small">${t.dose ? esc(t.dose) : "—"}</div>
+      </div>
+      <div class="flex gap-2">
+        <button class="btn btn-blue" style="padding:6px 10px" data-edit="treat" data-id="${t.id}">EDYTUJ</button>
+        <button class="btn btn-slate" style="padding:6px 10px" data-del="treat" data-id="${t.id}">✕</button>
+      </div>
+    </div>
+  `).join("");
+
+  $("listFeed").innerHTML=fs.map(f=>`
+    <div class="flex justify-between items-center" style="padding:8px 0;border-bottom:1px solid var(--border);gap:10px">
+      <div style="flex:1">
+        <div style="font-weight:1000">${isoToPL(f.date)} – ${Number(f.liters).toFixed(1)} L</div>
+        <div class="small">${f.note ? esc(f.note) : "—"}</div>
+      </div>
+      <div class="flex gap-2">
+        <button class="btn btn-blue" style="padding:6px 10px" data-edit="feed" data-id="${f.id}">EDYTUJ</button>
+        <button class="btn btn-slate" style="padding:6px 10px" data-del="feed" data-id="${f.id}">✕</button>
+      </div>
+    </div>
+  `).join("");
+
+  const pGrid=$("listPhotos"); pGrid.innerHTML="";
+  for(const p of ps){
+    const data=await mediaGet(p.mediaKey);
+    if(!data) continue;
+    const url=URL.createObjectURL(data.blob);
+    const wrap=document.createElement("div");
+    wrap.className="photo-item";
+    wrap.innerHTML=`<img alt="zdjęcie" src="${url}"><button class="del-btn-abs" data-del="photo" data-id="${p.id}">✕</button>`;
+    setTimeout(()=>{ try{URL.revokeObjectURL(url)}catch{} }, 20000);
+    pGrid.appendChild(wrap);
+  }
+
+  const rList=$("listReviews"); rList.innerHTML="";
+  for(const r of rs){
+    const card=document.createElement("div");
+    card.className="card";
+    card.style.background="#fff7ed";
+    card.style.borderLeft="4px solid var(--orange)";
+
+    let audioHtml="";
+    if(r.audioKey){
+      const a=await mediaGet(r.audioKey);
+      if(a){
+        const url=URL.createObjectURL(a.blob);
+        audioHtml=`<audio controls src="${url}" style="width:100%;margin:8px 0"></audio>`;
+        setTimeout(()=>{ try{URL.revokeObjectURL(url)}catch{} }, 20000);
+      }
+    }
+
+    card.innerHTML=`
+      <div class="flex justify-between items-center">
+        <div>
+          <div class="muted">DATA PRZEGLĄDU</div>
+          <div style="font-size:18px;font-weight:1000">${r.visitDate?isoToPL(r.visitDate):"—"}</div>
+        </div>
+        <div class="flex gap-2">
+          <button class="btn btn-blue" style="padding:6px 10px" data-edit="review" data-id="${r.id}">EDYTUJ</button>
+          <button class="btn btn-slate" style="padding:6px 10px" data-del="review" data-id="${r.id}">USUŃ</button>
+        </div>
+      </div>
+      ${audioHtml}
+      <div style="white-space:pre-wrap;margin-top:6px">${esc(r.note||"")}</div>
+    `;
+    rList.appendChild(card);
+  }
+}
+
+/* ===== Calendar (years 2022-2027) ===== */
+function ensureCalendarYear(y){ if(!State.calendar[y]) State.calendar[y]={}; }
+async function renderCalendar(){
+  const months=["Styczeń","Luty","Marzec","Kwiecień","Maj","Czerwiec","Lipiec","Sierpień","Wrzesień","Październik","Listopad","Grudzień"];
+  const yearSel=$("calYear");
+  if(!yearSel.options.length){
+    for(let y=2022;y<=2027;y++){
+      const o=document.createElement("option");
+      o.value=String(y); o.textContent=String(y);
+      yearSel.appendChild(o);
+    }
+  }
+  const current = yearSel.value || String(thisYear);
+  yearSel.value = (Number(current)>=2022 && Number(current)<=2027) ? current : String(thisYear);
+  ensureCalendarYear(yearSel.value);
+
+  const grid=$("calendarGrid"); grid.innerHTML="";
+  months.forEach((m,idx)=>{
+    const card=document.createElement("div");
+    card.className="card";
+    card.innerHTML=`<div style="font-weight:1000;color:#4f46e5;margin-bottom:6px">${m} ${yearSel.value}</div>`;
+    const area=document.createElement("textarea");
+    area.className="input"; area.style.height="75px";
+    area.value = State.calendar[yearSel.value][idx] || "";
+    area.onchange=async (e)=>{
+      ensureCalendarYear(yearSel.value);
+      State.calendar[yearSel.value][idx] = e.target.value;
+      await save("calendar");
+    };
+    card.appendChild(area);
+    grid.appendChild(card);
+  });
+
+  yearSel.onchange=()=>renderCalendar();
+}
+
+/* ===== Finance ===== */
+function renderFinance(){
+  const list=$("finList");
+  list.innerHTML="";
+
+  let inc=0, exp=0;
+  const items=[...State.finance].sort((a,b)=> (b.date||"").localeCompare(a.date||""));
+  items.forEach(f=>{
+    if(f.type==="income") inc+=Number(f.amount||0); else exp+=Number(f.amount||0);
+
+    const el=document.createElement("div");
+    el.className="card";
+    el.style.borderLeft = "4px solid " + (f.type==="income" ? "var(--success)" : "var(--danger)");
+    el.innerHTML=`
+      <div class="flex justify-between items-center">
+        <div>
+          <div style="font-weight:1000">${esc(f.desc)}</div>
+          <div class="small">${isoToPL(f.date)} • ${f.type==="income"?"Przychód":"Wydatek"}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-weight:1000;color:${f.type==="income"?"var(--success)":"var(--danger)"}">
+            ${f.type==="income"?"+":"-"}${Number(f.amount||0).toFixed(2)} zł
+          </div>
+          <div class="flex gap-2" style="justify-content:flex-end;margin-top:8px">
+            <button class="btn btn-blue" style="padding:6px 10px" data-edit="fin" data-id="${f.id}">EDYTUJ</button>
+            <button class="btn btn-slate" style="padding:6px 10px" data-del="fin" data-id="${f.id}">USUŃ</button>
+          </div>
+        </div>
+      </div>
+    `;
+    list.appendChild(el);
+  });
+
+  $("finInc").textContent = inc.toFixed(2);
+  $("finExp").textContent = exp.toFixed(2);
+  const bal=inc-exp;
+  $("finBalance").textContent = bal.toFixed(2)+" PLN";
+  $("finBalance").style.color = bal>=0 ? "var(--success)" : "var(--danger)";
+}
+
+/* ===== Inventory (history) ===== */
+function invItemNameById(id){
+  return State.invItems.find(x=>x.id===id)?.name || "";
+}
+function invCalcQtyAtDate(itemId, isoDate){
+  // stan na koniec dnia (<= isoDate)
+  const d=isoDate||todayISO();
+  return State.invMoves
+    .filter(m=>m.itemId===itemId && (m.date||"")<=d)
+    .reduce((s,m)=>s + (Number(m.delta)||0), 0);
+}
+function invCalcCurrentQty(itemId){
+  return State.invMoves
+    .filter(m=>m.itemId===itemId)
+    .reduce((s,m)=>s + (Number(m.delta)||0), 0);
+}
+function refreshInvSelectors(){
+  const items=[...State.invItems].sort((a,b)=>String(a.name).localeCompare(String(b.name)));
+  const sel=$("invItemSel");
+  const qsel=$("invQueryItem");
+  sel.innerHTML=`<option value="">Wybierz produkt…</option>`;
+  qsel.innerHTML=`<option value="">Wybierz produkt…</option>`;
+  for(const it of items){
+    const o=document.createElement("option");
+    o.value=it.id; o.textContent=it.name;
+    sel.appendChild(o);
+    const o2=document.createElement("option");
+    o2.value=it.id; o2.textContent=it.name;
+    qsel.appendChild(o2);
+  }
+}
+function renderInventory(){
+  refreshInvSelectors();
+  $("invMoveDate").value = $("invMoveDate").value || todayISO();
+  $("invQueryDate").value = $("invQueryDate").value || todayISO();
+
+  const list=$("invList");
+  list.innerHTML="";
+
+  const items=[...State.invItems].sort((a,b)=>String(a.name).localeCompare(String(b.name)));
+  if(items.length===0){
+    list.innerHTML=`<div class="card text-center"><div style="font-weight:1000">Brak produktów w magazynie.</div><div class="small mt-2">Dodaj pierwszy ruch (np. zakup).</div></div>`;
+    return;
+  }
+
+  for(const it of items){
+    const qty=invCalcCurrentQty(it.id);
+    const el=document.createElement("div");
+    el.className="card";
+    el.style.borderLeft="4px solid var(--slate)";
+    el.innerHTML=`
+      <div class="flex justify-between items-center" style="gap:10px">
+        <div style="flex:1">
+          <div style="font-weight:1000">${esc(it.name)}</div>
+          <div class="small">Aktualnie: <b>${qty.toFixed(2)}</b></div>
+        </div>
+        <div class="flex gap-2 items-center" style="flex-wrap:wrap;justify-content:flex-end">
+          <button class="btn btn-slate" style="padding:6px 10px" data-invquick="-1" data-id="${it.id}">−1</button>
+          <button class="btn btn-slate" style="padding:6px 10px" data-invquick="+1" data-id="${it.id}">+1</button>
+          <button class="btn btn-blue" style="padding:6px 10px" data-edit="invitem" data-id="${it.id}">EDYTUJ</button>
+          <button class="btn btn-slate" style="padding:6px 10px" data-del="invitem" data-id="${it.id}">✕</button>
+        </div>
+      </div>
+      <div class="hr"></div>
+      <div class="small">Ostatnie ruchy:</div>
+      <div style="display:grid;gap:6px;margin-top:8px">
+        ${
+          State.invMoves
+            .filter(m=>m.itemId===it.id)
+            .sort((a,b)=> (b.date||"").localeCompare(a.date||"") || (b.ts||0)-(a.ts||0))
+            .slice(0,3)
+            .map(m=>`
+              <div class="flex justify-between items-center" style="gap:10px">
+                <div class="small" style="flex:1">
+                  <b>${isoToPL(m.date)}</b> • ${esc(m.note||"—")}
+                </div>
+                <div style="font-weight:1000;color:${Number(m.delta)>=0?'var(--success)':'var(--danger)'}">
+                  ${Number(m.delta)>=0?'+':''}${Number(m.delta||0).toFixed(2)}
+                </div>
+                <button class="btn btn-slate" style="padding:6px 10px" data-del="invmove" data-id="${m.id}">✕</button>
+              </div>
+            `).join("")
+        }
+      </div>
+    `;
+    list.appendChild(el);
+  }
+}
+async function invAddMove(){
+  const selId=$("invItemSel").value;
+  const newName=($("invNewName").value||"").trim();
+  const date=$("invMoveDate").value || todayISO();
+  const delta=Number($("invMoveDelta").value);
+  const note=($("invMoveNote").value||"").trim();
+
+  if(!Number.isFinite(delta) || delta===0) return alert("Podaj ilość (różną od 0).");
+  if(!date) return alert("Podaj datę.");
+
+  let itemId=selId;
+
+  if(!itemId){
+    if(!newName) return alert("Wybierz produkt lub wpisz nowy.");
+    // jeśli istnieje o tej nazwie -> użyj go
+    const ex=State.invItems.find(x=>String(x.name).toLowerCase()===newName.toLowerCase());
+    if(ex) itemId=ex.id;
+    else{
+      itemId=uid();
+      State.invItems.push({id:itemId, name:newName, unit:""});
+      await save("invItems");
+    }
+  }
+
+  State.invMoves.push({id:uid(), itemId, date, delta, note, ts:Date.now()});
+  await save("invMoves");
+
+  $("invMoveDelta").value="";
+  $("invMoveNote").value="";
+  $("invNewName").value="";
+  $("invItemSel").value="";
+
+  renderInventory();
+}
+async function invQuickDelta(itemId, delta){
+  State.invMoves.push({id:uid(), itemId, date:todayISO(), delta, note:"Korekta szybka", ts:Date.now()});
+  await save("invMoves");
+  renderInventory();
+}
+function invQuery(){
+  const itemId=$("invQueryItem").value;
+  const date=$("invQueryDate").value || todayISO();
+  const box=$("invQueryResult");
+  box.innerHTML="";
+  if(!itemId) return alert("Wybierz produkt do sprawdzenia.");
+  const qty=invCalcQtyAtDate(itemId, date);
+
+  const moves = State.invMoves
+    .filter(m=>m.itemId===itemId && (m.date||"")<=date)
+    .sort((a,b)=> (b.date||"").localeCompare(a.date||"") || (b.ts||0)-(a.ts||0))
+    .slice(0,15);
+
+  box.innerHTML=`
+    <div class="card" style="border-left:4px solid var(--blue);padding:12px">
+      <div class="muted">WYNIK</div>
+      <div style="font-weight:1000;font-size:20px;margin-top:6px">${esc(invItemNameById(itemId))}</div>
+      <div class="small" style="margin-top:6px">Stan na dzień <b>${isoToPL(date)}</b>:</div>
+      <div style="font-weight:1000;font-size:26px;margin-top:6px;color:var(--blue)">${qty.toFixed(2)}</div>
+      <div class="hr"></div>
+      <div class="small"><b>Ruchy do tego dnia</b> (ostatnie 15):</div>
+      <div style="display:grid;gap:6px;margin-top:8px">
+        ${
+          moves.length ? moves.map(m=>`
+            <div class="flex justify-between items-center" style="gap:10px">
+              <div class="small" style="flex:1"><b>${isoToPL(m.date)}</b> • ${esc(m.note||"—")}</div>
+              <div style="font-weight:1000;color:${Number(m.delta)>=0?'var(--success)':'var(--danger)'}">
+                ${Number(m.delta)>=0?'+':''}${Number(m.delta||0).toFixed(2)}
+              </div>
+            </div>
+          `).join("") : `<div class="small">Brak ruchów do tego dnia.</div>`
+        }
+      </div>
+    </div>
+  `;
+}
+
+/* ===== Knowledge (topics) ===== */
+function refreshTopicSelect(){
+  const sel=$("knowTopic");
+  sel.innerHTML="";
+  (State.topics.length?State.topics:["Ogólne"]).forEach(t=>{
+    const o=document.createElement("option");
+    o.value=t; o.textContent=t;
+    sel.appendChild(o);
+  });
+}
+function renderKnowledge(){
+  refreshTopicSelect();
+  const wrap=$("knowList");
+  wrap.innerHTML="";
+
+  const byTopic={};
+  for(const n of State.knowledge){
+    const t=n.topic||"Ogólne";
+    if(!byTopic[t]) byTopic[t]=[];
+    byTopic[t].push(n);
+  }
+  const topics=[...new Set([...State.topics, ...Object.keys(byTopic)])].filter(Boolean);
+
+  topics.forEach(t=>{
+    const items=(byTopic[t]||[]).sort((a,b)=>b.dateTS-a.dateTS);
+    const sec=document.createElement("div");
+    sec.className="card";
+    sec.style.borderLeft="4px solid var(--purple)";
+    sec.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+      <div style="font-weight:1000;color:var(--purple)">${esc(t)}</div>
+      <div class="small">${items.length} not.</div>
+    </div>`;
+    if(items.length===0){
+      const p=document.createElement("div");
+      p.className="small";
+      p.style.marginTop="8px";
+      p.textContent="Brak notatek w tym temacie.";
+      sec.appendChild(p);
+    }else{
+      items.forEach(n=>{
+        const item=document.createElement("div");
+        item.style.marginTop="10px";
+        item.style.paddingTop="10px";
+        item.style.borderTop="1px solid var(--border)";
+        item.innerHTML=`
+          <div class="flex justify-between items-center">
+            <div>
+              <div style="font-weight:1000">${esc(n.title||"(bez tytułu)")}</div>
+              <div class="small">${new Date(n.dateTS||Date.now()).toLocaleDateString("pl-PL")}</div>
+            </div>
+            <div class="flex gap-2">
+              <button class="btn btn-blue" style="padding:6px 10px" data-edit="know" data-id="${n.id}">EDYTUJ</button>
+              <button class="btn btn-slate" style="padding:6px 10px" data-del="know" data-id="${n.id}">USUŃ</button>
+            </div>
+          </div>
+          <div style="white-space:pre-wrap;margin-top:6px">${esc(n.body||"")}</div>
+        `;
+        sec.appendChild(item);
+      });
+    }
+    wrap.appendChild(sec);
+  });
+}
+
+/* ===== Actions ===== */
+async function addHive(){
+  const label = prompt("Numer/Nazwa ula (np. 12, A1):");
+  if(!label) return;
+  const place = prompt("Położenie ula (opcjonalnie, np. Rząd 2 / 3 od lewej):", "") || "";
+  const kindRaw = prompt("Typ ula: wpisz R (rodzina) lub O (odkład)", "R");
+  const year = Number(prompt("Rok (np. 2025):", String(thisYear))) || thisYear;
+
+  const hive = {
+    id: label.trim(),
+    label: label.trim(),
+    place: place.trim(),
+    kind: (String(kindRaw||"R").toUpperCase().startsWith("O")) ? "odklad" : "rodzina",
+    year,
+    nextVisitDate:""
+  };
+
+  if(State.hives.some(h=>h.id===hive.id)){
+    alert("Taki ul już istnieje.");
+    return;
+  }
+  State.hives.push(hive);
+  await save("hives");
+  renderHives();
+}
+
+async function saveHiveMeta(){
+  const oldId = State.currentHive;
+  const hive = State.hives.find(h=>h.id===oldId);
+  if(!hive) return;
+
+  const newLabel = ($("hLabel").value || "").trim();
+  const newPlace = ($("hPlace").value || "").trim();
+  const newNext = ($("hNextVisit").value || "").trim();
+
+  if(!newLabel) return alert("Numer / nazwa ula nie może być pusta.");
+  const newId = newLabel;
+
+  if(newId !== oldId && State.hives.some(h=>h.id === newId)){
+    return alert("Taki numer/nazwa ula już istnieje. Wpisz inny.");
+  }
+
+  hive.kind  = $("hType").value;
+  hive.year  = Number($("hYear").value) || thisYear;
+  hive.place = newPlace;
+  hive.nextVisitDate = newNext;
+
+  if(newId !== oldId){
+    hive.id = newId;
+    hive.label = newLabel;
+    await renameHiveEverywhere(oldId, newId);
+    State.currentHive = newId;
+    const p=new URLSearchParams(location.search);
+    p.set("v","details"); p.set("id", newId);
+    history.replaceState({view:"details", hiveId:newId},"","?"+p.toString());
+  }else{
+    hive.label = newLabel;
+  }
+
+  await save("hives");
+  renderDetails(); renderHives();
+}
+
+async function addQueen(){
+  const hiveId=State.currentHive;
+  const y=Number($("qYear").value);
+  const m=Number($("qMonth").value);
+  const b=($("qBreed").value||"").trim();
+  if(!y || y<1900 || y>3000) return alert("Podaj poprawny rok.");
+  if(!m || m<1 || m>12) return alert("Wybierz miesiąc.");
+  if(!b) return alert("Podaj rasę / linię.");
+
+  State.queens.push({id:uid(), hiveId, year:y, month:m, breed:b, dateAddedTS:Date.now()});
+  await save("queens");
+  $("qYear").value=""; $("qBreed").value="";
+  renderDetails(); renderHives();
+}
+
+async function addHoney(){
+  const hiveId=State.currentHive;
+  const harvestDate = $("mHarvestDate").value || todayISO();
+  const t=$("mType").value;
+  const w=Number($("mWeight").value);
+  if(!w || w<=0) return alert("Podaj wagę.");
+  State.honey.push({id:uid(), hiveId, harvestDate, type:t, weight:w});
+  await save("honey");
+  $("mWeight").value="";
+  renderDetails(); renderHives();
+}
+
+async function addTreatment(){
+  const hiveId=State.currentHive;
+  const date=$("treatDate").value || todayISO();
+  const substance=($("treatSubstance").value||"").trim();
+  const dose=($("treatDose").value||"").trim();
+  if(!substance) return alert("Wpisz substancję.");
+  State.treatments.push({id:uid(), hiveId, date, substance, dose});
+  await save("treatments");
+  $("treatSubstance").value=""; $("treatDose").value="";
+  renderDetails(); renderHives();
+}
+
+async function addFeeding(){
+  const hiveId=State.currentHive;
+  const date=$("feedDate").value || todayISO();
+  const liters=Number($("feedLiters").value);
+  const note=($("feedNote").value||"").trim();
+  if(!Number.isFinite(liters) || liters<=0) return alert("Podaj ilość w litrach.");
+  State.feeding.push({id:uid(), hiveId, date, liters, note});
+  await save("feeding");
+  $("feedLiters").value=""; $("feedNote").value="";
+  renderDetails(); renderHives();
+}
+
+/* ===== Audio ===== */
+let mediaRecorder=null, currentStream=null, audioChunks=[];
+async function startRec(){
+  try{
+    currentStream=await navigator.mediaDevices.getUserMedia({audio:true});
+    mediaRecorder=new MediaRecorder(currentStream);
+    audioChunks=[];
+    mediaRecorder.ondataavailable=e=>{ if(e.data&&e.data.size) audioChunks.push(e.data); };
+    mediaRecorder.onstop=async ()=>{
+      const blob=new Blob(audioChunks,{type:"audio/webm"});
+      const key=await mediaPut(blob);
+      $("recBtn").dataset.audioKey=key;
+      $("recBtn").textContent="NAGRANO ✅";
+      $("recBtn").classList.remove("recording");
+      try{ currentStream.getTracks().forEach(t=>t.stop()); }catch{}
+      currentStream=null;
+    };
+    mediaRecorder.start();
+    $("recBtn").textContent="SŁUCHAM... (STOP)";
+    $("recBtn").classList.add("recording");
+  }catch(e){ console.error(e); alert("Brak dostępu do mikrofonu."); }
+}
+function stopRec(){ if(mediaRecorder && mediaRecorder.state!=="inactive") mediaRecorder.stop(); }
+
+async function addReview(){
+  const hiveId=State.currentHive;
+  const visitDate = $("rVisitDate").value || todayISO();
+  const note=($("vNote").value||"").trim();
+  const audioKey=$("recBtn").dataset.audioKey||null;
+  if(!note && !audioKey) return alert("Dodaj tekst lub nagranie.");
+
+  State.reviews.push({id:uid(), hiveId, visitDate, note, audioKey});
+  await save("reviews");
+
+  // AUTOMAT: ustaw następny przegląd na +6 dni
+  const hive=State.hives.find(h=>h.id===hiveId);
+  if(hive){
+    hive.nextVisitDate = addDaysISO(visitDate, 6);
+    await save("hives");
+  }
+
+  $("vNote").value="";
+  $("recBtn").textContent="🎤 NAGRAJ GŁOS";
+  $("recBtn").classList.remove("recording");
+  delete $("recBtn").dataset.audioKey;
+
+  renderDetails(); renderHives();
+}
+
+/* ===== Photo ===== */
+async function addPhoto(file){
+  const hiveId=State.currentHive;
+  const key=await mediaPut(file);
+  State.photos.push({id:uid(), hiveId, mediaKey:key, dateTS:Date.now()});
+  await save("photos");
+  renderDetails();
+}
+
+/* ===== Finance action ===== */
+async function addFinance(){
+  const type=$("finType").value;
+  const date=$("finDate").value || todayISO();
+  const amount=Number($("finAmount").value);
+  const desc=($("finDesc").value||"").trim();
+  if(!desc || !Number.isFinite(amount) || amount<=0) return alert("Podaj opis i kwotę > 0.");
+  State.finance.push({id:uid(), type, date, amount, desc});
+  await save("finance");
+  $("finAmount").value=""; $("finDesc").value="";
+  renderFinance();
+}
+
+/* ===== Knowledge actions ===== */
+async function addTopic(){
+  const t=($("knowNewTopic").value||"").trim();
+  if(!t) return;
+  if(!State.topics.includes(t)) State.topics.push(t);
+  await save("topics");
+  $("knowNewTopic").value="";
+  renderKnowledge();
+}
+async function addKnowledge(){
+  const topic=$("knowTopic").value || "Ogólne";
+  const title=($("knowTitle").value||"").trim();
+  const body=($("knowBody").value||"").trim();
+  if(!title && !body) return alert("Wpisz tytuł lub treść.");
+  State.knowledge.push({id:uid(), topic, title:title||"(bez tytułu)", body, dateTS:Date.now()});
+  await save("knowledge");
+  $("knowTitle").value=""; $("knowBody").value="";
+  renderKnowledge();
+}
+
+/* ===== Modal engine ===== */
+const Modal={overlay:null,title:null,body:null,btnSave:null,btnCancel:null,btnClose:null,onSave:null};
+function modalOpen({title, bodyEl, onSave}){
+  Modal.title.textContent=title;
+  Modal.body.innerHTML="";
+  Modal.body.appendChild(bodyEl);
+  Modal.onSave=onSave;
+  Modal.overlay.classList.add("show");
+  Modal.overlay.setAttribute("aria-hidden","false");
+}
+function modalClose(){
+  Modal.overlay.classList.remove("show");
+  Modal.overlay.setAttribute("aria-hidden","true");
+  Modal.onSave=null;
+  Modal.body.innerHTML="";
+}
+function mkInput(labelText, inputEl){
+  const wrap=document.createElement("div");
+  const lab=document.createElement("div");
+  lab.className="muted";
+  lab.textContent=labelText;
+  wrap.appendChild(lab);
+  wrap.appendChild(inputEl);
+  return wrap;
+}
+function mkRow(cols2=false){
+  const row=document.createElement("div");
+  row.className="row"+(cols2?" cols2":"");
+  return row;
+}
+
+/* ===== Edit modals ===== */
+function openEditHoney(id){
+  const h=State.honey.find(x=>x.id===id); if(!h) return;
+  const body=document.createElement("div");
+  const row1=mkRow(true);
+  const d=document.createElement("input"); d.type="date"; d.className="input"; d.value=h.harvestDate||todayISO();
+  const t=document.createElement("input"); t.type="text"; t.className="input"; t.value=h.type||"";
+  row1.append(mkInput("Data miodobrania", d), mkInput("Rodzaj", t));
+  const row2=mkRow(false);
+  const w=document.createElement("input"); w.type="number"; w.className="input"; w.value=Number(h.weight||0);
+  row2.append(mkInput("Waga (kg)", w));
+  body.append(row1,row2);
+  modalOpen({
+    title:"EDYCJA: MIODOBRANIE",
+    bodyEl:body,
+    onSave: async ()=>{
+      if(!d.value) return alert("Podaj datę.");
+      const ww=Number(w.value);
+      if(!Number.isFinite(ww)||ww<=0) return alert("Waga > 0.");
+      h.harvestDate=d.value;
+      h.type=(t.value||"").trim()||"—";
+      h.weight=ww;
+      await save("honey");
+      modalClose();
+      renderDetails(); renderHives();
+    }
+  });
+}
+function openEditTreat(id){
+  const t=State.treatments.find(x=>x.id===id); if(!t) return;
+  const body=document.createElement("div");
+  const row1=mkRow(true);
+  const d=document.createElement("input"); d.type="date"; d.className="input"; d.value=t.date||todayISO();
+  const s=document.createElement("input"); s.type="text"; s.className="input"; s.value=t.substance||"";
+  row1.append(mkInput("Data leczenia", d), mkInput("Substancja", s));
+  const row2=mkRow(false);
+  const dose=document.createElement("input"); dose.type="text"; dose.className="input"; dose.value=t.dose||"";
+  row2.append(mkInput("Dawka / forma", dose));
+  body.append(row1,row2);
+  modalOpen({
+    title:"EDYCJA: LECZENIE",
+    bodyEl:body,
+    onSave: async ()=>{
+      if(!d.value) return alert("Podaj datę.");
+      if(!(s.value||"").trim()) return alert("Podaj substancję.");
+      t.date=d.value; t.substance=(s.value||"").trim(); t.dose=(dose.value||"").trim();
+      await save("treatments");
+      modalClose();
+      renderDetails(); renderHives();
+    }
+  });
+}
+function openEditFeed(id){
+  const f=State.feeding.find(x=>x.id===id); if(!f) return;
+  const body=document.createElement("div");
+  const row1=mkRow(true);
+  const d=document.createElement("input"); d.type="date"; d.className="input"; d.value=f.date||todayISO();
+  const l=document.createElement("input"); l.type="number"; l.className="input"; l.value=Number(f.liters||0);
+  row1.append(mkInput("Data karmienia", d), mkInput("Ilość (L)", l));
+  const row2=mkRow(false);
+  const n=document.createElement("input"); n.type="text"; n.className="input"; n.value=f.note||"";
+  row2.append(mkInput("Rodzaj / uwagi", n));
+  body.append(row1,row2);
+  modalOpen({
+    title:"EDYCJA: KARMIENIE",
+    bodyEl:body,
+    onSave: async ()=>{
+      if(!d.value) return alert("Podaj datę.");
+      const ll=Number(l.value);
+      if(!Number.isFinite(ll)||ll<=0) return alert("Ilość > 0.");
+      f.date=d.value; f.liters=ll; f.note=(n.value||"").trim();
+      await save("feeding");
+      modalClose();
+      renderDetails(); renderHives();
+    }
+  });
+}
+function openEditReview(id){
+  const r=State.reviews.find(x=>x.id===id); if(!r) return;
+  const body=document.createElement("div");
+  const row1=mkRow(true);
+  const d=document.createElement("input"); d.type="date"; d.className="input"; d.value=r.visitDate||todayISO();
+  const keepAudio=document.createElement("select"); keepAudio.className="input";
+  keepAudio.innerHTML=`<option value="keep">Zostaw nagranie</option><option value="remove">Usuń nagranie</option>`;
+  row1.append(mkInput("Data przeglądu", d), mkInput("Nagranie", keepAudio));
+  const row2=mkRow(false);
+  const note=document.createElement("textarea"); note.className="input"; note.style.height="120px"; note.value=r.note||"";
+  row2.append(mkInput("Notatka", note));
+  body.append(row1,row2);
+  modalOpen({
+    title:"EDYCJA: PRZEGLĄD",
+    bodyEl:body,
+    onSave: async ()=>{
+      if(!d.value) return alert("Podaj datę przeglądu.");
+      r.visitDate=d.value;
+      r.note=(note.value||"").trim();
+      if(keepAudio.value==="remove" && r.audioKey){
+        await mediaDel(r.audioKey);
+        r.audioKey=null;
+      }
+      await save("reviews");
+
+      // po edycji też ustaw +6 dni (bo to jest Twój rytm)
+      const hive=State.hives.find(h=>h.id===r.hiveId);
+      if(hive){
+        hive.nextVisitDate = addDaysISO(r.visitDate, 6);
+        await save("hives");
+      }
+
+      modalClose();
+      renderDetails(); renderHives();
+    }
+  });
+}
+function openEditFin(id){
+  const f=State.finance.find(x=>x.id===id); if(!f) return;
+  const body=document.createElement("div");
+  const row1=mkRow(true);
+  const type=document.createElement("select"); type.className="input";
+  type.innerHTML=`<option value="expense">Wydatek</option><option value="income">Przychód</option>`;
+  type.value=f.type;
+  const date=document.createElement("input"); date.type="date"; date.className="input"; date.value=f.date||todayISO();
+  row1.append(mkInput("Typ", type), mkInput("Data", date));
+  const row2=mkRow(true);
+  const amount=document.createElement("input"); amount.type="number"; amount.className="input"; amount.value=Number(f.amount||0);
+  const desc=document.createElement("input"); desc.type="text"; desc.className="input"; desc.value=f.desc||"";
+  row2.append(mkInput("Kwota", amount), mkInput("Opis", desc));
+  body.append(row1,row2);
+  modalOpen({
+    title:"EDYCJA: FINANSE",
+    bodyEl:body,
+    onSave: async ()=>{
+      const a=Number(amount.value);
+      const d=desc.value.trim();
+      if(!d || !Number.isFinite(a) || a<=0) return alert("Opis + kwota > 0.");
+      f.type=type.value;
+      f.date=date.value || todayISO();
+      f.amount=a;
+      f.desc=d;
+      await save("finance");
+      modalClose();
+      renderFinance();
+    }
+  });
+}
+function openEditKnow(id){
+  const n=State.knowledge.find(x=>x.id===id); if(!n) return;
+  const body=document.createElement("div");
+  const row1=mkRow(true);
+  const topic=document.createElement("select"); topic.className="input";
+  const topics=[...new Set([...State.topics, n.topic||"Ogólne"])].filter(Boolean);
+  topic.innerHTML=topics.map(t=>`<option value="${esc(t)}">${esc(t)}</option>`).join("");
+  topic.value=n.topic||"Ogólne";
+  const title=document.createElement("input"); title.type="text"; title.className="input"; title.value=n.title||"";
+  row1.append(mkInput("Temat", topic), mkInput("Tytuł", title));
+  const row2=mkRow(false);
+  const bodyTxt=document.createElement("textarea"); bodyTxt.className="input"; bodyTxt.style.height="160px"; bodyTxt.value=n.body||"";
+  row2.append(mkInput("Treść", bodyTxt));
+  body.append(row1,row2);
+  modalOpen({
+    title:"EDYCJA: NOTATKA",
+    bodyEl:body,
+    onSave: async ()=>{
+      n.topic=topic.value;
+      n.title=(title.value||"").trim()||"(bez tytułu)";
+      n.body=(bodyTxt.value||"").trim();
+      await save("knowledge");
+      modalClose();
+      renderKnowledge();
+    }
+  });
+}
+function openEditQueen(id){
+  const q=State.queens.find(x=>x.id===id); if(!q) return;
+  const body=document.createElement("div");
+  const row1=mkRow(true);
+  const y=document.createElement("input"); y.type="number"; y.className="input"; y.value=Number(q.year||thisYear);
+  const m=document.createElement("select"); m.className="input";
+  m.innerHTML = Array.from({length:12},(_,i)=>`<option value="${i+1}">${monthsPL[i+1]}</option>`).join("");
+  m.value=String(q.month||1);
+  row1.append(mkInput("Rok", y), mkInput("Miesiąc", m));
+
+  const row2=mkRow(false);
+  const b=document.createElement("input"); b.type="text"; b.className="input"; b.value=q.breed||"";
+  row2.append(mkInput("Rasa / linia", b));
+
+  body.append(row1,row2);
+
+  modalOpen({
+    title:"EDYCJA: MATKA",
+    bodyEl:body,
+    onSave: async ()=>{
+      const yy=Number(y.value);
+      const mm=Number(m.value);
+      const bb=(b.value||"").trim();
+      if(!yy||yy<1900||yy>3000) return alert("Podaj poprawny rok.");
+      if(!mm||mm<1||mm>12) return alert("Wybierz miesiąc.");
+      if(!bb) return alert("Wpisz rasę/linię.");
+      q.year=yy;
+      q.month=mm;
+      q.breed=bb;
+      await save("queens");
+      modalClose();
+      renderDetails(); renderHives();
+    }
+  });
+}
+function openEditInvItem(id){
+  const it=State.invItems.find(x=>x.id===id); if(!it) return;
+  const body=document.createElement("div");
+  const row1=mkRow(false);
+  const name=document.createElement("input"); name.type="text"; name.className="input"; name.value=it.name||"";
+  row1.append(mkInput("Nazwa produktu", name));
+  body.append(row1);
+  modalOpen({
+    title:"EDYCJA: PRODUKT",
+    bodyEl:body,
+    onSave: async ()=>{
+      const n=(name.value||"").trim();
+      if(!n) return alert("Nazwa nie może być pusta.");
+      // unikaj duplikatów nazw
+      const dup=State.invItems.find(x=>x.id!==it.id && String(x.name).toLowerCase()===n.toLowerCase());
+      if(dup) return alert("Taki produkt już istnieje.");
+      it.name=n;
+      await save("invItems");
+      modalClose();
+      renderInventory();
+    }
+  });
+}
+
+/* ===== Delete dispatcher ===== */
+async function handleDelete(type,id){
+  if(!confirm("Usunąć?")) return;
+
+  if(type==="queen"){ State.queens=State.queens.filter(x=>x.id!==id); await save("queens"); renderDetails(); renderHives(); return; }
+  if(type==="honey"){ State.honey=State.honey.filter(x=>x.id!==id); await save("honey"); renderDetails(); renderHives(); return; }
+  if(type==="treat"){ State.treatments=State.treatments.filter(x=>x.id!==id); await save("treatments"); renderDetails(); renderHives(); return; }
+  if(type==="feed"){ State.feeding=State.feeding.filter(x=>x.id!==id); await save("feeding"); renderDetails(); renderHives(); return; }
+
+  if(type==="photo"){
+    const p=State.photos.find(x=>x.id===id);
+    State.photos=State.photos.filter(x=>x.id!==id); await save("photos");
+    if(p?.mediaKey) await mediaDel(p.mediaKey);
+    renderDetails(); return;
+  }
+  if(type==="review"){
+    const r=State.reviews.find(x=>x.id===id);
+    State.reviews=State.reviews.filter(x=>x.id!==id); await save("reviews");
+    if(r?.audioKey) await mediaDel(r.audioKey);
+    renderDetails(); renderHives(); return;
+  }
+  if(type==="fin"){
+    State.finance=State.finance.filter(x=>x.id!==id); await save("finance");
+    renderFinance(); return;
+  }
+  if(type==="know"){
+    State.knowledge=State.knowledge.filter(x=>x.id!==id); await save("knowledge");
+    renderKnowledge(); return;
+  }
+
+  // magazyn: usuń ruch
+  if(type==="invmove"){
+    State.invMoves=State.invMoves.filter(x=>x.id!==id);
+    await save("invMoves");
+    renderInventory();
+    return;
+  }
+  // magazyn: usuń produkt (i jego ruchy)
+  if(type==="invitem"){
+    const it=State.invItems.find(x=>x.id===id);
+    if(!it) return;
+    if(!confirm(`Usunąć produkt "${it.name}" oraz całą historię ruchów?`)) return;
+    State.invItems=State.invItems.filter(x=>x.id!==id);
+    State.invMoves=State.invMoves.filter(x=>x.itemId!==id);
+    await save("invItems");
+    await save("invMoves");
+    renderInventory();
+    return;
+  }
+}
+
+/* ===== Edit dispatcher ===== */
+function handleEdit(type,id){
+  if(type==="queen") return openEditQueen(id);
+  if(type==="honey") return openEditHoney(id);
+  if(type==="treat") return openEditTreat(id);
+  if(type==="feed") return openEditFeed(id);
+  if(type==="review") return openEditReview(id);
+  if(type==="fin") return openEditFin(id);
+  if(type==="know") return openEditKnow(id);
+  if(type==="invitem") return openEditInvItem(id);
+}
+
+/* ===== Export / Import ===== */
+async function exportBackup(){
+  const out = {
+    meta:{ app:"Pasiecznik ULTRA", exportedAt:new Date().toISOString() },
+    data:{
+      hives:State.hives, queens:State.queens, honey:State.honey, treatments:State.treatments,
+      feeding:State.feeding, photos:State.photos, reviews:State.reviews,
+      calendar:State.calendar, finance:State.finance,
+      invItems:State.invItems, invMoves:State.invMoves,
+      topics:State.topics, knowledge:State.knowledge
+    },
+    media:[]
+  };
+  const allMedia = await mediaGetAll();
+  for(const m of allMedia){
+    const b64 = await new Promise(res=>{
+      const fr=new FileReader();
+      fr.onload=()=>res(fr.result);
+      fr.readAsDataURL(m.blob);
+    });
+    out.media.push({ key:m.key, type:m.type, b64 });
+  }
+  const blob=new Blob([JSON.stringify(out)],{type:"application/json"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="pasiecznik_backup_"+new Date().toLocaleDateString("pl-PL")+".json";
+  a.click();
+}
+
+async function importBackup(file){
+  const txt = await file.text();
+  let d;
+  try{ d=JSON.parse(txt); }catch{ return alert("Błędny plik."); }
+  if(!confirm("Nadpisać wszystkie dane w aplikacji?")) return;
+
+  const data=d.data||d;
+
+  State.hives=data.hives||[];
+  State.queens=data.queens||[];
+  State.honey=data.honey||[];
+  State.treatments=data.treatments||[];
+  State.feeding=data.feeding||[];
+  State.photos=data.photos||[];
+  State.reviews=data.reviews||[];
+  State.calendar=data.calendar||{};
+  State.finance=data.finance||[];
+
+  State.invItems=data.invItems||[];
+  State.invMoves=data.invMoves||[];
+
+  State.topics=data.topics||["Ogólne"];
+  State.knowledge=data.knowledge||[];
+
+  // normalize hive fields
+  State.hives.forEach(h=>{
+    if(h.place===undefined) h.place="";
+    if(h.label===undefined) h.label=h.id;
+    if(h.kind===undefined) h.kind="rodzina";
+    if(h.year===undefined) h.year=thisYear;
+    if(h.nextVisitDate===undefined) h.nextVisitDate="";
+  });
+
+  // normalize queens month
+  State.queens.forEach(q=>{
+    if(q.month===undefined || q.month===null || q.month==="") q.month=1;
+  });
+
+  await dbSet("hives",State.hives);
+  await dbSet("queens",State.queens);
+  await dbSet("honey",State.honey);
+  await dbSet("treatments",State.treatments);
+  await dbSet("feeding",State.feeding);
+  await dbSet("photos",State.photos);
+  await dbSet("reviews",State.reviews);
+  await dbSet("calendar",State.calendar);
+  await dbSet("finance",State.finance);
+  await dbSet("invItems",State.invItems);
+  await dbSet("invMoves",State.invMoves);
+  await dbSet("topics",State.topics);
+  await dbSet("knowledge",State.knowledge);
+
+  // restore media
+  await mediaClearAll();
+  if(Array.isArray(d.media)){
+    for(const m of d.media){
+      try{
+        const res=await fetch(m.b64);
+        const blob=await res.blob();
+        await new Promise((resolve,reject)=>{
+          const tx=db.transaction("media","readwrite");
+          tx.objectStore("media").put({ key:m.key, blob, type:m.type||blob.type });
+          tx.oncomplete=()=>resolve();
+          tx.onerror=()=>reject(tx.error);
+        });
+      }catch{}
+    }
+  }
+
+  alert("Przywrócono dane.");
+  renderView("hives", null, true);
+}
+
+/* ===== START ===== */
+document.addEventListener("DOMContentLoaded", async ()=>{
+  try{
+    await openDB();
+    await loadAll();
+
+    // modal refs
+    Modal.overlay=$("modalOverlay");
+    Modal.title=$("modalTitle");
+    Modal.body=$("modalBody");
+    Modal.btnSave=$("modalSave");
+    Modal.btnCancel=$("modalCancel");
+    Modal.btnClose=$("modalClose");
+
+    Modal.btnCancel.addEventListener("click", modalClose);
+    Modal.btnClose.addEventListener("click", modalClose);
+    Modal.overlay.addEventListener("click", (e)=>{ if(e.target===Modal.overlay) modalClose(); });
+    Modal.btnSave.addEventListener("click", async ()=>{ if(Modal.onSave) await Modal.onSave(); });
+
+    // nav
+    $("topNav").addEventListener("click",(e)=>{
+      const btn=e.target.closest("button[data-view]");
+      if(!btn) return;
+      renderView(btn.dataset.view, null, true);
+    });
+
+    $("addHiveBtn").addEventListener("click", addHive);
+    $("backBtn").addEventListener("click", ()=>renderView("hives", null, true));
+
+    // home filters
+    $("fltReviewBtn").addEventListener("click", ()=>{
+      Filters.review=!Filters.review;
+      renderHives();
+    });
+    $("fltQueenBtn").addEventListener("click", ()=>{
+      Filters.queen=!Filters.queen;
+      renderHives();
+    });
+    $("fltClearBtn").addEventListener("click", ()=>{
+      Filters.review=false; Filters.queen=false;
+      renderHives();
+    });
+
+    // details actions
+    $("saveHiveMetaBtn").addEventListener("click", saveHiveMeta);
+    $("addQueenBtn").addEventListener("click", addQueen);
+    $("addHoneyBtn").addEventListener("click", addHoney);
+    $("addTreatBtn").addEventListener("click", addTreatment);
+    $("addFeedBtn").addEventListener("click", addFeeding);
+
+    $("recBtn").addEventListener("click", async ()=>{
+      if(!mediaRecorder || mediaRecorder.state==="inactive") await startRec();
+      else stopRec();
+    });
+    $("addReviewBtn").addEventListener("click", addReview);
+
+    $("photoFile").addEventListener("change", async (e)=>{
+      const f=e.target.files?.[0];
+      e.target.value="";
+      if(!f) return;
+      await addPhoto(f);
+    });
+
+    // finance actions
+    $("addFinBtn").addEventListener("click", addFinance);
+    $("finDate").value = todayISO();
+
+    // inventory actions
+    $("invAddMoveBtn").addEventListener("click", invAddMove);
+    $("invQueryBtn").addEventListener("click", invQuery);
+
+    // knowledge actions
+    $("addTopicBtn").addEventListener("click", addTopic);
+    $("addKnowBtn").addEventListener("click", addKnowledge);
+
+    // export / import
+    $("exportBtn").addEventListener("click", exportBackup);
+    $("importFile").addEventListener("change", async (e)=>{
+      const f=e.target.files?.[0];
+      e.target.value="";
+      if(!f) return;
+      await importBackup(f);
+    });
+
+    // delegation (delete/edit/quick inv)
+    document.body.addEventListener("click", async (e)=>{
+      const d=e.target.closest("[data-del]");
+      if(d) return handleDelete(d.getAttribute("data-del"), d.getAttribute("data-id"));
+
+      const ed=e.target.closest("[data-edit]");
+      if(ed) return handleEdit(ed.getAttribute("data-edit"), ed.getAttribute("data-id"));
+
+      const iq=e.target.closest("[data-invquick]");
+      if(iq){
+        const itemId=iq.getAttribute("data-id");
+        const delta = iq.getAttribute("data-invquick")==="+1" ? 1 : -1;
+        return invQuickDelta(itemId, delta);
+      }
+    });
+
+    // defaults for details inputs
+    $("mHarvestDate").value=todayISO();
+    $("rVisitDate").value=todayISO();
+    $("treatDate").value=todayISO();
+    $("feedDate").value=todayISO();
+    $("invMoveDate").value=todayISO();
+    $("invQueryDate").value=todayISO();
+    $("qMonth").value="1";
+
+    // router start
+    const p=new URLSearchParams(location.search);
+    const v=p.get("v")||"hives";
+    const id=p.get("id");
+    if(v==="details" && id) renderView("details", id, false);
+    else renderView(v, null, false);
+
+  }catch(e){
+    console.error(e);
+    document.body.innerHTML = `<h1 style="color:red;padding:16px">Błąd aplikacji: ${esc(e?.message||String(e))}</h1>`;
+  }
+});
+</script>
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("./sw.js");
+}
+
+
+</body>
+</html>
