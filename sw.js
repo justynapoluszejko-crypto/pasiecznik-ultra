@@ -1,54 +1,69 @@
-// sw.js
-const CACHE_NAME = "pasiecznik-cache-v1";
+/* Pasiecznik ULTRA – sw.js (bez “wiecznego” cache)
+   Cel: nie blokować aktualizacji JS/HTML na GitHub Pages.
+*/
 
-// Tu dodaj pliki, które chcesz mieć na pewno offline:
+const VERSION = "2026-01-12_1";
+const CACHE = `pasiecznik-ultra-${VERSION}`;
+
+// Cache tylko “stabilne” pliki (bez index.html!)
 const ASSETS = [
   "./",
-  "./index.html",
-  "./manifest.webmanifest"
+  "./manifest.webmanifest",
+  "./icons/icon-192.png",
+  "./icons/icon-512.png"
 ];
 
+// Install: cache minimalnych assetów
 self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
-  );
   self.skipWaiting();
-});
-
-self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.map(k => k !== CACHE_NAME ? caches.delete(k) : null))
-    )
+    caches.open(CACHE).then((c) => c.addAll(ASSETS)).catch(() => {})
   );
-  self.clients.claim();
 });
 
-// Strategia: Network-first dla HTML, Cache-first dla reszty
+// Activate: usuń stare cache
+self.addEventListener("activate", (event) => {
+  event.waitUntil((async () => {
+    const keys = await caches.keys();
+    await Promise.all(keys.map((k) => (k !== CACHE ? caches.delete(k) : null)));
+    await self.clients.claim();
+  })());
+});
+
+// Fetch:
+// - index.html zawsze z sieci (żeby aktualizacje dochodziły natychmiast)
+// - pozostałe: "stale-while-revalidate" (szybko działa, ale aktualizuje w tle)
 self.addEventListener("fetch", (event) => {
   const req = event.request;
-  const isHTML = req.headers.get("accept")?.includes("text/html");
+  const url = new URL(req.url);
 
-  if (isHTML) {
-    event.respondWith(
-      fetch(req)
-        .then((res) => {
-          const copy = res.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
-          return res;
-        })
-        .catch(() => caches.match(req).then(r => r || caches.match("./index.html")))
-    );
-  } else {
-    event.respondWith(
-      caches.match(req).then((cached) =>
-        cached ||
-        fetch(req).then((res) => {
-          const copy = res.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
-          return res;
-        })
-      )
-    );
+  // obsługuj tylko to samo origin (GitHub Pages)
+  if (url.origin !== self.location.origin) return;
+
+  // index.html / nawigacja: zawsze network-first
+  if (req.mode === "navigate" || url.pathname.endsWith("/index.html")) {
+    event.respondWith((async () => {
+      try {
+        return await fetch(req, { cache: "no-store" });
+      } catch {
+        // awaryjnie: pokaż coś z cache, jeśli jest
+        const cached = await caches.match("./");
+        return cached || Response.error();
+      }
+    })());
+    return;
   }
+
+  // Reszta: stale-while-revalidate
+  event.respondWith((async () => {
+    const cached = await caches.match(req);
+    const fetchPromise = fetch(req).then((res) => {
+      const copy = res.clone();
+      caches.open(CACHE).then((c) => c.put(req, copy)).catch(() => {});
+      return res;
+    }).catch(() => cached);
+
+    return cached || fetchPromise;
+  })());
 });
+
