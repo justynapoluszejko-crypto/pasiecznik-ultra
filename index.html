@@ -129,7 +129,7 @@ Zasady użycia określa plik LICENSE.
       </div>
       <div class="small mt-2">
         „Do przeglądu” = ul z <b>terminem następnego przeglądu</b> na dziś / wstecz, albo (jeśli brak terminu) ostatni przegląd starszy niż <b>6 dni</b>.
-        „Wymienić matkę” = matka starsza niż <b>24 miesiące</b>.
+        „Wymienić matkę” = (na razie placeholder — dołożymy moduł matek później).
       </div>
     </div>
     <div id="hivesGrid" class="grid grid-hives"></div>
@@ -158,30 +158,37 @@ Zasady użycia określa plik LICENSE.
         <button id="saveHiveMetaBtn" class="btn btn-blue">ZAPISZ</button>
       </div>
 
+      <div class="small mt-2">
+        Ekran „Szczegóły” jest stabilny. Poniżej masz przeglądy + automatyczny termin następnego przeglądu.
+      </div>
+
       <div class="hr"></div>
 
       <!-- PRZEGLĄDY -->
-      <details open>
-        <summary>
-          <span>📝 PRZEGLĄD ULA</span>
-          <span class="small">dodaj wpis</span>
-        </summary>
-        <div class="details-content">
-          <div class="row cols2">
-            <input id="revDate" class="input" type="date">
-            <button id="addReviewBtn" class="btn btn-green">DODAJ</button>
-          </div>
-          <textarea id="revNote" class="input" style="height:90px" placeholder="Notatka z przeglądu (np. czerw, matka, nastrój rojowy, karmienie)"></textarea>
+      <div class="card" style="border-left:6px solid var(--blue)">
+        <div class="muted">PRZEGLĄD</div>
 
-          <div class="hr"></div>
-          <div class="muted mb-2">HISTORIA PRZEGLĄDÓW</div>
-          <div id="revList" class="grid" style="gap:10px"></div>
+        <div class="row cols2 mt-2">
+          <input id="revDate" class="input" type="date">
+          <select id="revAutoDays" class="input">
+            <option value="7">⏭ +7 dni</option>
+            <option value="10">⏭ +10 dni</option>
+            <option value="14">⏭ +14 dni</option>
+          </select>
         </div>
-      </details>
 
-      <div class="small mt-2">
-        Ekran „Szczegóły” jest w trybie stabilnej bazy. Moduły będziemy dokładać etapami.
+        <textarea id="revNote" class="input" style="height:90px;margin-top:10px" placeholder="Notatka z przeglądu (co widziałaś, co zrobiłaś, karmienie, leczenie, matka, nastrój rojowy...)"></textarea>
+
+        <div class="mt-2">
+          <button id="addReviewBtn" class="btn btn-blue w-full">DODAJ PRZEGLĄD</button>
+          <div class="small mt-2">
+            Po dodaniu przeglądu aplikacja sama ustawi <b>Termin następnego przeglądu</b> w ulu (wg +7/+10/+14).
+          </div>
+        </div>
       </div>
+
+      <div id="reviewsList" class="grid" style="gap:10px"></div>
+
     </div>
   </section>
 
@@ -304,7 +311,7 @@ Zasady użycia określa plik LICENSE.
 <script>
 /* =========================
    Pasiecznik ULTRA – CLEAN JS
-   Stabilna baza + PRZEGLĄDY
+   Naprawia: routing/nav, Finanse, Magazyn, przeglądy + auto termin
 ========================= */
 
 (() => {
@@ -338,6 +345,12 @@ Zasady użycia określa plik LICENSE.
     const [y,m,d] = String(iso).split("-").map(Number);
     if (!y || !m || !d) return null;
     return new Date(y, m-1, d, 12, 0, 0, 0);
+  };
+
+  const addDaysISO = (iso, days) => {
+    const dt = parseISODate(iso) || parseISODate(todayISO());
+    dt.setDate(dt.getDate() + days);
+    return dt.toISOString().slice(0,10);
   };
 
   const thisYear = new Date().getFullYear();
@@ -406,6 +419,7 @@ Zasady użycia określa plik LICENSE.
     State.topics    = (await dbGet("topics"))    || ["Ogólne"];
     State.knowledge = (await dbGet("knowledge")) || [];
 
+    // seed minimal
     if (!State.hives.length){
       State.hives = ["1","2","3"].map(s => ({
         id: s, label: s, place: "", kind: "rodzina", year: thisYear, nextVisitDate: ""
@@ -413,6 +427,7 @@ Zasady użycia określa plik LICENSE.
       await dbSet("hives", State.hives);
     }
 
+    // normalize
     State.hives.forEach(h => {
       if (h.label == null) h.label = h.id;
       if (h.place == null) h.place = "";
@@ -515,7 +530,7 @@ Zasady użycia określa plik LICENSE.
   function filterHives(list){
     let out = [...list];
     if (Filters.review) out = out.filter(h => needsReview(h));
-    if (Filters.queen) out = out.filter(() => false);
+    if (Filters.queen) out = out.filter(() => false); // placeholder
     return out;
   }
 
@@ -593,65 +608,8 @@ Zasady użycia określa plik LICENSE.
     $("hYear").value  = hive.year || thisYear;
     $("hNextVisit").value = hive.nextVisitDate || "";
 
-    // PRZEGLĄDY
-    $("revDate").value = todayISO();
-    renderReviewsForCurrentHive();
-  }
-
-  function renderReviewsForCurrentHive(){
-    const hiveId = State.currentHive;
-    const box = $("revList");
-    if (!box) return;
-    box.innerHTML = "";
-
-    const items = State.reviews
-      .filter(r => r.hiveId === hiveId)
-      .sort((a,b) => (b.visitDate||"").localeCompare(a.visitDate||""));
-
-    if (!items.length){
-      box.innerHTML = `
-        <div class="card text-center">
-          <div style="font-weight:1000">Brak przeglądów.</div>
-          <div class="small mt-2">Dodaj pierwszy wpis powyżej.</div>
-        </div>
-      `;
-      return;
-    }
-
-    items.forEach(r => {
-      const el = document.createElement("div");
-      el.className = "card";
-      el.style.borderLeft = "4px solid var(--primary)";
-      el.innerHTML = `
-        <div class="flex justify-between items-center" style="gap:10px">
-          <div>
-            <div style="font-weight:1000">${isoToPL(r.visitDate)}</div>
-            <div class="small" style="white-space:pre-wrap;margin-top:6px">${esc(r.note||"")}</div>
-          </div>
-          <button class="btn btn-slate" style="padding:6px 10px" data-del="review" data-id="${esc(r.id)}">USUŃ</button>
-        </div>
-      `;
-      box.appendChild(el);
-    });
-  }
-
-  async function addReview(){
-    const hiveId = State.currentHive;
-    const date = ($("revDate").value || todayISO()).trim();
-    const note = ($("revNote").value || "").trim();
-
-    if (!hiveId) return;
-    if (!date) return alert("Podaj datę przeglądu.");
-    if (!note) return alert("Wpisz chociaż krótką notatkę.");
-
-    State.reviews.push({ id:uid(), hiveId, visitDate:date, note });
-    await save("reviews");
-
-    $("revNote").value = "";
-    $("revDate").value = todayISO();
-
-    renderReviewsForCurrentHive();
-    renderHives();
+    if ($("revDate")) $("revDate").value = todayISO();
+    renderReviews();
   }
 
   async function saveHiveMeta(){
@@ -693,6 +651,70 @@ Zasady użycia określa plik LICENSE.
     await save("hives");
     renderDetails();
     renderHives();
+  }
+
+  /* ===== Reviews (Przeglądy) ===== */
+  function renderReviews(){
+    const hiveId = State.currentHive;
+    const box = $("reviewsList");
+    if (!box) return;
+
+    box.innerHTML = "";
+
+    const list = State.reviews
+      .filter(r => r.hiveId === hiveId)
+      .sort((a,b) => (b.visitDate||"").localeCompare(a.visitDate||""));
+
+    if (!list.length){
+      const empty = document.createElement("div");
+      empty.className = "card text-center";
+      empty.innerHTML = `
+        <div style="font-weight:1000">Brak przeglądów.</div>
+        <div class="small mt-2">Dodaj pierwszy przegląd powyżej — ul zacznie „żyć” terminami.</div>
+      `;
+      box.appendChild(empty);
+      return;
+    }
+
+    list.slice(0, 30).forEach(r => {
+      const el = document.createElement("div");
+      el.className = "card";
+      el.style.borderLeft = "4px solid var(--blue)";
+      el.innerHTML = `
+        <div class="flex justify-between items-center" style="gap:10px">
+          <div style="flex:1">
+            <div style="font-weight:1000">📌 ${isoToPL(r.visitDate)}</div>
+            <div class="small" style="white-space:pre-wrap;margin-top:6px">${esc(r.note || "—")}</div>
+          </div>
+          <div>
+            <button class="btn btn-slate" style="padding:6px 10px" data-del="review" data-id="${esc(r.id)}">USUŃ</button>
+          </div>
+        </div>
+      `;
+      box.appendChild(el);
+    });
+  }
+
+  async function addReview(){
+    const hiveId = State.currentHive;
+    const hive = State.hives.find(h => h.id === hiveId);
+    if (!hive) return;
+
+    const visitDate = ($("revDate").value || todayISO()).trim();
+    const note = ($("revNote").value || "").trim();
+    const days = Number($("revAutoDays").value || 7);
+
+    State.reviews.push({ id: uid(), hiveId, visitDate, note });
+    await save("reviews");
+
+    hive.nextVisitDate = addDaysISO(visitDate, days);
+    await save("hives");
+
+    $("hNextVisit").value = hive.nextVisitDate;
+    $("revNote").value = "";
+
+    renderHives();
+    renderReviews();
   }
 
   /* ===== Calendar ===== */
@@ -1170,7 +1192,7 @@ Zasady użycia określa plik LICENSE.
     if (type === "review"){
       State.reviews = State.reviews.filter(x => x.id !== id);
       await save("reviews");
-      renderReviewsForCurrentHive();
+      renderReviews();
       renderHives();
       return;
     }
@@ -1225,12 +1247,9 @@ Zasady użycia określa plik LICENSE.
       $("fltQueenBtn").addEventListener("click", ()=>{ Filters.queen=!Filters.queen; renderHives(); });
       $("fltClearBtn").addEventListener("click", ()=>{ Filters.review=false; Filters.queen=false; renderHives(); });
 
-      // Details save
+      // Details save + Reviews add
       $("saveHiveMetaBtn").addEventListener("click", saveHiveMeta);
-
-      // Reviews
       $("addReviewBtn").addEventListener("click", addReview);
-      $("revDate").value = todayISO();
 
       // Finance
       $("addFinBtn").addEventListener("click", addFinance);
