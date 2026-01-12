@@ -135,7 +135,7 @@ Zasady użycia określa plik LICENSE.
     <div id="hivesGrid" class="grid grid-hives"></div>
   </section>
 
-  <!-- SZCZEGÓŁY ULA (tu zostaje tylko metadane + przegląd tekstowy, żeby nie rozjechać pliku) -->
+  <!-- SZCZEGÓŁY ULA -->
   <section id="viewDetails" class="hidden grid">
     <div class="card" style="border-left:6px solid var(--primary)">
       <div class="muted">UL</div>
@@ -266,7 +266,7 @@ Zasady użycia określa plik LICENSE.
   </section>
 </main>
 
-<!-- MODAL (zostawiam, ale w tej wersji nie jest używany do wszystkiego) -->
+<!-- MODAL -->
 <div id="modalOverlay" class="modal-overlay" aria-hidden="true">
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
     <div class="modal-header">
@@ -330,7 +330,7 @@ Zasady użycia określa plik LICENSE.
 
   /* ===== IndexedDB ===== */
   const DB_NAME = "pasiecznik_ultra_db";
-  const DB_VER  = 6; // bump na czystą wersję
+  const DB_VER  = 6;
   let db = null;
 
   function openDB(){
@@ -369,18 +369,18 @@ Zasady użycia określa plik LICENSE.
     view: "hives",
     currentHive: null,
 
-    hives: [], // {id,label,place,kind,year,nextVisitDate}
-    reviews: [], // {id,hiveId,visitDate,note}
+    hives: [],
+    reviews: [],
 
-    calendar: {}, // { [year]: {0:'',...} }
+    calendar: {},
 
-    finance: [], // {id,type,date,amount,desc}
+    finance: [],
 
-    invItems: [], // {id,name}
-    invMoves: [], // {id,itemId,date,delta,note,ts}
+    invItems: [],
+    invMoves: [],
 
     topics: [],
-    knowledge: [] // {id,topic,title,body,dateTS}
+    knowledge: []
   };
 
   async function loadAll(){
@@ -393,7 +393,6 @@ Zasady użycia określa plik LICENSE.
     State.topics    = (await dbGet("topics"))    || ["Ogólne"];
     State.knowledge = (await dbGet("knowledge")) || [];
 
-    // seed minimal (jeśli pusto, dodaj 3 ule)
     if (!State.hives.length){
       State.hives = ["1","2","3"].map(s => ({
         id: s, label: s, place: "", kind: "rodzina", year: thisYear, nextVisitDate: ""
@@ -401,7 +400,6 @@ Zasady użycia określa plik LICENSE.
       await dbSet("hives", State.hives);
     }
 
-    // normalize
     State.hives.forEach(h => {
       if (h.label == null) h.label = h.id;
       if (h.place == null) h.place = "";
@@ -504,7 +502,6 @@ Zasady użycia określa plik LICENSE.
   function filterHives(list){
     let out = [...list];
     if (Filters.review) out = out.filter(h => needsReview(h));
-    // queen filter zostawiam jako „placeholder” (bo tu nie ma modułu matek)
     if (Filters.queen) out = out.filter(() => false);
     return out;
   }
@@ -606,11 +603,9 @@ Zasady użycia określa plik LICENSE.
     hive.nextVisitDate = newNext;
 
     if (newId !== oldId){
-      // zmiana ID
       hive.id = newId;
       hive.label = newLabel;
 
-      // przenieś ewentualne przeglądy
       State.reviews.forEach(r => { if (r.hiveId === oldId) r.hiveId = newId; });
       await save("reviews");
 
@@ -1039,7 +1034,6 @@ Zasady użycia określa plik LICENSE.
     State.topics    = data.topics    || ["Ogólne"];
     State.knowledge = data.knowledge || [];
 
-    // normalize
     State.hives.forEach(h => {
       if (h.label == null) h.label = h.id;
       if (h.place == null) h.place = "";
@@ -1135,7 +1129,6 @@ Zasady użycia określa plik LICENSE.
       await openDB();
       await loadAll();
 
-      // NAV
       $("topNav").addEventListener("click",(e)=>{
         const btn = e.target.closest("button[data-view]");
         if (!btn) return;
@@ -1145,29 +1138,23 @@ Zasady użycia określa plik LICENSE.
       $("addHiveBtn").addEventListener("click", addHive);
       $("backBtn").addEventListener("click", ()=>renderView("hives", null, true));
 
-      // Filters
       $("fltReviewBtn").addEventListener("click", ()=>{ Filters.review=!Filters.review; renderHives(); });
       $("fltQueenBtn").addEventListener("click", ()=>{ Filters.queen=!Filters.queen; renderHives(); });
       $("fltClearBtn").addEventListener("click", ()=>{ Filters.review=false; Filters.queen=false; renderHives(); });
 
-      // Details save
       $("saveHiveMetaBtn").addEventListener("click", saveHiveMeta);
 
-      // Finance
       $("addFinBtn").addEventListener("click", addFinance);
       $("finDate").value = todayISO();
 
-      // Inventory
       $("invAddMoveBtn").addEventListener("click", invAddMove);
       $("invQueryBtn").addEventListener("click", invQuery);
       $("invMoveDate").value = todayISO();
       $("invQueryDate").value = todayISO();
 
-      // Knowledge
       $("addTopicBtn").addEventListener("click", addTopic);
       $("addKnowBtn").addEventListener("click", addKnowledge);
 
-      // Export / Import
       $("exportBtn").addEventListener("click", exportBackup);
       $("importFile").addEventListener("change", async (e)=>{
         const f = e.target.files?.[0];
@@ -1176,7 +1163,6 @@ Zasady użycia określa plik LICENSE.
         await importBackup(f);
       });
 
-      // Delegation
       document.body.addEventListener("click", async (e)=>{
         const d = e.target.closest("[data-del]");
         if (d) return handleDelete(d.getAttribute("data-del"), d.getAttribute("data-id"));
@@ -1189,7 +1175,6 @@ Zasady użycia określa plik LICENSE.
         }
       });
 
-      // Router start
       const p = new URLSearchParams(location.search);
       const v = p.get("v") || "hives";
       const id = p.get("id");
@@ -1205,16 +1190,26 @@ Zasady użycia określa plik LICENSE.
 })();
 </script>
 
+<!-- ✅ NOWY SERVICE WORKER: wersjonowanie + update + reload -->
 <script>
-  // Service Worker (zostawiam, ale pamiętaj: po aktualizacji najlepiej wyczyścić SW w DevTools)
-  if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("./sw.js").catch(console.warn);
-  }
+(() => {
+  if (!("serviceWorker" in navigator)) return;
+
+  // ZMIENIAJ TEN SUFIKS przy każdej publikacji (żeby GitHub Pages nie trzymał starego SW)
+  const SW_URL = "./sw.js?v=20260112_1";
+
+  navigator.serviceWorker.register(SW_URL).then((reg) => {
+    reg.update().catch(()=>{});
+  }).catch(console.warn);
+
+  let refreshing = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (refreshing) return;
+    refreshing = true;
+    location.reload();
+  });
+})();
 </script>
 
 </body>
 </html>
-
-
-
-    
