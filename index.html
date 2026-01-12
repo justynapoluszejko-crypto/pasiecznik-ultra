@@ -64,17 +64,11 @@ Zasady użycia określa plik LICENSE.
     .mt-3{margin-top:12px}
     .hive-card{border-bottom:6px solid var(--primary);cursor:pointer;transition:transform .2s}
     .hive-card:hover{transform:translateY(-2px)}
-    .hive-alert{border-color:var(--danger)!important}
     .text-alert{color:var(--danger);font-weight:1000;animation:blink 2s infinite}
     @keyframes blink{0%{opacity:1}50%{opacity:.55}100%{opacity:1}}
-    details{border:1px solid var(--border);border-radius:12px;margin-bottom:10px;overflow:hidden;background:#fff}
-    details>summary{background:#f8fafc;padding:12px;font-weight:1000;cursor:pointer;list-style:none;font-size:.8rem;text-transform:uppercase;color:#475569;display:flex;justify-content:space-between;align-items:center}
-    details[open]>summary{background:#e2e8f0}
-    .details-content{padding:12px;border-top:1px solid var(--border)}
     .pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;font-weight:1000;font-size:11px;border:1px solid var(--border);background:#fff}
     .muted{color:#64748b;font-weight:1000;font-size:11px;text-transform:uppercase;letter-spacing:1px}
     .small{font-size:12px;color:#64748b;font-weight:700}
-    .kpi{font-weight:1000;font-size:18px}
     .hr{height:1px;background:var(--border);margin:10px 0}
 
     /* Modal */
@@ -158,16 +152,13 @@ Zasady użycia określa plik LICENSE.
         <input id="hNextVisit" class="input" type="date">
         <button id="saveHiveMetaBtn" class="btn btn-blue">ZAPISZ</button>
       </div>
-
-      <div class="small mt-2">
-        Ten ekran jest stabilny i prosty. Moduł „Przeglądy” poniżej ma pełną edycję (data + notatka).
-      </div>
+      <div class="small mt-2">Termin ⏭ możesz ustawić ręcznie tutaj, albo przy dodawaniu/edycji przeglądu.</div>
     </div>
 
     <!-- Przeglądy -->
     <div class="card" style="border-left:6px solid var(--blue)">
       <div class="muted">PRZEGLĄDY</div>
-      <div class="small mt-2">Dodaj przegląd, a aplikacja automatycznie ustawi termin następnego przeglądu (⏭).</div>
+      <div class="small mt-2">Po każdym przeglądzie możesz wpisać <b>konkretną datę</b> kolejnego terminu (⏭).</div>
 
       <div class="hr"></div>
 
@@ -177,12 +168,9 @@ Zasady użycia określa plik LICENSE.
           <input id="revDate" type="date" class="input">
         </div>
         <div>
-          <div class="muted mb-2">AUTO TERMIN</div>
-          <select id="revAutoDays" class="input">
-            <option value="7">⏭ +7 dni</option>
-            <option value="10">⏭ +10 dni</option>
-            <option value="14">⏭ +14 dni</option>
-          </select>
+          <div class="muted mb-2">TERMIN NASTĘPNEGO PRZEGLĄDU (OPCJONALNIE)</div>
+          <input id="revNextDate" type="date" class="input">
+          <div class="small mt-2">Jeśli zostawisz puste – termin ⏭ nie zmieni się.</div>
         </div>
       </div>
 
@@ -318,19 +306,11 @@ Zasady użycia określa plik LICENSE.
 </div>
 
 <script>
-/* =========================
-   Pasiecznik ULTRA – CLEAN JS
-   Naprawia: routing/nav, Finanse, Magazyn + dodaje pełną edycję przeglądów (data + notatka)
-========================= */
-
 (() => {
   "use strict";
 
-  /* ===== Helpers ===== */
   const $ = (id) => document.getElementById(id);
-  const uid = () =>
-    (crypto && crypto.randomUUID) ? crypto.randomUUID() :
-      (Date.now().toString(36) + Math.random().toString(36).slice(2));
+  const uid = () => (crypto && crypto.randomUUID) ? crypto.randomUUID() : (Date.now().toString(36) + Math.random().toString(36).slice(2));
 
   const esc = (s) =>
     String(s ?? "")
@@ -356,15 +336,9 @@ Zasady użycia określa plik LICENSE.
     return new Date(y, m-1, d, 12, 0, 0, 0);
   };
 
-  const addDaysISO = (iso, days) => {
-    const dt = parseISODate(iso) || parseISODate(todayISO());
-    dt.setDate(dt.getDate() + days);
-    return dt.toISOString().slice(0,10);
-  };
-
   const thisYear = new Date().getFullYear();
 
-  /* ===== Modal helpers ===== */
+  /* Modal */
   function modalClose(){
     const ov = $("modalOverlay");
     if (!ov) return;
@@ -394,7 +368,7 @@ Zasady użycia określa plik LICENSE.
     };
   }
 
-  /* ===== IndexedDB ===== */
+  /* IndexedDB */
   const DB_NAME = "pasiecznik_ultra_db";
   const DB_VER  = 6;
   let db = null;
@@ -402,7 +376,6 @@ Zasady użycia określa plik LICENSE.
   function openDB(){
     return new Promise((resolve, reject) => {
       const req = indexedDB.open(DB_NAME, DB_VER);
-
       req.onupgradeneeded = (e) => {
         const d = e.target.result;
         if (!d.objectStoreNames.contains("data")) d.createObjectStore("data", { keyPath:"key" });
@@ -430,22 +403,18 @@ Zasady użycia określa plik LICENSE.
     });
   }
 
-  /* ===== State ===== */
+  /* State */
   const State = {
     view: "hives",
     currentHive: null,
-
-    hives: [],     // {id,label,place,kind,year,nextVisitDate}
-    reviews: [],   // {id,hiveId,visitDate,note,autoDays}
-
-    calendar: {},  // { [year]: {0:'',...} }
-    finance: [],   // {id,type,date,amount,desc}
-
-    invItems: [],  // {id,name}
-    invMoves: [],  // {id,itemId,date,delta,note,ts}
-
+    hives: [],
+    reviews: [],
+    calendar: {},
+    finance: [],
+    invItems: [],
+    invMoves: [],
     topics: [],
-    knowledge: []  // {id,topic,title,body,dateTS}
+    knowledge: []
   };
 
   async function loadAll(){
@@ -459,9 +428,7 @@ Zasady użycia określa plik LICENSE.
     State.knowledge = (await dbGet("knowledge")) || [];
 
     if (!State.hives.length){
-      State.hives = ["1","2","3"].map(s => ({
-        id: s, label: s, place: "", kind: "rodzina", year: thisYear, nextVisitDate: ""
-      }));
+      State.hives = ["1","2","3"].map(s => ({ id: s, label: s, place: "", kind: "rodzina", year: thisYear, nextVisitDate: "" }));
       await dbSet("hives", State.hives);
     }
 
@@ -473,36 +440,23 @@ Zasady użycia określa plik LICENSE.
       if (h.nextVisitDate == null) h.nextVisitDate = "";
     });
 
-    // normalize reviews
     State.reviews.forEach(r => {
       if (!r.id) r.id = uid();
-      if (r.autoDays == null) r.autoDays = 7;
       if (r.note == null) r.note = "";
+      if (r.nextVisitDate == null) r.nextVisitDate = ""; // NOWE: przechowujemy też termin wpisany przy przeglądzie
     });
   }
 
-  async function save(key){
-    await dbSet(key, State[key]);
-  }
+  async function save(key){ await dbSet(key, State[key]); }
 
-  /* ===== Router ===== */
-  function hideAll(){
-    document.querySelectorAll("main > section").forEach(s => s.classList.add("hidden"));
-  }
+  /* Router */
+  function hideAll(){ document.querySelectorAll("main > section").forEach(s => s.classList.add("hidden")); }
 
   function setTitle(){
     const v = State.view;
     $("backBtn").classList.toggle("hidden", v !== "details");
-    const map = {
-      hives:"PASIECZNIK",
-      details:"UL",
-      calendar:"KALENDARZ",
-      finance:"FINANSE",
-      inventory:"MAGAZYN",
-      knowledge:"WIEDZA"
-    };
-    $("appTitle").textContent =
-      (v === "details" && State.currentHive) ? ("UL " + State.currentHive) : (map[v] || "PASIECZNIK");
+    const map = { hives:"PASIECZNIK", details:"UL", calendar:"KALENDARZ", finance:"FINANSE", inventory:"MAGAZYN", knowledge:"WIEDZA" };
+    $("appTitle").textContent = (v === "details" && State.currentHive) ? ("UL " + State.currentHive) : (map[v] || "PASIECZNIK");
   }
 
   function renderView(view, hiveId=null, push=true){
@@ -542,17 +496,15 @@ Zasady użycia określa plik LICENSE.
     renderView(v, v === "details" ? id : null, false);
   };
 
-  /* ===== Computed ===== */
+  /* Computed */
   function lastReviewDateForHive(hiveId){
-    const rs = State.reviews
-      .filter(r => r.hiveId === hiveId && r.visitDate)
+    const rs = State.reviews.filter(r => r.hiveId === hiveId && r.visitDate)
       .sort((a,b) => (b.visitDate||"").localeCompare(a.visitDate||""));
     return rs[0]?.visitDate || "";
   }
 
   function getLatestReviewForHive(hiveId){
-    const list = State.reviews
-      .filter(r => r.hiveId === hiveId && r.visitDate)
+    const list = State.reviews.filter(r => r.hiveId === hiveId && r.visitDate)
       .sort((a,b) => (b.visitDate||"").localeCompare(a.visitDate||""));
     return list[0] || null;
   }
@@ -568,7 +520,7 @@ Zasady użycia określa plik LICENSE.
     return diffDays >= 6;
   }
 
-  /* ===== Filters ===== */
+  /* Filters */
   const Filters = { review:false, queen:false };
   function applyFilterFlags(btn, isOn, style){
     btn.classList.toggle("active", !!isOn);
@@ -581,19 +533,17 @@ Zasady użycia określa plik LICENSE.
   function filterHives(list){
     let out = [...list];
     if (Filters.review) out = out.filter(h => needsReview(h));
-    if (Filters.queen) out = out.filter(() => false); // placeholder
+    if (Filters.queen) out = out.filter(() => false);
     return out;
   }
 
-  /* ===== Render: Hives ===== */
+  /* Render: Hives */
   function renderHives(){
     renderFilterButtons();
     const grid = $("hivesGrid");
     grid.innerHTML = "";
 
-    const sorted = [...State.hives].sort((a,b) =>
-      String(a.label).localeCompare(String(b.label), undefined, {numeric:true})
-    );
+    const sorted = [...State.hives].sort((a,b) => String(a.label).localeCompare(String(b.label), undefined, {numeric:true}));
     const filtered = filterHives(sorted);
 
     filtered.forEach(h => {
@@ -634,22 +584,16 @@ Zasady użycia określa plik LICENSE.
     if (!filtered.length){
       const empty = document.createElement("div");
       empty.className = "card text-center";
-      empty.innerHTML = `
-        <div style="font-weight:1000">Brak uli w tym filtrze.</div>
-        <div class="small mt-2">Kliknij „Wyczyść”, żeby zobaczyć wszystkie.</div>
-      `;
+      empty.innerHTML = `<div style="font-weight:1000">Brak uli w tym filtrze.</div><div class="small mt-2">Kliknij „Wyczyść”, żeby zobaczyć wszystkie.</div>`;
       grid.appendChild(empty);
     }
   }
 
-  /* ===== Details ===== */
+  /* Details */
   function renderDetails(){
     const hiveId = State.currentHive;
     const hive = State.hives.find(h => h.id === hiveId);
-    if (!hive){
-      renderView("hives", null, true);
-      return;
-    }
+    if (!hive){ renderView("hives", null, true); return; }
 
     $("detailsTitle").textContent = `${hive.label} • ${hive.kind==="odklad"?"Odkład":"Rodzina"} • ${hive.year}`;
 
@@ -659,8 +603,8 @@ Zasady użycia określa plik LICENSE.
     $("hYear").value  = hive.year || thisYear;
     $("hNextVisit").value = hive.nextVisitDate || "";
 
-    // reviews form defaults
     $("revDate").value = todayISO();
+    $("revNextDate").value = "";
   }
 
   async function saveHiveMeta(){
@@ -705,40 +649,32 @@ Zasady użycia określa plik LICENSE.
     renderReviews();
   }
 
-  /* ===== Reviews ===== */
+  /* Reviews */
   function renderReviews(){
     const hiveId = State.currentHive;
     const box = $("reviewsList");
-    if (!box) return;
-
     box.innerHTML = "";
 
-    const list = State.reviews
-      .filter(r => r.hiveId === hiveId)
+    const list = State.reviews.filter(r => r.hiveId === hiveId)
       .sort((a,b) => (b.visitDate||"").localeCompare(a.visitDate||""));
 
     if (!list.length){
       const empty = document.createElement("div");
       empty.className = "card text-center";
-      empty.innerHTML = `
-        <div style="font-weight:1000">Brak przeglądów.</div>
-        <div class="small mt-2">Dodaj pierwszy przegląd powyżej — ul zacznie „żyć” terminami.</div>
-      `;
+      empty.innerHTML = `<div style="font-weight:1000">Brak przeglądów.</div><div class="small mt-2">Dodaj pierwszy przegląd powyżej.</div>`;
       box.appendChild(empty);
       return;
     }
 
-    list.slice(0, 50).forEach(r => {
-      const auto = Number(r.autoDays || 0);
-      const autoTxt = auto ? ` • ⏭ +${auto} dni` : ``;
-
+    list.slice(0,50).forEach(r => {
+      const nextTxt = r.nextVisitDate ? ` • ⏭ ${isoToPL(r.nextVisitDate)}` : "";
       const el = document.createElement("div");
       el.className = "card";
       el.style.borderLeft = "4px solid var(--blue)";
       el.innerHTML = `
         <div class="flex justify-between items-center" style="gap:10px">
           <div style="flex:1">
-            <div style="font-weight:1000">📌 ${isoToPL(r.visitDate)}<span class="small">${autoTxt}</span></div>
+            <div style="font-weight:1000">📌 ${isoToPL(r.visitDate)}<span class="small">${nextTxt}</span></div>
             <div class="small" style="white-space:pre-wrap;margin-top:6px">${esc(r.note || "—")}</div>
           </div>
           <div class="flex gap-2" style="align-items:center;flex-wrap:wrap;justify-content:flex-end">
@@ -758,16 +694,19 @@ Zasady użycia określa plik LICENSE.
 
     const visitDate = ($("revDate").value || todayISO()).trim();
     const note = ($("revNote").value || "").trim();
-    const days = Number($("revAutoDays").value || 7);
+    const nextDate = ($("revNextDate").value || "").trim();
 
-    State.reviews.push({ id: uid(), hiveId, visitDate, note, autoDays: days });
+    State.reviews.push({ id: uid(), hiveId, visitDate, note, nextVisitDate: nextDate });
     await save("reviews");
 
-    hive.nextVisitDate = addDaysISO(visitDate, days);
-    await save("hives");
+    if (nextDate){
+      hive.nextVisitDate = nextDate;
+      await save("hives");
+      $("hNextVisit").value = hive.nextVisitDate;
+    }
 
-    $("hNextVisit").value = hive.nextVisitDate;
     $("revNote").value = "";
+    $("revNextDate").value = "";
 
     renderHives();
     renderReviews();
@@ -779,23 +718,18 @@ Zasady użycia określa plik LICENSE.
     const r = State.reviews.find(x => x.id === reviewId);
     if (!r) return;
 
-    const currentDays = Number(r.autoDays || 7);
-
     modalOpen({
       title: "EDYCJA PRZEGLĄDU",
       bodyHTML: `
         <div class="row cols2">
           <div>
-            <div class="muted mb-2">DATA</div>
+            <div class="muted mb-2">DATA PRZEGLĄDU</div>
             <input id="editRevDate" class="input" type="date" value="${esc(r.visitDate || todayISO())}">
           </div>
           <div>
-            <div class="muted mb-2">AUTO TERMIN</div>
-            <select id="editRevDays" class="input">
-              <option value="7"  ${currentDays===7 ? "selected":""}>⏭ +7 dni</option>
-              <option value="10" ${currentDays===10? "selected":""}>⏭ +10 dni</option>
-              <option value="14" ${currentDays===14? "selected":""}>⏭ +14 dni</option>
-            </select>
+            <div class="muted mb-2">TERMIN NASTĘPNEGO (OPCJONALNIE)</div>
+            <input id="editRevNext" class="input" type="date" value="${esc(r.nextVisitDate || "")}">
+            <div class="small mt-2">Jeśli puste – nie zmienia ⏭ dla ula.</div>
           </div>
         </div>
 
@@ -805,26 +739,26 @@ Zasady użycia określa plik LICENSE.
         </div>
 
         <label class="small" style="display:flex;gap:8px;align-items:center">
-          <input id="editRevRecalc" type="checkbox" checked>
-          Przelicz „Termin następnego przeglądu” dla ula (jeśli to najnowszy przegląd)
+          <input id="editRevApplyToHive" type="checkbox" checked>
+          Jeśli to <b>najnowszy</b> przegląd – ustaw ⏭ dla ula zgodnie z tym wpisem
         </label>
       `,
       onSave: async () => {
         const newDate = ($("editRevDate").value || todayISO()).trim();
         const newNote = ($("editRevNote").value || "").trim();
-        const newDays = Number($("editRevDays").value || 7);
-        const recalc  = !!$("editRevRecalc").checked;
+        const newNext = ($("editRevNext").value || "").trim();
+        const apply = !!$("editRevApplyToHive").checked;
 
         r.visitDate = newDate;
         r.note = newNote;
-        r.autoDays = newDays;
+        r.nextVisitDate = newNext;
 
         await save("reviews");
 
-        if (recalc && hive){
+        if (apply && hive){
           const latest = getLatestReviewForHive(hiveId);
-          if (latest && latest.id === r.id){
-            hive.nextVisitDate = addDaysISO(r.visitDate, Number(r.autoDays || 7));
+          if (latest && latest.id === r.id && newNext){
+            hive.nextVisitDate = newNext;
             await save("hives");
             $("hNextVisit").value = hive.nextVisitDate;
           }
@@ -836,15 +770,11 @@ Zasady użycia określa plik LICENSE.
     });
   }
 
-  /* ===== Calendar ===== */
-  function ensureCalendarYear(y){
-    if (!State.calendar[y]) State.calendar[y] = {};
-  }
-
+  /* Calendar (bez zmian) */
+  function ensureCalendarYear(y){ if (!State.calendar[y]) State.calendar[y] = {}; }
   function renderCalendar(){
     const months = ["Styczeń","Luty","Marzec","Kwiecień","Maj","Czerwiec","Lipiec","Sierpień","Wrzesień","Październik","Listopad","Grudzień"];
     const yearSel = $("calYear");
-
     if (!yearSel.options.length){
       for (let y=2022;y<=2027;y++){
         const o=document.createElement("option");
@@ -852,15 +782,12 @@ Zasady użycia określa plik LICENSE.
         yearSel.appendChild(o);
       }
     }
-
     const current = yearSel.value || String(thisYear);
     yearSel.value = (Number(current)>=2022 && Number(current)<=2027) ? current : String(thisYear);
-
     ensureCalendarYear(yearSel.value);
 
     const grid = $("calendarGrid");
     grid.innerHTML = "";
-
     months.forEach((m,idx) => {
       const card = document.createElement("div");
       card.className = "card";
@@ -877,18 +804,15 @@ Zasady użycia określa plik LICENSE.
       card.appendChild(area);
       grid.appendChild(card);
     });
-
     yearSel.onchange = () => renderCalendar();
   }
 
-  /* ===== Finance ===== */
+  /* Finance */
   function renderFinance(){
     const list = $("finList");
     list.innerHTML = "";
-
     let inc=0, exp=0;
     const items = [...State.finance].sort((a,b) => (b.date||"").localeCompare(a.date||""));
-
     items.forEach(f => {
       if (f.type === "income") inc += Number(f.amount||0);
       else exp += Number(f.amount||0);
@@ -927,82 +851,47 @@ Zasady użycia określa plik LICENSE.
     const date = $("finDate").value || todayISO();
     const amount = Number($("finAmount").value);
     const desc = ($("finDesc").value || "").trim();
-
-    if (!desc || !Number.isFinite(amount) || amount<=0){
-      return alert("Podaj opis i kwotę > 0.");
-    }
-
+    if (!desc || !Number.isFinite(amount) || amount<=0) return alert("Podaj opis i kwotę > 0.");
     State.finance.push({ id:uid(), type, date, amount, desc });
     await save("finance");
-
-    $("finAmount").value = "";
-    $("finDesc").value = "";
+    $("finAmount").value = ""; $("finDesc").value = "";
     renderFinance();
   }
 
-  /* ===== Inventory ===== */
+  /* Inventory + Knowledge (bez zmian) */
   function invCalcQtyAtDate(itemId, isoDate){
     const d = isoDate || todayISO();
-    return State.invMoves
-      .filter(m => m.itemId === itemId && (m.date||"") <= d)
-      .reduce((s,m) => s + (Number(m.delta)||0), 0);
+    return State.invMoves.filter(m => m.itemId === itemId && (m.date||"") <= d).reduce((s,m) => s + (Number(m.delta)||0), 0);
   }
-
-  function invCalcCurrentQty(itemId){
-    return State.invMoves
-      .filter(m => m.itemId === itemId)
-      .reduce((s,m) => s + (Number(m.delta)||0), 0);
-  }
-
+  function invCalcCurrentQty(itemId){ return State.invMoves.filter(m => m.itemId === itemId).reduce((s,m) => s + (Number(m.delta)||0), 0); }
   function refreshInvSelectors(){
     const items = [...State.invItems].sort((a,b) => String(a.name).localeCompare(String(b.name)));
     const sel  = $("invItemSel");
     const qsel = $("invQueryItem");
-
     sel.innerHTML  = `<option value="">Wybierz produkt…</option>`;
     qsel.innerHTML = `<option value="">Wybierz produkt…</option>`;
-
     items.forEach(it => {
-      const o=document.createElement("option");
-      o.value=it.id; o.textContent=it.name;
-      sel.appendChild(o);
-
-      const o2=document.createElement("option");
-      o2.value=it.id; o2.textContent=it.name;
-      qsel.appendChild(o2);
+      const o=document.createElement("option"); o.value=it.id; o.textContent=it.name; sel.appendChild(o);
+      const o2=document.createElement("option"); o2.value=it.id; o2.textContent=it.name; qsel.appendChild(o2);
     });
   }
-
   function renderInventory(){
     refreshInvSelectors();
     $("invMoveDate").value  = $("invMoveDate").value  || todayISO();
     $("invQueryDate").value = $("invQueryDate").value || todayISO();
-
     const list = $("invList");
     list.innerHTML = "";
-
     const items = [...State.invItems].sort((a,b) => String(a.name).localeCompare(String(b.name)));
     if (!items.length){
-      list.innerHTML = `
-        <div class="card text-center">
-          <div style="font-weight:1000">Brak produktów w magazynie.</div>
-          <div class="small mt-2">Dodaj pierwszy ruch (np. zakup).</div>
-        </div>
-      `;
+      list.innerHTML = `<div class="card text-center"><div style="font-weight:1000">Brak produktów w magazynie.</div><div class="small mt-2">Dodaj pierwszy ruch (np. zakup).</div></div>`;
       return;
     }
-
     for (const it of items){
       const qty = invCalcCurrentQty(it.id);
       const el = document.createElement("div");
       el.className = "card";
       el.style.borderLeft = "4px solid var(--slate)";
-
-      const lastMoves = State.invMoves
-        .filter(m => m.itemId === it.id)
-        .sort((a,b) => (b.date||"").localeCompare(a.date||"") || (b.ts||0)-(a.ts||0))
-        .slice(0,3);
-
+      const lastMoves = State.invMoves.filter(m => m.itemId === it.id).sort((a,b) => (b.date||"").localeCompare(a.date||"") || (b.ts||0)-(a.ts||0)).slice(0,3);
       el.innerHTML = `
         <div class="flex justify-between items-center" style="gap:10px">
           <div style="flex:1">
@@ -1034,19 +923,15 @@ Zasady użycia określa plik LICENSE.
       list.appendChild(el);
     }
   }
-
   async function invAddMove(){
     const selId  = $("invItemSel").value;
     const newName = ($("invNewName").value || "").trim();
     const date   = $("invMoveDate").value || todayISO();
     const delta  = Number($("invMoveDelta").value);
     const note   = ($("invMoveNote").value || "").trim();
-
     if (!Number.isFinite(delta) || delta===0) return alert("Podaj ilość (różną od 0).");
     if (!date) return alert("Podaj datę.");
-
     let itemId = selId;
-
     if (!itemId){
       if (!newName) return alert("Wybierz produkt lub wpisz nowy.");
       const ex = State.invItems.find(x => String(x.name).toLowerCase() === newName.toLowerCase());
@@ -1057,40 +942,26 @@ Zasady użycia określa plik LICENSE.
         await save("invItems");
       }
     }
-
     State.invMoves.push({ id:uid(), itemId, date, delta, note, ts:Date.now() });
     await save("invMoves");
-
-    $("invMoveDelta").value = "";
-    $("invMoveNote").value = "";
-    $("invNewName").value = "";
-    $("invItemSel").value = "";
-
+    $("invMoveDelta").value = ""; $("invMoveNote").value = ""; $("invNewName").value = ""; $("invItemSel").value = "";
     renderInventory();
   }
-
   async function invQuickDelta(itemId, delta){
     State.invMoves.push({ id:uid(), itemId, date:todayISO(), delta, note:"Korekta szybka", ts:Date.now() });
     await save("invMoves");
     renderInventory();
   }
-
   function invQuery(){
     const itemId = $("invQueryItem").value;
     const date = $("invQueryDate").value || todayISO();
     const box = $("invQueryResult");
     box.innerHTML = "";
-
     if (!itemId) return alert("Wybierz produkt do sprawdzenia.");
-
     const item = State.invItems.find(x => x.id === itemId);
     const qty = invCalcQtyAtDate(itemId, date);
-
-    const moves = State.invMoves
-      .filter(m => m.itemId === itemId && (m.date||"") <= date)
-      .sort((a,b) => (b.date||"").localeCompare(a.date||"") || (b.ts||0)-(a.ts||0))
-      .slice(0,15);
-
+    const moves = State.invMoves.filter(m => m.itemId === itemId && (m.date||"") <= date)
+      .sort((a,b) => (b.date||"").localeCompare(a.date||"") || (b.ts||0)-(a.ts||0)).slice(0,15);
     box.innerHTML = `
       <div class="card" style="border-left:4px solid var(--blue);padding:12px">
         <div class="muted">WYNIK</div>
@@ -1115,31 +986,23 @@ Zasady użycia określa plik LICENSE.
     `;
   }
 
-  /* ===== Knowledge ===== */
   function refreshTopicSelect(){
     const sel = $("knowTopic");
     sel.innerHTML = "";
     (State.topics.length ? State.topics : ["Ogólne"]).forEach(t => {
-      const o=document.createElement("option");
-      o.value=t; o.textContent=t;
-      sel.appendChild(o);
+      const o=document.createElement("option"); o.value=t; o.textContent=t; sel.appendChild(o);
     });
   }
-
   function renderKnowledge(){
     refreshTopicSelect();
-    const wrap = $("knowList");
-    wrap.innerHTML = "";
-
+    const wrap = $("knowList"); wrap.innerHTML = "";
     const byTopic = {};
     for (const n of State.knowledge){
       const t = n.topic || "Ogólne";
       if (!byTopic[t]) byTopic[t]=[];
       byTopic[t].push(n);
     }
-
     const topics = [...new Set([...State.topics, ...Object.keys(byTopic)])].filter(Boolean);
-
     topics.forEach(t => {
       const items = (byTopic[t] || []).sort((a,b) => (b.dateTS||0)-(a.dateTS||0));
       const sec = document.createElement("div");
@@ -1151,12 +1014,8 @@ Zasady użycia określa plik LICENSE.
           <div class="small">${items.length} not.</div>
         </div>
       `;
-
       if (!items.length){
-        const p=document.createElement("div");
-        p.className="small";
-        p.style.marginTop="8px";
-        p.textContent="Brak notatek w tym temacie.";
+        const p=document.createElement("div"); p.className="small"; p.style.marginTop="8px"; p.textContent="Brak notatek w tym temacie.";
         sec.appendChild(p);
       } else {
         items.forEach(n => {
@@ -1179,11 +1038,9 @@ Zasady użycia określa plik LICENSE.
           sec.appendChild(item);
         });
       }
-
       wrap.appendChild(sec);
     });
   }
-
   async function addTopic(){
     const t = ($("knowNewTopic").value || "").trim();
     if (!t) return;
@@ -1192,53 +1049,35 @@ Zasady użycia określa plik LICENSE.
     $("knowNewTopic").value = "";
     renderKnowledge();
   }
-
   async function addKnowledge(){
     const topic = $("knowTopic").value || "Ogólne";
     const title = ($("knowTitle").value || "").trim();
     const body  = ($("knowBody").value || "").trim();
     if (!title && !body) return alert("Wpisz tytuł lub treść.");
-
     State.knowledge.push({ id:uid(), topic, title:title||"(bez tytułu)", body, dateTS:Date.now() });
     await save("knowledge");
-
-    $("knowTitle").value = "";
-    $("knowBody").value = "";
+    $("knowTitle").value = ""; $("knowBody").value = "";
     renderKnowledge();
   }
 
-  /* ===== Export / Import ===== */
+  /* Export / Import */
   async function exportBackup(){
-    const out = {
-      meta:{ app:"Pasiecznik ULTRA", exportedAt:new Date().toISOString() },
-      data:{
-        hives: State.hives,
-        reviews: State.reviews,
-        calendar: State.calendar,
-        finance: State.finance,
-        invItems: State.invItems,
-        invMoves: State.invMoves,
-        topics: State.topics,
-        knowledge: State.knowledge
-      }
-    };
-
+    const out = { meta:{ app:"Pasiecznik ULTRA", exportedAt:new Date().toISOString() }, data:{
+      hives: State.hives, reviews: State.reviews, calendar: State.calendar, finance: State.finance,
+      invItems: State.invItems, invMoves: State.invMoves, topics: State.topics, knowledge: State.knowledge
+    }};
     const blob = new Blob([JSON.stringify(out, null, 2)], {type:"application/json"});
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
     a.download = "pasiecznik_backup_" + new Date().toLocaleDateString("pl-PL") + ".json";
     a.click();
   }
-
   async function importBackup(file){
     const txt = await file.text();
     let parsed;
     try { parsed = JSON.parse(txt); } catch { return alert("Błędny plik."); }
-
     if (!confirm("Nadpisać wszystkie dane w aplikacji?")) return;
-
     const data = parsed.data || parsed;
-
     State.hives     = data.hives     || [];
     State.reviews   = data.reviews   || [];
     State.calendar  = data.calendar  || {};
@@ -1258,8 +1097,8 @@ Zasady użycia określa plik LICENSE.
 
     State.reviews.forEach(r => {
       if (!r.id) r.id = uid();
-      if (r.autoDays == null) r.autoDays = 7;
       if (r.note == null) r.note = "";
+      if (r.nextVisitDate == null) r.nextVisitDate = "";
     });
 
     await dbSet("hives", State.hives);
@@ -1275,35 +1114,20 @@ Zasady użycia określa plik LICENSE.
     renderView("hives", null, true);
   }
 
-  /* ===== Add Hive ===== */
+  /* Add Hive */
   async function addHive(){
     const label = prompt("Numer/Nazwa ula (np. 12, A1):");
     if (!label) return;
-
     const place = prompt("Położenie ula (opcjonalnie, np. Rząd 2 / 3 od lewej):", "") || "";
     const kindRaw = prompt("Typ ula: wpisz R (rodzina) lub O (odkład)", "R");
     const year = Number(prompt("Rok (np. 2025):", String(thisYear))) || thisYear;
-
     const id = label.trim();
-    if (State.hives.some(h => h.id === id)){
-      alert("Taki ul już istnieje.");
-      return;
-    }
-
-    State.hives.push({
-      id,
-      label: id,
-      place: place.trim(),
-      kind: String(kindRaw||"R").toUpperCase().startsWith("O") ? "odklad" : "rodzina",
-      year,
-      nextVisitDate: ""
-    });
-
+    if (State.hives.some(h => h.id === id)){ alert("Taki ul już istnieje."); return; }
+    State.hives.push({ id, label:id, place:place.trim(), kind:String(kindRaw||"R").toUpperCase().startsWith("O") ? "odklad" : "rodzina", year, nextVisitDate:"" });
     await save("hives");
     renderHives();
   }
 
-  /* ===== Delete dispatcher ===== */
   async function handleDelete(type, id){
     if (!confirm("Usunąć?")) return;
 
@@ -1333,12 +1157,9 @@ Zasady użycia określa plik LICENSE.
       const it = State.invItems.find(x => x.id === id);
       if (!it) return;
       if (!confirm(`Usunąć produkt "${it.name}" oraz całą historię ruchów?`)) return;
-
       State.invItems = State.invItems.filter(x => x.id !== id);
       State.invMoves = State.invMoves.filter(x => x.itemId !== id);
-
-      await save("invItems");
-      await save("invMoves");
+      await save("invItems"); await save("invMoves");
       renderInventory();
       return;
     }
@@ -1351,13 +1172,12 @@ Zasady użycia określa plik LICENSE.
     }
   }
 
-  /* ===== START ===== */
+  /* START */
   document.addEventListener("DOMContentLoaded", async () => {
     try {
       await openDB();
       await loadAll();
 
-      // NAV
       $("topNav").addEventListener("click",(e)=>{
         const btn = e.target.closest("button[data-view]");
         if (!btn) return;
@@ -1367,33 +1187,26 @@ Zasady użycia określa plik LICENSE.
       $("addHiveBtn").addEventListener("click", addHive);
       $("backBtn").addEventListener("click", ()=>renderView("hives", null, true));
 
-      // Filters
       $("fltReviewBtn").addEventListener("click", ()=>{ Filters.review=!Filters.review; renderHives(); });
       $("fltQueenBtn").addEventListener("click", ()=>{ Filters.queen=!Filters.queen; renderHives(); });
       $("fltClearBtn").addEventListener("click", ()=>{ Filters.review=false; Filters.queen=false; renderHives(); });
 
-      // Details save
       $("saveHiveMetaBtn").addEventListener("click", saveHiveMeta);
 
-      // Reviews
       $("addReviewBtn").addEventListener("click", addReview);
       $("revDate").value = todayISO();
 
-      // Finance
       $("addFinBtn").addEventListener("click", addFinance);
       $("finDate").value = todayISO();
 
-      // Inventory
       $("invAddMoveBtn").addEventListener("click", invAddMove);
       $("invQueryBtn").addEventListener("click", invQuery);
       $("invMoveDate").value = todayISO();
       $("invQueryDate").value = todayISO();
 
-      // Knowledge
       $("addTopicBtn").addEventListener("click", addTopic);
       $("addKnowBtn").addEventListener("click", addKnowledge);
 
-      // Export / Import
       $("exportBtn").addEventListener("click", exportBackup);
       $("importFile").addEventListener("change", async (e)=>{
         const f = e.target.files?.[0];
@@ -1402,7 +1215,6 @@ Zasady użycia określa plik LICENSE.
         await importBackup(f);
       });
 
-      // Delegation
       document.body.addEventListener("click", async (e)=>{
         const d = e.target.closest("[data-del]");
         if (d) return handleDelete(d.getAttribute("data-del"), d.getAttribute("data-id"));
@@ -1420,7 +1232,6 @@ Zasady użycia określa plik LICENSE.
         }
       });
 
-      // Router start
       const p = new URLSearchParams(location.search);
       const v = p.get("v") || "hives";
       const id = p.get("id");
@@ -1437,7 +1248,6 @@ Zasady użycia określa plik LICENSE.
 </script>
 
 <script>
-  // Service Worker (po aktualizacji czasem warto wyczyścić SW w DevTools)
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("./sw.js").catch(console.warn);
   }
