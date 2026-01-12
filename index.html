@@ -82,6 +82,7 @@ Zasady użycia określa plik LICENSE.
     .modal-footer{padding:12px 16px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px}
     .row{display:grid;grid-template-columns:1fr;gap:10px}
     @media(min-width:600px){.row.cols2{grid-template-columns:1fr 1fr}}
+    @media(min-width:900px){.row.cols3{grid-template-columns:1fr 1fr 1fr}}
   </style>
 </head>
 <body>
@@ -123,7 +124,7 @@ Zasady użycia określa plik LICENSE.
       </div>
       <div class="small mt-2">
         „Do przeglądu” = ul z <b>terminem następnego przeglądu</b> na dziś / wstecz, albo (jeśli brak terminu) ostatni przegląd starszy niż <b>6 dni</b>.
-        „Wymienić matkę” = matka starsza niż <b>24 miesiące</b>.
+        „Wymienić matkę” = matka starsza niż <b>24 miesiące</b> (rok+miesiąc).
       </div>
     </div>
     <div id="hivesGrid" class="grid grid-hives"></div>
@@ -131,7 +132,7 @@ Zasady użycia określa plik LICENSE.
 
   <!-- SZCZEGÓŁY ULA -->
   <section id="viewDetails" class="hidden grid">
-    <!-- Metadane -->
+    <!-- Metadane + Matka -->
     <div class="card" style="border-left:6px solid var(--primary)">
       <div class="muted">UL</div>
       <div id="detailsTitle" style="font-weight:1000;font-size:18px;margin-top:6px"></div>
@@ -141,6 +142,7 @@ Zasady użycia określa plik LICENSE.
         <input id="hLabel" class="input" type="text" placeholder="Numer / nazwa ula (np. 12, A1)">
         <input id="hPlace" class="input" type="text" placeholder="Położenie (np. Rząd 2 / 3 od lewej)">
       </div>
+
       <div class="row cols2">
         <select id="hType" class="input">
           <option value="rodzina">Rodzina</option>
@@ -148,17 +150,32 @@ Zasady użycia określa plik LICENSE.
         </select>
         <input id="hYear" class="input" type="number" placeholder="Rok (np. 2025)">
       </div>
+
       <div class="row cols2">
         <input id="hNextVisit" class="input" type="date">
         <button id="saveHiveMetaBtn" class="btn btn-blue">ZAPISZ</button>
       </div>
-      <div class="small mt-2">Termin ⏭ możesz ustawić ręcznie tutaj, albo przy dodawaniu/edycji przeglądu.</div>
+
+      <div class="hr"></div>
+
+      <div class="muted mb-2">MATKA</div>
+      <div class="row cols3">
+        <input id="qName" class="input" type="text" placeholder="Nazwa matki (np. Linia X / od Kasi)">
+        <input id="qYear" class="input" type="number" placeholder="Rok matki (np. 2024)">
+        <select id="qMonth" class="input">
+          <option value="">Miesiąc</option>
+          <option value="1">01</option><option value="2">02</option><option value="3">03</option><option value="4">04</option>
+          <option value="5">05</option><option value="6">06</option><option value="7">07</option><option value="8">08</option>
+          <option value="9">09</option><option value="10">10</option><option value="11">11</option><option value="12">12</option>
+        </select>
+      </div>
+      <div id="queenHint" class="small mt-2"></div>
     </div>
 
     <!-- Przeglądy -->
     <div class="card" style="border-left:6px solid var(--blue)">
       <div class="muted">PRZEGLĄDY</div>
-      <div class="small mt-2">Po każdym przeglądzie możesz wpisać <b>konkretną datę</b> kolejnego terminu (⏭).</div>
+      <div class="small mt-2">Po przeglądzie możesz wpisać <b>konkretną datę</b> kolejnego terminu (⏭).</div>
 
       <div class="hr"></div>
 
@@ -170,13 +187,13 @@ Zasady użycia określa plik LICENSE.
         <div>
           <div class="muted mb-2">TERMIN NASTĘPNEGO PRZEGLĄDU (OPCJONALNIE)</div>
           <input id="revNextDate" type="date" class="input">
-          <div class="small mt-2">Jeśli zostawisz puste – termin ⏭ nie zmieni się.</div>
+          <div class="small mt-2">Jeśli puste – termin ⏭ nie zmieni się.</div>
         </div>
       </div>
 
       <div class="mt-2">
         <div class="muted mb-2">NOTATKA</div>
-        <textarea id="revNote" class="input" style="height:110px" placeholder="Co zrobiłaś, co zauważyłaś, leczenie, nastrój ula..."></textarea>
+        <textarea id="revNote" class="input" style="height:110px" placeholder="Co zrobiłaś, co zauważyłaś..."></textarea>
       </div>
 
       <div class="mt-2">
@@ -338,6 +355,36 @@ Zasady użycia określa plik LICENSE.
 
   const thisYear = new Date().getFullYear();
 
+  /* ===== Queen helpers ===== */
+  function queenAgeMonths(hive){
+    const y = Number(hive?.queenYear);
+    const m = Number(hive?.queenMonth);
+    if (!y || !m || m<1 || m>12) return null;
+    const now = new Date();
+    const ny = now.getFullYear();
+    const nm = now.getMonth()+1;
+    return (ny - y) * 12 + (nm - m);
+  }
+
+  function queenIsDue(hive){
+    const age = queenAgeMonths(hive);
+    if (age == null) return false;
+    return age >= 24;
+  }
+
+  function queenLabel(hive){
+    const name = (hive?.queenName || "").trim();
+    const y = Number(hive?.queenYear);
+    const m = Number(hive?.queenMonth);
+    const hasDate = !!(y && m>=1 && m<=12);
+    if (!name && !hasDate) return "";
+    const mm = hasDate ? String(m).padStart(2,"0") : "";
+    const ym = hasDate ? `${mm}.${y}` : "";
+    if (name && ym) return `${name} • ${ym}`;
+    if (name) return name;
+    return ym;
+  }
+
   /* Modal */
   function modalClose(){
     const ov = $("modalOverlay");
@@ -428,7 +475,10 @@ Zasady użycia określa plik LICENSE.
     State.knowledge = (await dbGet("knowledge")) || [];
 
     if (!State.hives.length){
-      State.hives = ["1","2","3"].map(s => ({ id: s, label: s, place: "", kind: "rodzina", year: thisYear, nextVisitDate: "" }));
+      State.hives = ["1","2","3"].map(s => ({
+        id: s, label: s, place: "", kind: "rodzina", year: thisYear, nextVisitDate: "",
+        queenName:"", queenYear:"", queenMonth:""
+      }));
       await dbSet("hives", State.hives);
     }
 
@@ -438,12 +488,15 @@ Zasady użycia określa plik LICENSE.
       if (h.kind == null) h.kind = "rodzina";
       if (h.year == null) h.year = thisYear;
       if (h.nextVisitDate == null) h.nextVisitDate = "";
+      if (h.queenName == null) h.queenName = "";
+      if (h.queenYear == null) h.queenYear = "";
+      if (h.queenMonth == null) h.queenMonth = "";
     });
 
     State.reviews.forEach(r => {
       if (!r.id) r.id = uid();
       if (r.note == null) r.note = "";
-      if (r.nextVisitDate == null) r.nextVisitDate = ""; // NOWE: przechowujemy też termin wpisany przy przeglądzie
+      if (r.nextVisitDate == null) r.nextVisitDate = "";
     });
   }
 
@@ -533,7 +586,7 @@ Zasady użycia określa plik LICENSE.
   function filterHives(list){
     let out = [...list];
     if (Filters.review) out = out.filter(h => needsReview(h));
-    if (Filters.queen) out = out.filter(() => false);
+    if (Filters.queen) out = out.filter(h => queenIsDue(h));
     return out;
   }
 
@@ -549,6 +602,9 @@ Zasady użycia określa plik LICENSE.
     filtered.forEach(h => {
       const due = needsReview(h);
       const lastRev = lastReviewDateForHive(h.id);
+      const qDue = queenIsDue(h);
+      const qLbl = queenLabel(h);
+      const qAge = queenAgeMonths(h);
 
       const el = document.createElement("div");
       el.className = "card hive-card";
@@ -556,24 +612,38 @@ Zasady użycia określa plik LICENSE.
         <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
           <div>
             <div style="font-size:22px;font-weight:1000">${esc(h.label)}</div>
+
             <div class="small" style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">
               <span class="pill">${h.kind==="odklad"?"Odkład":"Rodzina"} ${esc(h.year)}</span>
               ${h.place ? `<span class="pill">📍 ${esc(h.place)}</span>` : ``}
+
               ${
                 h.nextVisitDate
                   ? `<span class="pill" style="border-color:${due?'#fecaca':'var(--border)'}">⏭ ${esc(isoToPL(h.nextVisitDate))}</span>`
                   : (due ? `<span class="pill" style="border-color:#fecaca">⏭ BRAK (DO PRZEGLĄDU)</span>` : ``)
               }
+
+              ${
+                qLbl
+                  ? `<span class="pill" style="border-color:${qDue?'#fecaca':'var(--border)'}">👑 ${esc(qLbl)}${(qAge!=null)?` • ${qAge} m-cy`:``}</span>`
+                  : `<span class="pill">👑 brak danych</span>`
+              }
             </div>
           </div>
+
           <div style="text-align:right">
             <div class="muted">Ostatni przegląd</div>
             <div style="font-weight:1000">${lastRev ? isoToPL(lastRev) : "—"}</div>
           </div>
         </div>
+
         <div style="margin-top:10px;font-size:12px">
           <div class="${due?'text-alert':''}" style="margin-top:6px;font-weight:1000">
             ${due ? "🔎 DO PRZEGLĄDU" : "✅ OK"}
+          </div>
+
+          <div class="${qDue?'text-alert':''}" style="margin-top:6px;font-weight:1000">
+            ${qDue ? "👑 MATKA DO WYMIANY" : ""}
           </div>
         </div>
       `;
@@ -603,6 +673,17 @@ Zasady użycia określa plik LICENSE.
     $("hYear").value  = hive.year || thisYear;
     $("hNextVisit").value = hive.nextVisitDate || "";
 
+    // Queen fields
+    $("qName").value = hive.queenName || "";
+    $("qYear").value = hive.queenYear || "";
+    $("qMonth").value = hive.queenMonth || "";
+
+    const age = queenAgeMonths(hive);
+    const qDue = queenIsDue(hive);
+    $("queenHint").innerHTML = (age==null)
+      ? `Wpisz <b>rok i miesiąc</b>, żeby system umiał liczyć wiek.`
+      : `Wiek matki: <b>${age} miesięcy</b> ${qDue ? `<span class="text-alert">• MATKA DO WYMIANY</span>` : ``}`;
+
     $("revDate").value = todayISO();
     $("revNextDate").value = "";
   }
@@ -616,6 +697,10 @@ Zasady użycia określa plik LICENSE.
     const newPlace = ($("hPlace").value || "").trim();
     const newNext  = ($("hNextVisit").value || "").trim();
 
+    const qName  = ($("qName").value || "").trim();
+    const qYear  = ($("qYear").value || "").trim();
+    const qMonth = ($("qMonth").value || "").trim();
+
     if (!newLabel) return alert("Numer / nazwa ula nie może być pusta.");
 
     const newId = newLabel;
@@ -627,6 +712,10 @@ Zasady użycia określa plik LICENSE.
     hive.year  = Number($("hYear").value) || thisYear;
     hive.place = newPlace;
     hive.nextVisitDate = newNext;
+
+    hive.queenName = qName;
+    hive.queenYear = qYear;
+    hive.queenMonth = qMonth;
 
     if (newId !== oldId){
       hive.id = newId;
@@ -770,7 +859,7 @@ Zasady użycia określa plik LICENSE.
     });
   }
 
-  /* Calendar (bez zmian) */
+  /* Calendar */
   function ensureCalendarYear(y){ if (!State.calendar[y]) State.calendar[y] = {}; }
   function renderCalendar(){
     const months = ["Styczeń","Luty","Marzec","Kwiecień","Maj","Czerwiec","Lipiec","Sierpień","Wrzesień","Październik","Listopad","Grudzień"];
@@ -858,7 +947,7 @@ Zasady użycia określa plik LICENSE.
     renderFinance();
   }
 
-  /* Inventory + Knowledge (bez zmian) */
+  /* Inventory (bez zmian) */
   function invCalcQtyAtDate(itemId, isoDate){
     const d = isoDate || todayISO();
     return State.invMoves.filter(m => m.itemId === itemId && (m.date||"") <= d).reduce((s,m) => s + (Number(m.delta)||0), 0);
@@ -986,6 +1075,7 @@ Zasady użycia określa plik LICENSE.
     `;
   }
 
+  /* Knowledge */
   function refreshTopicSelect(){
     const sel = $("knowTopic");
     sel.innerHTML = "";
@@ -1078,6 +1168,7 @@ Zasady użycia określa plik LICENSE.
     try { parsed = JSON.parse(txt); } catch { return alert("Błędny plik."); }
     if (!confirm("Nadpisać wszystkie dane w aplikacji?")) return;
     const data = parsed.data || parsed;
+
     State.hives     = data.hives     || [];
     State.reviews   = data.reviews   || [];
     State.calendar  = data.calendar  || {};
@@ -1093,6 +1184,9 @@ Zasady użycia określa plik LICENSE.
       if (h.kind == null) h.kind = "rodzina";
       if (h.year == null) h.year = thisYear;
       if (h.nextVisitDate == null) h.nextVisitDate = "";
+      if (h.queenName == null) h.queenName = "";
+      if (h.queenYear == null) h.queenYear = "";
+      if (h.queenMonth == null) h.queenMonth = "";
     });
 
     State.reviews.forEach(r => {
@@ -1118,12 +1212,21 @@ Zasady użycia określa plik LICENSE.
   async function addHive(){
     const label = prompt("Numer/Nazwa ula (np. 12, A1):");
     if (!label) return;
+
     const place = prompt("Położenie ula (opcjonalnie, np. Rząd 2 / 3 od lewej):", "") || "";
     const kindRaw = prompt("Typ ula: wpisz R (rodzina) lub O (odkład)", "R");
     const year = Number(prompt("Rok (np. 2025):", String(thisYear))) || thisYear;
+
     const id = label.trim();
     if (State.hives.some(h => h.id === id)){ alert("Taki ul już istnieje."); return; }
-    State.hives.push({ id, label:id, place:place.trim(), kind:String(kindRaw||"R").toUpperCase().startsWith("O") ? "odklad" : "rodzina", year, nextVisitDate:"" });
+
+    State.hives.push({
+      id, label:id, place:place.trim(),
+      kind:String(kindRaw||"R").toUpperCase().startsWith("O") ? "odklad" : "rodzina",
+      year, nextVisitDate:"",
+      queenName:"", queenYear:"", queenMonth:""
+    });
+
     await save("hives");
     renderHives();
   }
