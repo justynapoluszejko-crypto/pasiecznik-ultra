@@ -399,7 +399,7 @@ Zasady użycia określa plik LICENSE.
 </div>
 
 <script>
-  document.addEventListener("DOMContentLoaded", () => {
+  document"DOMContentLoaded", () => {
 
 /* ===== Helpers ===== */
 const $ = (id) => {
@@ -1918,7 +1918,7 @@ async function importBackup(file){
 }
 
 /* ===== START ===== */
-document.addEventListener("DOMContentLoaded", async ()=>{
+document??.addEventListener("DOMContentLoaded", async ()=>{
   try{
     await openDB();
     await loadAll();
@@ -1931,49 +1931,49 @@ document.addEventListener("DOMContentLoaded", async ()=>{
     Modal.btnCancel=document.getElementById("modalCancel");
     Modal.btnClose=document.getElementById("modalClose");
 
-    Modal.btnCancel.addEventListener("click", modalClose);
-    Modal.btnClose.addEventListener("click", modalClose);
-    Modal.overlay.addEventListener("click", (e)=>{ if(e.target===Modal.overlay) modalClose(); });
-    Modal.btnSave.addEventListener("click", async ()=>{ if(Modal.onSave) await Modal.onSave(); });
+    Modal.btnCancel??.addEventListener("click", modalClose);
+    Modal.btnClose??.addEventListener("click", modalClose);
+    Modal.overlay??.addEventListener("click", (e)=>{ if(e.target===Modal.overlay) modalClose(); });
+    Modal.btnSave??.addEventListener("click", async ()=>{ if(Modal.onSave) await Modal.onSave(); });
 
     // nav
-    document.getElementById("topNav").addEventListener("click",(e)=>{
+    document.getElementById("topNav")??.addEventListener("click",(e)=>{
       const btn=e.target.closest("button[data-view]");
       if(!btn) return;
       renderView(btn.dataset.view, null, true);
     });
 
-    document.getElementById("addHiveBtn").addEventListener("click", addHive);
-    document.getElementById("backBtn").addEventListener("click", ()=>renderView("hives", null, true));
+    document.getElementById("addHiveBtn")??.addEventListener("click", addHive);
+    document.getElementById("backBtn")??.addEventListener("click", ()=>renderView("hives", null, true));
 
     // home filters
-    document.getElementById("fltReviewBtn").addEventListener("click", ()=>{
+    document.getElementById("fltReviewBtn")??.addEventListener("click", ()=>{
       Filters.review=!Filters.review;
       renderHives();
     });
-    document.getElementById("fltQueenBtn").addEventListener("click", ()=>{
+    document.getElementById("fltQueenBtn")??.addEventListener("click", ()=>{
       Filters.queen=!Filters.queen;
       renderHives();
     });
-    document.getElementById("fltClearBtn").addEventListener("click", ()=>{
+    document.getElementById("fltClearBtn")??.addEventListener("click", ()=>{
       Filters.review=false; Filters.queen=false;
       renderHives();
     });
 
     // details actions
-    document.getElementById("saveHiveMetaBtn").addEventListener("click", saveHiveMeta);
-    document.getElementById("addQueenBtn").addEventListener("click", addQueen);
-    document.getElementById("addHoneyBtn").addEventListener("click", addHoney);
-    document.getElementById("addTreatBtn").addEventListener("click", addTreatment);
-    document.getElementById("addFeedBtn").addEventListener("click", addFeeding);
+    document.getElementById("saveHiveMetaBtn")??.addEventListener("click", saveHiveMeta);
+    document.getElementById("addQueenBtn")??.addEventListener("click", addQueen);
+    document.getElementById("addHoneyBtn")??.addEventListener("click", addHoney);
+    document.getElementById("addTreatBtn")??.addEventListener("click", addTreatment);
+    document.getElementById("addFeedBtn")??.addEventListener("click", addFeeding);
 
-    document.getElementById("recBtn").addEventListener("click", async ()=>{
+    document.getElementById("recBtn")??.addEventListener("click", async ()=>{
       if(!mediaRecorder || mediaRecorder.state==="inactive") await startRec();
       else stopRec();
     });
-    document.getElementById("addReviewBtn").addEventListener("click", addReview);
+    document.getElementById("addReviewBtn")??.addEventListener("click", addReview);
 
-    document.getElementById("photoFile").addEventListener("change", async (e)=>{
+    document.getElementById("photoFile")??.addEventListener("change", async (e)=>{
       const f=e.target.files?.[0];
       e.target.value="";
       if(!f) return;
@@ -1981,20 +1981,20 @@ document.addEventListener("DOMContentLoaded", async ()=>{
     });
 
     // finance actions
-    document.getElementById("addFinBtn").addEventListener("click", addFinance);
+    document.getElementById("addFinBtn")??.addEventListener("click", addFinance);
     document.getElementById("finDate").value = todayISO();
 
     // inventory actions
-    document.getElementById("invAddMoveBtn").addEventListener("click", invAddMove);
-    document.getElementById("invQueryBtn").addEventListener("click", invQuery);
+    document.getElementById("invAddMoveBtn")??.addEventListener("click", invAddMove);
+    document.getElementById("invQueryBtn")??.addEventListener("click", invQuery);
 
     // knowledge actions
-    document.getElementById("addTopicBtn").addEventListener("click", addTopic);
-    document.getElementById("addKnowBtn").addEventListener("click", addKnowledge);
+    document.getElementById("addTopicBtn")??.addEventListener("click", addTopic);
+    document.getElementById("addKnowBtn")??.addEventListener("click", addKnowledge);
 
     // export / import
-    document.getElementById("exportBtn").addEventListener("click", exportBackup);
-    document.getElementById("importFile").addEventListener("change", async (e)=>{
+    document.getElementById("exportBtn")??.addEventListener("click", exportBackup);
+    document.getElementById("importFile")??.addEventListener("change", async (e)=>{
       const f=e.target.files?.[0];
       e.target.value="";
       if(!f) return;
@@ -2002,7 +2002,7 @@ document.addEventListener("DOMContentLoaded", async ()=>{
     });
 
     // delegation (delete/edit/quick inv)
-    document.body.addEventListener("click", async (e)=>{
+    document.body??.addEventListener("click", async (e)=>{
       const d=e.target.closest("[data-del]");
       if(d) return handleDelete(d.getAttribute("data-del"), d.getAttribute("data-id"));
 
@@ -2043,7 +2043,7 @@ if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("./sw.js");
 }
 // === FIX IMPORT BACKUP (PWA / GitHub Pages) ===
-window.addEventListener("load", () => {
+window??.addEventListener("load", () => {
   const importBtn = document.getElementById("importBtn");
   const importInput = document.getElementById("importFile");
 
@@ -2075,6 +2075,7 @@ window.addEventListener("load", () => {
 
 </body>
 </html>
+
 
 
 
