@@ -158,9 +158,29 @@ Zasady użycia określa plik LICENSE.
         <button id="saveHiveMetaBtn" class="btn btn-blue">ZAPISZ</button>
       </div>
 
+      <div class="hr"></div>
+
+      <!-- PRZEGLĄDY -->
+      <details open>
+        <summary>
+          <span>📝 PRZEGLĄD ULA</span>
+          <span class="small">dodaj wpis</span>
+        </summary>
+        <div class="details-content">
+          <div class="row cols2">
+            <input id="revDate" class="input" type="date">
+            <button id="addReviewBtn" class="btn btn-green">DODAJ</button>
+          </div>
+          <textarea id="revNote" class="input" style="height:90px" placeholder="Notatka z przeglądu (np. czerw, matka, nastrój rojowy, karmienie)"></textarea>
+
+          <div class="hr"></div>
+          <div class="muted mb-2">HISTORIA PRZEGLĄDÓW</div>
+          <div id="revList" class="grid" style="gap:10px"></div>
+        </div>
+      </details>
+
       <div class="small mt-2">
-        Uprościłam ekran „Szczegóły” w tej wersji, żeby usunąć wszystkie błędy parsowania.
-        Jeśli chcesz – dołożę z powrotem Twoje moduły (matki, leczenie, zdjęcia, audio) już na czystej bazie.
+        Ekran „Szczegóły” jest w trybie stabilnej bazy. Moduły będziemy dokładać etapami.
       </div>
     </div>
   </section>
@@ -266,7 +286,7 @@ Zasady użycia określa plik LICENSE.
   </section>
 </main>
 
-<!-- MODAL -->
+<!-- MODAL (zostawiam, ale w tej wersji nie jest używany do wszystkiego) -->
 <div id="modalOverlay" class="modal-overlay" aria-hidden="true">
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
     <div class="modal-header">
@@ -284,7 +304,7 @@ Zasady użycia określa plik LICENSE.
 <script>
 /* =========================
    Pasiecznik ULTRA – CLEAN JS
-   Naprawia: routing/nav, Finanse, Magazyn, brak parsowania
+   Stabilna baza + PRZEGLĄDY
 ========================= */
 
 (() => {
@@ -318,12 +338,6 @@ Zasady użycia określa plik LICENSE.
     const [y,m,d] = String(iso).split("-").map(Number);
     if (!y || !m || !d) return null;
     return new Date(y, m-1, d, 12, 0, 0, 0);
-  };
-
-  const addDaysISO = (iso, days) => {
-    const dt = parseISODate(iso) || parseISODate(todayISO());
-    dt.setDate(dt.getDate() + days);
-    return dt.toISOString().slice(0,10);
   };
 
   const thisYear = new Date().getFullYear();
@@ -369,18 +383,17 @@ Zasady użycia określa plik LICENSE.
     view: "hives",
     currentHive: null,
 
-    hives: [],
-    reviews: [],
+    hives: [],     // {id,label,place,kind,year,nextVisitDate}
+    reviews: [],   // {id,hiveId,visitDate,note}
 
-    calendar: {},
+    calendar: {},  // { [year]: {0:'',...} }
+    finance: [],   // {id,type,date,amount,desc}
 
-    finance: [],
-
-    invItems: [],
-    invMoves: [],
+    invItems: [],  // {id,name}
+    invMoves: [],  // {id,itemId,date,delta,note,ts}
 
     topics: [],
-    knowledge: []
+    knowledge: []  // {id,topic,title,body,dateTS}
   };
 
   async function loadAll(){
@@ -579,6 +592,66 @@ Zasady użycia określa plik LICENSE.
     $("hType").value  = hive.kind || "rodzina";
     $("hYear").value  = hive.year || thisYear;
     $("hNextVisit").value = hive.nextVisitDate || "";
+
+    // PRZEGLĄDY
+    $("revDate").value = todayISO();
+    renderReviewsForCurrentHive();
+  }
+
+  function renderReviewsForCurrentHive(){
+    const hiveId = State.currentHive;
+    const box = $("revList");
+    if (!box) return;
+    box.innerHTML = "";
+
+    const items = State.reviews
+      .filter(r => r.hiveId === hiveId)
+      .sort((a,b) => (b.visitDate||"").localeCompare(a.visitDate||""));
+
+    if (!items.length){
+      box.innerHTML = `
+        <div class="card text-center">
+          <div style="font-weight:1000">Brak przeglądów.</div>
+          <div class="small mt-2">Dodaj pierwszy wpis powyżej.</div>
+        </div>
+      `;
+      return;
+    }
+
+    items.forEach(r => {
+      const el = document.createElement("div");
+      el.className = "card";
+      el.style.borderLeft = "4px solid var(--primary)";
+      el.innerHTML = `
+        <div class="flex justify-between items-center" style="gap:10px">
+          <div>
+            <div style="font-weight:1000">${isoToPL(r.visitDate)}</div>
+            <div class="small" style="white-space:pre-wrap;margin-top:6px">${esc(r.note||"")}</div>
+          </div>
+          <button class="btn btn-slate" style="padding:6px 10px" data-del="review" data-id="${esc(r.id)}">USUŃ</button>
+        </div>
+      `;
+      box.appendChild(el);
+    });
+  }
+
+  async function addReview(){
+    const hiveId = State.currentHive;
+    const date = ($("revDate").value || todayISO()).trim();
+    const note = ($("revNote").value || "").trim();
+
+    if (!hiveId) return;
+    if (!date) return alert("Podaj datę przeglądu.");
+    if (!note) return alert("Wpisz chociaż krótką notatkę.");
+
+    State.reviews.push({ id:uid(), hiveId, visitDate:date, note });
+    await save("reviews");
+
+    $("revNote").value = "";
+    $("revDate").value = todayISO();
+
+    renderReviewsForCurrentHive();
+    renderHives();
   }
 
   async function saveHiveMeta(){
@@ -1094,6 +1167,14 @@ Zasady użycia określa plik LICENSE.
       return;
     }
 
+    if (type === "review"){
+      State.reviews = State.reviews.filter(x => x.id !== id);
+      await save("reviews");
+      renderReviewsForCurrentHive();
+      renderHives();
+      return;
+    }
+
     if (type === "invmove"){
       State.invMoves = State.invMoves.filter(x => x.id !== id);
       await save("invMoves");
@@ -1129,6 +1210,7 @@ Zasady użycia określa plik LICENSE.
       await openDB();
       await loadAll();
 
+      // NAV
       $("topNav").addEventListener("click",(e)=>{
         const btn = e.target.closest("button[data-view]");
         if (!btn) return;
@@ -1138,23 +1220,33 @@ Zasady użycia określa plik LICENSE.
       $("addHiveBtn").addEventListener("click", addHive);
       $("backBtn").addEventListener("click", ()=>renderView("hives", null, true));
 
+      // Filters
       $("fltReviewBtn").addEventListener("click", ()=>{ Filters.review=!Filters.review; renderHives(); });
       $("fltQueenBtn").addEventListener("click", ()=>{ Filters.queen=!Filters.queen; renderHives(); });
       $("fltClearBtn").addEventListener("click", ()=>{ Filters.review=false; Filters.queen=false; renderHives(); });
 
+      // Details save
       $("saveHiveMetaBtn").addEventListener("click", saveHiveMeta);
 
+      // Reviews
+      $("addReviewBtn").addEventListener("click", addReview);
+      $("revDate").value = todayISO();
+
+      // Finance
       $("addFinBtn").addEventListener("click", addFinance);
       $("finDate").value = todayISO();
 
+      // Inventory
       $("invAddMoveBtn").addEventListener("click", invAddMove);
       $("invQueryBtn").addEventListener("click", invQuery);
       $("invMoveDate").value = todayISO();
       $("invQueryDate").value = todayISO();
 
+      // Knowledge
       $("addTopicBtn").addEventListener("click", addTopic);
       $("addKnowBtn").addEventListener("click", addKnowledge);
 
+      // Export / Import
       $("exportBtn").addEventListener("click", exportBackup);
       $("importFile").addEventListener("change", async (e)=>{
         const f = e.target.files?.[0];
@@ -1163,6 +1255,7 @@ Zasady użycia określa plik LICENSE.
         await importBackup(f);
       });
 
+      // Delegation
       document.body.addEventListener("click", async (e)=>{
         const d = e.target.closest("[data-del]");
         if (d) return handleDelete(d.getAttribute("data-del"), d.getAttribute("data-id"));
@@ -1175,6 +1268,7 @@ Zasady użycia określa plik LICENSE.
         }
       });
 
+      // Router start
       const p = new URLSearchParams(location.search);
       const v = p.get("v") || "hives";
       const id = p.get("id");
@@ -1190,28 +1284,12 @@ Zasady użycia określa plik LICENSE.
 })();
 </script>
 
-<!-- ✅ NOWY SERVICE WORKER: wersjonowanie + update + reload -->
 <script>
-(() => {
-  if (!("serviceWorker" in navigator)) return;
-
-  // ZMIENIAJ TEN SUFIKS przy każdej publikacji (żeby GitHub Pages nie trzymał starego SW)
-  const SW_URL = "./sw.js?v=20260112_1";
-
-  navigator.serviceWorker.register(SW_URL).then((reg) => {
-    reg.update().catch(()=>{});
-  }).catch(console.warn);
-
-  let refreshing = false;
-  navigator.serviceWorker.addEventListener("controllerchange", () => {
-    if (refreshing) return;
-    refreshing = true;
-    location.reload();
-  });
-})();
+  // Service Worker (zostawiam, ale pamiętaj: po aktualizacji najlepiej wyczyścić SW w DevTools)
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("./sw.js").catch(console.warn);
+  }
 </script>
 
 </body>
 </html>
-
-
