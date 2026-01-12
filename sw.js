@@ -1,11 +1,11 @@
-/* Pasiecznik ULTRA – sw.js (bez “wiecznego” cache)
-   Cel: nie blokować aktualizacji JS/HTML na GitHub Pages.
+/* Pasiecznik ULTRA – sw.js (bez “wiecznego” cache index.html)
+   Cel: GitHub Pages ma zawsze podawać nowy JS/HTML.
 */
 
 const VERSION = "2026-01-12_1";
 const CACHE = `pasiecznik-ultra-${VERSION}`;
 
-// Cache tylko “stabilne” pliki (bez index.html!)
+// Cache tylko “stabilne” assety (bez index.html!)
 const ASSETS = [
   "./",
   "./manifest.webmanifest",
@@ -13,7 +13,6 @@ const ASSETS = [
   "./icons/icon-512.png"
 ];
 
-// Install: cache minimalnych assetów
 self.addEventListener("install", (event) => {
   self.skipWaiting();
   event.waitUntil(
@@ -21,7 +20,6 @@ self.addEventListener("install", (event) => {
   );
 });
 
-// Activate: usuń stare cache
 self.addEventListener("activate", (event) => {
   event.waitUntil((async () => {
     const keys = await caches.keys();
@@ -30,23 +28,18 @@ self.addEventListener("activate", (event) => {
   })());
 });
 
-// Fetch:
-// - index.html zawsze z sieci (żeby aktualizacje dochodziły natychmiast)
-// - pozostałe: "stale-while-revalidate" (szybko działa, ale aktualizuje w tle)
 self.addEventListener("fetch", (event) => {
   const req = event.request;
   const url = new URL(req.url);
 
-  // obsługuj tylko to samo origin (GitHub Pages)
   if (url.origin !== self.location.origin) return;
 
-  // index.html / nawigacja: zawsze network-first
+  // NAWIGACJA / index.html: zawsze network-first (żeby aktualizacje dochodziły)
   if (req.mode === "navigate" || url.pathname.endsWith("/index.html")) {
     event.respondWith((async () => {
       try {
         return await fetch(req, { cache: "no-store" });
       } catch {
-        // awaryjnie: pokaż coś z cache, jeśli jest
         const cached = await caches.match("./");
         return cached || Response.error();
       }
@@ -66,4 +59,6 @@ self.addEventListener("fetch", (event) => {
     return cached || fetchPromise;
   })());
 });
+
+
 
