@@ -124,7 +124,7 @@ Zasady użycia określa plik LICENSE.
       </div>
       <div class="small mt-2">
         „Do przeglądu” = ul z <b>terminem następnego przeglądu</b> na dziś / wstecz, albo (jeśli brak terminu) ostatni przegląd starszy niż <b>6 dni</b>.
-        „Wymienić matkę” = matka starsza niż <b>24 miesiące</b> (rok+miesiąc).
+        „Wymienić matkę” = <b>aktualna</b> matka (ostatni wpis w historii) starsza niż <b>24 miesiące</b>.
       </div>
     </div>
     <div id="hivesGrid" class="grid grid-hives"></div>
@@ -132,7 +132,7 @@ Zasady użycia określa plik LICENSE.
 
   <!-- SZCZEGÓŁY ULA -->
   <section id="viewDetails" class="hidden grid">
-    <!-- Metadane + Matka -->
+    <!-- Metadane + Matki -->
     <div class="card" style="border-left:6px solid var(--primary)">
       <div class="muted">UL</div>
       <div id="detailsTitle" style="font-weight:1000;font-size:18px;margin-top:6px"></div>
@@ -158,18 +158,36 @@ Zasady użycia określa plik LICENSE.
 
       <div class="hr"></div>
 
-      <div class="muted mb-2">MATKA</div>
+      <div class="muted mb-2">MATKI (HISTORIA)</div>
+
+      <div class="small mt-2">
+        Dodaj każdą nową matkę jako <b>kolejny wpis</b>. Aktualna matka = <b>ostatni wpis</b>.
+        Jeśli chcesz zmienić aktualną na starszą z historii — użyj przycisku <b>USTAW JAKO AKTUALNĄ</b>.
+      </div>
+
+      <div class="hr"></div>
+
+      <div class="muted mb-2">DODAJ NOWĄ MATKĘ</div>
       <div class="row cols3">
-        <input id="qName" class="input" type="text" placeholder="Nazwa matki (np. Linia X / od Kasi)">
-        <input id="qYear" class="input" type="number" placeholder="Rok matki (np. 2024)">
-        <select id="qMonth" class="input">
+        <input id="qNameNew" class="input" type="text" placeholder="Nazwa matki (np. Linia X / od Kasi)">
+        <input id="qYearNew" class="input" type="number" placeholder="Rok (np. 2024)">
+        <select id="qMonthNew" class="input">
           <option value="">Miesiąc</option>
           <option value="1">01</option><option value="2">02</option><option value="3">03</option><option value="4">04</option>
           <option value="5">05</option><option value="6">06</option><option value="7">07</option><option value="8">08</option>
           <option value="9">09</option><option value="10">10</option><option value="11">11</option><option value="12">12</option>
         </select>
       </div>
+      <div class="mt-2">
+        <button id="addQueenBtn" class="btn btn-green w-full">DODAJ DO HISTORII</button>
+      </div>
+
       <div id="queenHint" class="small mt-2"></div>
+
+      <div class="hr"></div>
+
+      <div class="muted mb-2">HISTORIA MATEK</div>
+      <div id="queenHistoryList" class="grid" style="gap:10px"></div>
     </div>
 
     <!-- Przeglądy -->
@@ -355,37 +373,7 @@ Zasady użycia określa plik LICENSE.
 
   const thisYear = new Date().getFullYear();
 
-  /* ===== Queen helpers ===== */
-  function queenAgeMonths(hive){
-    const y = Number(hive?.queenYear);
-    const m = Number(hive?.queenMonth);
-    if (!y || !m || m<1 || m>12) return null;
-    const now = new Date();
-    const ny = now.getFullYear();
-    const nm = now.getMonth()+1;
-    return (ny - y) * 12 + (nm - m);
-  }
-
-  function queenIsDue(hive){
-    const age = queenAgeMonths(hive);
-    if (age == null) return false;
-    return age >= 24;
-  }
-
-  function queenLabel(hive){
-    const name = (hive?.queenName || "").trim();
-    const y = Number(hive?.queenYear);
-    const m = Number(hive?.queenMonth);
-    const hasDate = !!(y && m>=1 && m<=12);
-    if (!name && !hasDate) return "";
-    const mm = hasDate ? String(m).padStart(2,"0") : "";
-    const ym = hasDate ? `${mm}.${y}` : "";
-    if (name && ym) return `${name} • ${ym}`;
-    if (name) return name;
-    return ym;
-  }
-
-  /* Modal */
+  /* ===== Modal helpers ===== */
   function modalClose(){
     const ov = $("modalOverlay");
     if (!ov) return;
@@ -415,7 +403,7 @@ Zasady użycia określa plik LICENSE.
     };
   }
 
-  /* IndexedDB */
+  /* ===== IndexedDB ===== */
   const DB_NAME = "pasiecznik_ultra_db";
   const DB_VER  = 6;
   let db = null;
@@ -450,7 +438,7 @@ Zasady użycia określa plik LICENSE.
     });
   }
 
-  /* State */
+  /* ===== State ===== */
   const State = {
     view: "hives",
     currentHive: null,
@@ -463,6 +451,89 @@ Zasady użycia określa plik LICENSE.
     topics: [],
     knowledge: []
   };
+
+  /* ===== Queen history helpers ===== */
+  function hiveQueenHistory(hive){
+    if (!hive) return [];
+    if (!Array.isArray(hive.queenHistory)) hive.queenHistory = [];
+    return hive.queenHistory;
+  }
+
+  function getActiveQueen(hive){
+    const hist = hiveQueenHistory(hive);
+    if (!hist.length) return null;
+    // aktualna = największy orderTS
+    return hist.slice().sort((a,b) => (a.orderTS||0)-(b.orderTS||0))[hist.length-1];
+  }
+
+  function queenAgeMonthsFromEntry(entry){
+    const y = Number(entry?.year);
+    const m = Number(entry?.month);
+    if (!y || !m || m<1 || m>12) return null;
+    const now = new Date();
+    const ny = now.getFullYear();
+    const nm = now.getMonth()+1;
+    return (ny - y) * 12 + (nm - m);
+  }
+
+  function queenIsDue(hive){
+    const q = getActiveQueen(hive);
+    const age = queenAgeMonthsFromEntry(q);
+    if (age == null) return false;
+    return age >= 24;
+  }
+
+  function queenLabelFromEntry(q){
+    if (!q) return "";
+    const name = (q.name || "").trim();
+    const y = Number(q.year);
+    const m = Number(q.month);
+    const hasDate = !!(y && m>=1 && m<=12);
+    const mm = hasDate ? String(m).padStart(2,"0") : "";
+    const ym = hasDate ? `${mm}.${y}` : "";
+    if (name && ym) return `${name} • ${ym}`;
+    if (name) return name;
+    return ym;
+  }
+
+  function activeQueenPill(hive){
+    const q = getActiveQueen(hive);
+    const lbl = queenLabelFromEntry(q);
+    const age = queenAgeMonthsFromEntry(q);
+    const due = queenIsDue(hive);
+    if (!q) return `<span class="pill">👑 brak danych</span>`;
+    return `<span class="pill" style="border-color:${due?'#fecaca':'var(--border)'}">👑 ${esc(lbl)}${(age!=null)?` • ${age} m-cy`:``}</span>`;
+  }
+
+  function maxQueenOrderTS(hive){
+    const hist = hiveQueenHistory(hive);
+    return hist.reduce((m,q)=>Math.max(m, Number(q.orderTS||0)), 0);
+  }
+
+  async function setQueenAsActive(queenId){
+    const hiveId = State.currentHive;
+    const hive = State.hives.find(h => h.id === hiveId);
+    if (!hive) return;
+
+    const hist = hiveQueenHistory(hive);
+    const q = hist.find(x => x.id === queenId);
+    if (!q) return;
+
+    const active = getActiveQueen(hive);
+    if (active && active.id === queenId) return;
+
+    if (!confirm("Ustawić tę matkę jako AKTUALNĄ?")) return;
+
+    // ustaw największy orderTS, żeby była „ostatnia”
+    const mx = maxQueenOrderTS(hive);
+    q.orderTS = mx + 1;
+
+    await dbSet("hives", State.hives);
+
+    renderDetails();
+    renderQueenHistory();
+    renderHives();
+  }
 
   async function loadAll(){
     State.hives     = (await dbGet("hives"))     || [];
@@ -477,7 +548,7 @@ Zasady użycia określa plik LICENSE.
     if (!State.hives.length){
       State.hives = ["1","2","3"].map(s => ({
         id: s, label: s, place: "", kind: "rodzina", year: thisYear, nextVisitDate: "",
-        queenName:"", queenYear:"", queenMonth:""
+        queenHistory: []
       }));
       await dbSet("hives", State.hives);
     }
@@ -488,9 +559,29 @@ Zasady użycia określa plik LICENSE.
       if (h.kind == null) h.kind = "rodzina";
       if (h.year == null) h.year = thisYear;
       if (h.nextVisitDate == null) h.nextVisitDate = "";
-      if (h.queenName == null) h.queenName = "";
-      if (h.queenYear == null) h.queenYear = "";
-      if (h.queenMonth == null) h.queenMonth = "";
+      if (!Array.isArray(h.queenHistory)) h.queenHistory = [];
+
+      const hasLegacy = (h.queenName || h.queenYear || h.queenMonth);
+      if (hasLegacy){
+        h.queenHistory.push({
+          id: uid(),
+          name: (h.queenName || "").trim(),
+          year: h.queenYear || "",
+          month: h.queenMonth || "",
+          note: "Migracja ze starej wersji",
+          orderTS: Date.now()
+        });
+        h.queenName = "";
+        h.queenYear = "";
+        h.queenMonth = "";
+      }
+
+      // jeśli ktoś ma wpisy bez orderTS, nadaj
+      h.queenHistory.forEach((q, idx) => {
+        if (!q.id) q.id = uid();
+        if (q.orderTS == null) q.orderTS = Date.now() + idx;
+        if (q.note == null) q.note = "";
+      });
     });
 
     State.reviews.forEach(r => {
@@ -498,11 +589,13 @@ Zasady użycia określa plik LICENSE.
       if (r.note == null) r.note = "";
       if (r.nextVisitDate == null) r.nextVisitDate = "";
     });
+
+    await dbSet("hives", State.hives);
   }
 
   async function save(key){ await dbSet(key, State[key]); }
 
-  /* Router */
+  /* ===== Router ===== */
   function hideAll(){ document.querySelectorAll("main > section").forEach(s => s.classList.add("hidden")); }
 
   function setTitle(){
@@ -523,7 +616,7 @@ Zasady użycia określa plik LICENSE.
     setTitle();
 
     if (view === "hives") renderHives();
-    if (view === "details") { renderDetails(); renderReviews(); }
+    if (view === "details") { renderDetails(); renderQueenHistory(); renderReviews(); }
     if (view === "calendar") renderCalendar();
     if (view === "finance") renderFinance();
     if (view === "inventory") renderInventory();
@@ -549,7 +642,7 @@ Zasady użycia określa plik LICENSE.
     renderView(v, v === "details" ? id : null, false);
   };
 
-  /* Computed */
+  /* ===== Computed ===== */
   function lastReviewDateForHive(hiveId){
     const rs = State.reviews.filter(r => r.hiveId === hiveId && r.visitDate)
       .sort((a,b) => (b.visitDate||"").localeCompare(a.visitDate||""));
@@ -573,7 +666,7 @@ Zasady użycia określa plik LICENSE.
     return diffDays >= 6;
   }
 
-  /* Filters */
+  /* ===== Filters ===== */
   const Filters = { review:false, queen:false };
   function applyFilterFlags(btn, isOn, style){
     btn.classList.toggle("active", !!isOn);
@@ -590,21 +683,21 @@ Zasady użycia określa plik LICENSE.
     return out;
   }
 
-  /* Render: Hives */
+  /* ===== Render: Hives ===== */
   function renderHives(){
     renderFilterButtons();
     const grid = $("hivesGrid");
     grid.innerHTML = "";
 
-    const sorted = [...State.hives].sort((a,b) => String(a.label).localeCompare(String(b.label), undefined, {numeric:true}));
+    const sorted = [...State.hives].sort((a,b) =>
+      String(a.label).localeCompare(String(b.label), undefined, {numeric:true})
+    );
     const filtered = filterHives(sorted);
 
     filtered.forEach(h => {
       const due = needsReview(h);
       const lastRev = lastReviewDateForHive(h.id);
       const qDue = queenIsDue(h);
-      const qLbl = queenLabel(h);
-      const qAge = queenAgeMonths(h);
 
       const el = document.createElement("div");
       el.className = "card hive-card";
@@ -612,36 +705,26 @@ Zasady użycia określa plik LICENSE.
         <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
           <div>
             <div style="font-size:22px;font-weight:1000">${esc(h.label)}</div>
-
             <div class="small" style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">
               <span class="pill">${h.kind==="odklad"?"Odkład":"Rodzina"} ${esc(h.year)}</span>
               ${h.place ? `<span class="pill">📍 ${esc(h.place)}</span>` : ``}
-
               ${
                 h.nextVisitDate
                   ? `<span class="pill" style="border-color:${due?'#fecaca':'var(--border)'}">⏭ ${esc(isoToPL(h.nextVisitDate))}</span>`
                   : (due ? `<span class="pill" style="border-color:#fecaca">⏭ BRAK (DO PRZEGLĄDU)</span>` : ``)
               }
-
-              ${
-                qLbl
-                  ? `<span class="pill" style="border-color:${qDue?'#fecaca':'var(--border)'}">👑 ${esc(qLbl)}${(qAge!=null)?` • ${qAge} m-cy`:``}</span>`
-                  : `<span class="pill">👑 brak danych</span>`
-              }
+              ${activeQueenPill(h)}
             </div>
           </div>
-
           <div style="text-align:right">
             <div class="muted">Ostatni przegląd</div>
             <div style="font-weight:1000">${lastRev ? isoToPL(lastRev) : "—"}</div>
           </div>
         </div>
-
         <div style="margin-top:10px;font-size:12px">
           <div class="${due?'text-alert':''}" style="margin-top:6px;font-weight:1000">
             ${due ? "🔎 DO PRZEGLĄDU" : "✅ OK"}
           </div>
-
           <div class="${qDue?'text-alert':''}" style="margin-top:6px;font-weight:1000">
             ${qDue ? "👑 MATKA DO WYMIANY" : ""}
           </div>
@@ -659,7 +742,7 @@ Zasady użycia określa plik LICENSE.
     }
   }
 
-  /* Details */
+  /* ===== Details ===== */
   function renderDetails(){
     const hiveId = State.currentHive;
     const hive = State.hives.find(h => h.id === hiveId);
@@ -673,16 +756,17 @@ Zasady użycia określa plik LICENSE.
     $("hYear").value  = hive.year || thisYear;
     $("hNextVisit").value = hive.nextVisitDate || "";
 
-    // Queen fields
-    $("qName").value = hive.queenName || "";
-    $("qYear").value = hive.queenYear || "";
-    $("qMonth").value = hive.queenMonth || "";
+    $("qNameNew").value = "";
+    $("qYearNew").value = "";
+    $("qMonthNew").value = "";
 
-    const age = queenAgeMonths(hive);
+    const q = getActiveQueen(hive);
+    const age = queenAgeMonthsFromEntry(q);
     const qDue = queenIsDue(hive);
-    $("queenHint").innerHTML = (age==null)
-      ? `Wpisz <b>rok i miesiąc</b>, żeby system umiał liczyć wiek.`
-      : `Wiek matki: <b>${age} miesięcy</b> ${qDue ? `<span class="text-alert">• MATKA DO WYMIANY</span>` : ``}`;
+
+    $("queenHint").innerHTML = q
+      ? `Aktualna matka: <b>${esc(queenLabelFromEntry(q) || "—")}</b> • Wiek: <b>${age ?? "—"} mies.</b> ${qDue ? `<span class="text-alert">• MATKA DO WYMIANY</span>` : ``}`
+      : `Brak wpisów w historii matek. Dodaj pierwszą matkę powyżej.`;
 
     $("revDate").value = todayISO();
     $("revNextDate").value = "";
@@ -697,10 +781,6 @@ Zasady użycia określa plik LICENSE.
     const newPlace = ($("hPlace").value || "").trim();
     const newNext  = ($("hNextVisit").value || "").trim();
 
-    const qName  = ($("qName").value || "").trim();
-    const qYear  = ($("qYear").value || "").trim();
-    const qMonth = ($("qMonth").value || "").trim();
-
     if (!newLabel) return alert("Numer / nazwa ula nie może być pusta.");
 
     const newId = newLabel;
@@ -712,10 +792,6 @@ Zasady użycia określa plik LICENSE.
     hive.year  = Number($("hYear").value) || thisYear;
     hive.place = newPlace;
     hive.nextVisitDate = newNext;
-
-    hive.queenName = qName;
-    hive.queenYear = qYear;
-    hive.queenMonth = qMonth;
 
     if (newId !== oldId){
       hive.id = newId;
@@ -735,10 +811,155 @@ Zasady użycia określa plik LICENSE.
     await save("hives");
     renderDetails();
     renderHives();
+    renderQueenHistory();
     renderReviews();
   }
 
-  /* Reviews */
+  /* ===== Queen history ===== */
+  function renderQueenHistory(){
+    const hiveId = State.currentHive;
+    const hive = State.hives.find(h => h.id === hiveId);
+    const box = $("queenHistoryList");
+    box.innerHTML = "";
+
+    if (!hive) return;
+
+    const hist = hiveQueenHistory(hive)
+      .slice()
+      .sort((a,b) => (b.orderTS||0) - (a.orderTS||0));
+
+    if (!hist.length){
+      const empty = document.createElement("div");
+      empty.className = "card text-center";
+      empty.innerHTML = `<div style="font-weight:1000">Brak historii matek.</div><div class="small mt-2">Dodaj pierwszą matkę powyżej.</div>`;
+      box.appendChild(empty);
+      return;
+    }
+
+    const active = getActiveQueen(hive);
+
+    hist.forEach(q => {
+      const age = queenAgeMonthsFromEntry(q);
+      const isActive = active && active.id === q.id;
+      const due = isActive && queenIsDue(hive);
+
+      const el = document.createElement("div");
+      el.className = "card";
+      el.style.borderLeft = "4px solid " + (isActive ? "var(--success)" : "var(--slate)");
+      el.innerHTML = `
+        <div class="flex justify-between items-center" style="gap:10px">
+          <div style="flex:1">
+            <div style="font-weight:1000">
+              ${isActive ? "✅ AKTUALNA" : "•"}
+              👑 ${esc(queenLabelFromEntry(q) || "—")}
+              ${age!=null ? `<span class="small"> • ${age} mies.</span>` : ``}
+              ${due ? `<span class="text-alert"> • MATKA DO WYMIANY</span>` : ``}
+            </div>
+            ${q.note ? `<div class="small" style="white-space:pre-wrap;margin-top:6px">${esc(q.note)}</div>` : ``}
+          </div>
+          <div class="flex gap-2" style="align-items:center;flex-wrap:wrap;justify-content:flex-end">
+            ${!isActive ? `<button class="btn btn-orange" style="padding:6px 10px" data-queenactive="1" data-id="${esc(q.id)}">USTAW AKTUALNĄ</button>` : ``}
+            <button class="btn btn-blue" style="padding:6px 10px" data-edit="queen" data-id="${esc(q.id)}">EDYTUJ</button>
+            <button class="btn btn-slate" style="padding:6px 10px" data-del="queen" data-id="${esc(q.id)}">USUŃ</button>
+          </div>
+        </div>
+      `;
+      box.appendChild(el);
+    });
+  }
+
+  async function addQueenToHistory(){
+    const hiveId = State.currentHive;
+    const hive = State.hives.find(h => h.id === hiveId);
+    if (!hive) return;
+
+    const name = ($("qNameNew").value || "").trim();
+    const year = ($("qYearNew").value || "").trim();
+    const month = ($("qMonthNew").value || "").trim();
+
+    if (!name && !year && !month) return alert("Wpisz przynajmniej nazwę albo rok/miesiąc.");
+
+    const mx = maxQueenOrderTS(hive);
+
+    hiveQueenHistory(hive).push({
+      id: uid(),
+      name,
+      year,
+      month,
+      note: "",
+      orderTS: mx + 1
+    });
+
+    await save("hives");
+
+    $("qNameNew").value = "";
+    $("qYearNew").value = "";
+    $("qMonthNew").value = "";
+
+    renderDetails();
+    renderQueenHistory();
+    renderHives();
+  }
+
+  async function editQueenById(queenId){
+    const hiveId = State.currentHive;
+    const hive = State.hives.find(h => h.id === hiveId);
+    if (!hive) return;
+
+    const hist = hiveQueenHistory(hive);
+    const q = hist.find(x => x.id === queenId);
+    if (!q) return;
+
+    modalOpen({
+      title: "EDYCJA MATKI",
+      bodyHTML: `
+        <div class="row cols3">
+          <input id="editQName" class="input" type="text" placeholder="Nazwa" value="${esc(q.name || "")}">
+          <input id="editQYear" class="input" type="number" placeholder="Rok" value="${esc(q.year || "")}">
+          <select id="editQMonth" class="input">
+            <option value="">Miesiąc</option>
+            ${Array.from({length:12}).map((_,i)=>{
+              const m=i+1;
+              const sel = String(q.month||"")===String(m) ? "selected" : "";
+              return `<option value="${m}" ${sel}>${String(m).padStart(2,"0")}</option>`;
+            }).join("")}
+          </select>
+        </div>
+        <div>
+          <div class="muted mb-2">NOTATKA (opcjonalnie)</div>
+          <textarea id="editQNote" class="input" style="height:110px">${esc(q.note || "")}</textarea>
+        </div>
+      `,
+      onSave: async () => {
+        q.name = ($("editQName").value || "").trim();
+        q.year = ($("editQYear").value || "").trim();
+        q.month = ($("editQMonth").value || "").trim();
+        q.note = ($("editQNote").value || "").trim();
+
+        await save("hives");
+        renderDetails();
+        renderQueenHistory();
+        renderHives();
+      }
+    });
+  }
+
+  async function deleteQueenById(queenId){
+    const hiveId = State.currentHive;
+    const hive = State.hives.find(h => h.id === hiveId);
+    if (!hive) return;
+
+    if (!confirm("Usunąć ten wpis z historii matek?")) return;
+
+    hive.queenHistory = hiveQueenHistory(hive).filter(x => x.id !== queenId);
+    await save("hives");
+
+    renderDetails();
+    renderQueenHistory();
+    renderHives();
+  }
+
+  /* ===== Reviews ===== */
   function renderReviews(){
     const hiveId = State.currentHive;
     const box = $("reviewsList");
@@ -859,11 +1080,13 @@ Zasady użycia określa plik LICENSE.
     });
   }
 
-  /* Calendar */
+  /* ===== Calendar ===== */
   function ensureCalendarYear(y){ if (!State.calendar[y]) State.calendar[y] = {}; }
+
   function renderCalendar(){
     const months = ["Styczeń","Luty","Marzec","Kwiecień","Maj","Czerwiec","Lipiec","Sierpień","Wrzesień","Październik","Listopad","Grudzień"];
     const yearSel = $("calYear");
+
     if (!yearSel.options.length){
       for (let y=2022;y<=2027;y++){
         const o=document.createElement("option");
@@ -871,12 +1094,15 @@ Zasady użycia określa plik LICENSE.
         yearSel.appendChild(o);
       }
     }
+
     const current = yearSel.value || String(thisYear);
     yearSel.value = (Number(current)>=2022 && Number(current)<=2027) ? current : String(thisYear);
+
     ensureCalendarYear(yearSel.value);
 
     const grid = $("calendarGrid");
     grid.innerHTML = "";
+
     months.forEach((m,idx) => {
       const card = document.createElement("div");
       card.className = "card";
@@ -893,15 +1119,18 @@ Zasady użycia określa plik LICENSE.
       card.appendChild(area);
       grid.appendChild(card);
     });
+
     yearSel.onchange = () => renderCalendar();
   }
 
-  /* Finance */
+  /* ===== Finance ===== */
   function renderFinance(){
     const list = $("finList");
     list.innerHTML = "";
+
     let inc=0, exp=0;
     const items = [...State.finance].sort((a,b) => (b.date||"").localeCompare(a.date||""));
+
     items.forEach(f => {
       if (f.type === "income") inc += Number(f.amount||0);
       else exp += Number(f.amount||0);
@@ -940,47 +1169,82 @@ Zasady użycia określa plik LICENSE.
     const date = $("finDate").value || todayISO();
     const amount = Number($("finAmount").value);
     const desc = ($("finDesc").value || "").trim();
-    if (!desc || !Number.isFinite(amount) || amount<=0) return alert("Podaj opis i kwotę > 0.");
+
+    if (!desc || !Number.isFinite(amount) || amount<=0){
+      return alert("Podaj opis i kwotę > 0.");
+    }
+
     State.finance.push({ id:uid(), type, date, amount, desc });
     await save("finance");
-    $("finAmount").value = ""; $("finDesc").value = "";
+
+    $("finAmount").value = "";
+    $("finDesc").value = "";
     renderFinance();
   }
 
-  /* Inventory (bez zmian) */
+  /* ===== Inventory (bez zmian) ===== */
   function invCalcQtyAtDate(itemId, isoDate){
     const d = isoDate || todayISO();
-    return State.invMoves.filter(m => m.itemId === itemId && (m.date||"") <= d).reduce((s,m) => s + (Number(m.delta)||0), 0);
+    return State.invMoves
+      .filter(m => m.itemId === itemId && (m.date||"") <= d)
+      .reduce((s,m) => s + (Number(m.delta)||0), 0);
   }
-  function invCalcCurrentQty(itemId){ return State.invMoves.filter(m => m.itemId === itemId).reduce((s,m) => s + (Number(m.delta)||0), 0); }
+
+  function invCalcCurrentQty(itemId){
+    return State.invMoves
+      .filter(m => m.itemId === itemId)
+      .reduce((s,m) => s + (Number(m.delta)||0), 0);
+  }
+
   function refreshInvSelectors(){
     const items = [...State.invItems].sort((a,b) => String(a.name).localeCompare(String(b.name)));
     const sel  = $("invItemSel");
     const qsel = $("invQueryItem");
+
     sel.innerHTML  = `<option value="">Wybierz produkt…</option>`;
     qsel.innerHTML = `<option value="">Wybierz produkt…</option>`;
+
     items.forEach(it => {
-      const o=document.createElement("option"); o.value=it.id; o.textContent=it.name; sel.appendChild(o);
-      const o2=document.createElement("option"); o2.value=it.id; o2.textContent=it.name; qsel.appendChild(o2);
+      const o=document.createElement("option");
+      o.value=it.id; o.textContent=it.name;
+      sel.appendChild(o);
+
+      const o2=document.createElement("option");
+      o2.value=it.id; o2.textContent=it.name;
+      qsel.appendChild(o2);
     });
   }
+
   function renderInventory(){
     refreshInvSelectors();
     $("invMoveDate").value  = $("invMoveDate").value  || todayISO();
     $("invQueryDate").value = $("invQueryDate").value || todayISO();
+
     const list = $("invList");
     list.innerHTML = "";
+
     const items = [...State.invItems].sort((a,b) => String(a.name).localeCompare(String(b.name)));
     if (!items.length){
-      list.innerHTML = `<div class="card text-center"><div style="font-weight:1000">Brak produktów w magazynie.</div><div class="small mt-2">Dodaj pierwszy ruch (np. zakup).</div></div>`;
+      list.innerHTML = `
+        <div class="card text-center">
+          <div style="font-weight:1000">Brak produktów w magazynie.</div>
+          <div class="small mt-2">Dodaj pierwszy ruch (np. zakup).</div>
+        </div>
+      `;
       return;
     }
+
     for (const it of items){
       const qty = invCalcCurrentQty(it.id);
       const el = document.createElement("div");
       el.className = "card";
       el.style.borderLeft = "4px solid var(--slate)";
-      const lastMoves = State.invMoves.filter(m => m.itemId === it.id).sort((a,b) => (b.date||"").localeCompare(a.date||"") || (b.ts||0)-(a.ts||0)).slice(0,3);
+
+      const lastMoves = State.invMoves
+        .filter(m => m.itemId === it.id)
+        .sort((a,b) => (b.date||"").localeCompare(a.date||"") || (b.ts||0)-(a.ts||0))
+        .slice(0,3);
+
       el.innerHTML = `
         <div class="flex justify-between items-center" style="gap:10px">
           <div style="flex:1">
@@ -1012,15 +1276,19 @@ Zasady użycia określa plik LICENSE.
       list.appendChild(el);
     }
   }
+
   async function invAddMove(){
     const selId  = $("invItemSel").value;
     const newName = ($("invNewName").value || "").trim();
     const date   = $("invMoveDate").value || todayISO();
     const delta  = Number($("invMoveDelta").value);
     const note   = ($("invMoveNote").value || "").trim();
+
     if (!Number.isFinite(delta) || delta===0) return alert("Podaj ilość (różną od 0).");
     if (!date) return alert("Podaj datę.");
+
     let itemId = selId;
+
     if (!itemId){
       if (!newName) return alert("Wybierz produkt lub wpisz nowy.");
       const ex = State.invItems.find(x => String(x.name).toLowerCase() === newName.toLowerCase());
@@ -1031,26 +1299,40 @@ Zasady użycia określa plik LICENSE.
         await save("invItems");
       }
     }
+
     State.invMoves.push({ id:uid(), itemId, date, delta, note, ts:Date.now() });
     await save("invMoves");
-    $("invMoveDelta").value = ""; $("invMoveNote").value = ""; $("invNewName").value = ""; $("invItemSel").value = "";
+
+    $("invMoveDelta").value = "";
+    $("invMoveNote").value = "";
+    $("invNewName").value = "";
+    $("invItemSel").value = "";
+
     renderInventory();
   }
+
   async function invQuickDelta(itemId, delta){
     State.invMoves.push({ id:uid(), itemId, date:todayISO(), delta, note:"Korekta szybka", ts:Date.now() });
     await save("invMoves");
     renderInventory();
   }
+
   function invQuery(){
     const itemId = $("invQueryItem").value;
     const date = $("invQueryDate").value || todayISO();
     const box = $("invQueryResult");
     box.innerHTML = "";
+
     if (!itemId) return alert("Wybierz produkt do sprawdzenia.");
+
     const item = State.invItems.find(x => x.id === itemId);
     const qty = invCalcQtyAtDate(itemId, date);
-    const moves = State.invMoves.filter(m => m.itemId === itemId && (m.date||"") <= date)
-      .sort((a,b) => (b.date||"").localeCompare(a.date||"") || (b.ts||0)-(a.ts||0)).slice(0,15);
+
+    const moves = State.invMoves
+      .filter(m => m.itemId === itemId && (m.date||"") <= date)
+      .sort((a,b) => (b.date||"").localeCompare(a.date||"") || (b.ts||0)-(a.ts||0))
+      .slice(0,15);
+
     box.innerHTML = `
       <div class="card" style="border-left:4px solid var(--blue);padding:12px">
         <div class="muted">WYNIK</div>
@@ -1075,24 +1357,31 @@ Zasady użycia określa plik LICENSE.
     `;
   }
 
-  /* Knowledge */
+  /* ===== Knowledge ===== */
   function refreshTopicSelect(){
     const sel = $("knowTopic");
     sel.innerHTML = "";
     (State.topics.length ? State.topics : ["Ogólne"]).forEach(t => {
-      const o=document.createElement("option"); o.value=t; o.textContent=t; sel.appendChild(o);
+      const o=document.createElement("option");
+      o.value=t; o.textContent=t;
+      sel.appendChild(o);
     });
   }
+
   function renderKnowledge(){
     refreshTopicSelect();
-    const wrap = $("knowList"); wrap.innerHTML = "";
+    const wrap = $("knowList");
+    wrap.innerHTML = "";
+
     const byTopic = {};
     for (const n of State.knowledge){
       const t = n.topic || "Ogólne";
       if (!byTopic[t]) byTopic[t]=[];
       byTopic[t].push(n);
     }
+
     const topics = [...new Set([...State.topics, ...Object.keys(byTopic)])].filter(Boolean);
+
     topics.forEach(t => {
       const items = (byTopic[t] || []).sort((a,b) => (b.dateTS||0)-(a.dateTS||0));
       const sec = document.createElement("div");
@@ -1104,8 +1393,12 @@ Zasady użycia określa plik LICENSE.
           <div class="small">${items.length} not.</div>
         </div>
       `;
+
       if (!items.length){
-        const p=document.createElement("div"); p.className="small"; p.style.marginTop="8px"; p.textContent="Brak notatek w tym temacie.";
+        const p=document.createElement("div");
+        p.className="small";
+        p.style.marginTop="8px";
+        p.textContent="Brak notatek w tym temacie.";
         sec.appendChild(p);
       } else {
         items.forEach(n => {
@@ -1128,9 +1421,11 @@ Zasady użycia określa plik LICENSE.
           sec.appendChild(item);
         });
       }
+
       wrap.appendChild(sec);
     });
   }
+
   async function addTopic(){
     const t = ($("knowNewTopic").value || "").trim();
     if (!t) return;
@@ -1139,34 +1434,51 @@ Zasady użycia określa plik LICENSE.
     $("knowNewTopic").value = "";
     renderKnowledge();
   }
+
   async function addKnowledge(){
     const topic = $("knowTopic").value || "Ogólne";
     const title = ($("knowTitle").value || "").trim();
     const body  = ($("knowBody").value || "").trim();
     if (!title && !body) return alert("Wpisz tytuł lub treść.");
+
     State.knowledge.push({ id:uid(), topic, title:title||"(bez tytułu)", body, dateTS:Date.now() });
     await save("knowledge");
-    $("knowTitle").value = ""; $("knowBody").value = "";
+
+    $("knowTitle").value = "";
+    $("knowBody").value = "";
     renderKnowledge();
   }
 
-  /* Export / Import */
+  /* ===== Export / Import ===== */
   async function exportBackup(){
-    const out = { meta:{ app:"Pasiecznik ULTRA", exportedAt:new Date().toISOString() }, data:{
-      hives: State.hives, reviews: State.reviews, calendar: State.calendar, finance: State.finance,
-      invItems: State.invItems, invMoves: State.invMoves, topics: State.topics, knowledge: State.knowledge
-    }};
+    const out = {
+      meta:{ app:"Pasiecznik ULTRA", exportedAt:new Date().toISOString() },
+      data:{
+        hives: State.hives,
+        reviews: State.reviews,
+        calendar: State.calendar,
+        finance: State.finance,
+        invItems: State.invItems,
+        invMoves: State.invMoves,
+        topics: State.topics,
+        knowledge: State.knowledge
+      }
+    };
+
     const blob = new Blob([JSON.stringify(out, null, 2)], {type:"application/json"});
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
     a.download = "pasiecznik_backup_" + new Date().toLocaleDateString("pl-PL") + ".json";
     a.click();
   }
+
   async function importBackup(file){
     const txt = await file.text();
     let parsed;
     try { parsed = JSON.parse(txt); } catch { return alert("Błędny plik."); }
+
     if (!confirm("Nadpisać wszystkie dane w aplikacji?")) return;
+
     const data = parsed.data || parsed;
 
     State.hives     = data.hives     || [];
@@ -1184,9 +1496,12 @@ Zasady użycia określa plik LICENSE.
       if (h.kind == null) h.kind = "rodzina";
       if (h.year == null) h.year = thisYear;
       if (h.nextVisitDate == null) h.nextVisitDate = "";
-      if (h.queenName == null) h.queenName = "";
-      if (h.queenYear == null) h.queenYear = "";
-      if (h.queenMonth == null) h.queenMonth = "";
+      if (!Array.isArray(h.queenHistory)) h.queenHistory = [];
+      h.queenHistory.forEach((q, idx) => {
+        if (!q.id) q.id = uid();
+        if (q.orderTS == null) q.orderTS = Date.now() + idx;
+        if (q.note == null) q.note = "";
+      });
     });
 
     State.reviews.forEach(r => {
@@ -1208,7 +1523,7 @@ Zasady użycia określa plik LICENSE.
     renderView("hives", null, true);
   }
 
-  /* Add Hive */
+  /* ===== Add Hive ===== */
   async function addHive(){
     const label = prompt("Numer/Nazwa ula (np. 12, A1):");
     if (!label) return;
@@ -1218,19 +1533,26 @@ Zasady użycia określa plik LICENSE.
     const year = Number(prompt("Rok (np. 2025):", String(thisYear))) || thisYear;
 
     const id = label.trim();
-    if (State.hives.some(h => h.id === id)){ alert("Taki ul już istnieje."); return; }
+    if (State.hives.some(h => h.id === id)){
+      alert("Taki ul już istnieje.");
+      return;
+    }
 
     State.hives.push({
-      id, label:id, place:place.trim(),
-      kind:String(kindRaw||"R").toUpperCase().startsWith("O") ? "odklad" : "rodzina",
-      year, nextVisitDate:"",
-      queenName:"", queenYear:"", queenMonth:""
+      id,
+      label: id,
+      place: place.trim(),
+      kind: String(kindRaw||"R").toUpperCase().startsWith("O") ? "odklad" : "rodzina",
+      year,
+      nextVisitDate: "",
+      queenHistory: []
     });
 
     await save("hives");
     renderHives();
   }
 
+  /* ===== Delete dispatcher ===== */
   async function handleDelete(type, id){
     if (!confirm("Usunąć?")) return;
 
@@ -1249,6 +1571,10 @@ Zasady użycia określa plik LICENSE.
       return;
     }
 
+    if (type === "queen"){
+      return deleteQueenById(id);
+    }
+
     if (type === "invmove"){
       State.invMoves = State.invMoves.filter(x => x.id !== id);
       await save("invMoves");
@@ -1260,9 +1586,12 @@ Zasady użycia określa plik LICENSE.
       const it = State.invItems.find(x => x.id === id);
       if (!it) return;
       if (!confirm(`Usunąć produkt "${it.name}" oraz całą historię ruchów?`)) return;
+
       State.invItems = State.invItems.filter(x => x.id !== id);
       State.invMoves = State.invMoves.filter(x => x.itemId !== id);
-      await save("invItems"); await save("invMoves");
+
+      await save("invItems");
+      await save("invMoves");
       renderInventory();
       return;
     }
@@ -1275,7 +1604,7 @@ Zasady użycia określa plik LICENSE.
     }
   }
 
-  /* START */
+  /* ===== START ===== */
   document.addEventListener("DOMContentLoaded", async () => {
     try {
       await openDB();
@@ -1295,6 +1624,8 @@ Zasady użycia określa plik LICENSE.
       $("fltClearBtn").addEventListener("click", ()=>{ Filters.review=false; Filters.queen=false; renderHives(); });
 
       $("saveHiveMetaBtn").addEventListener("click", saveHiveMeta);
+
+      $("addQueenBtn").addEventListener("click", addQueenToHistory);
 
       $("addReviewBtn").addEventListener("click", addReview);
       $("revDate").value = todayISO();
@@ -1318,13 +1649,23 @@ Zasady użycia określa plik LICENSE.
         await importBackup(f);
       });
 
+      // Delegation
       document.body.addEventListener("click", async (e)=>{
         const d = e.target.closest("[data-del]");
         if (d) return handleDelete(d.getAttribute("data-del"), d.getAttribute("data-id"));
 
         const ed = e.target.closest("[data-edit]");
-        if (ed && ed.getAttribute("data-edit") === "review"){
-          return editReviewById(ed.getAttribute("data-id"));
+        if (ed){
+          const kind = ed.getAttribute("data-edit");
+          const id = ed.getAttribute("data-id");
+          if (kind === "review") return editReviewById(id);
+          if (kind === "queen") return editQueenById(id);
+        }
+
+        const qa = e.target.closest("[data-queenactive]");
+        if (qa){
+          const id = qa.getAttribute("data-id");
+          return setQueenAsActive(id);
         }
 
         const iq = e.target.closest("[data-invquick]");
@@ -1335,6 +1676,7 @@ Zasady użycia określa plik LICENSE.
         }
       });
 
+      // Router start
       const p = new URLSearchParams(location.search);
       const v = p.get("v") || "hives";
       const id = p.get("id");
