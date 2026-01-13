@@ -35,30 +35,3 @@ self.addEventListener("fetch", (event) => {
   if (url.origin !== self.location.origin) return;
 
   // NAWIGACJA / index.html: zawsze network-first (żeby aktualizacje dochodziły)
-  if (req.mode === "navigate" || url.pathname.endsWith("/index.html")) {
-    event.respondWith((async () => {
-      try {
-        return await fetch(req, { cache: "no-store" });
-      } catch {
-        const cached = await caches.match("./");
-        return cached || Response.error();
-      }
-    })());
-    return;
-  }
-
-  // Reszta: stale-while-revalidate
-  event.respondWith((async () => {
-    const cached = await caches.match(req);
-    const fetchPromise = fetch(req).then((res) => {
-      const copy = res.clone();
-      caches.open(CACHE).then((c) => c.put(req, copy)).catch(() => {});
-      return res;
-    }).catch(() => cached);
-
-    return cached || fetchPromise;
-  })());
-});
-
-
-
