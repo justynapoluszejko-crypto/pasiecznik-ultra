@@ -77,7 +77,7 @@ Zasady użycia określa plik LICENSE.
     .kpi{font-weight:1000;font-size:18px}
     .hr{height:1px;background:var(--border);margin:10px 0}
 
-    /* Modal */
+    /* Modal (zostaje, ale nieużywany w tej wersji) */
     .modal-overlay{position:fixed;inset:0;background:rgba(15,23,42,.55);display:none;align-items:flex-end;justify-content:center;padding:16px;z-index:9999}
     .modal-overlay.show{display:flex}
     .modal{width:min(720px,100%);background:#fff;border-radius:18px;border:1px solid var(--border);box-shadow:0 12px 40px rgba(0,0,0,.25);overflow:hidden;animation:slideUp .18s ease-out}
@@ -159,8 +159,7 @@ Zasady użycia określa plik LICENSE.
       </div>
 
       <div class="small mt-2">
-        Uprościłam ekran „Szczegóły” w tej wersji, żeby usunąć wszystkie błędy parsowania.
-        Jeśli chcesz – dołożę z powrotem Twoje moduły (przeglądy, matki, karmienie) już na czystej bazie.
+        Ekran „Szczegóły” jest uproszczony w tej bazie stabilnej.
       </div>
     </div>
   </section>
@@ -206,7 +205,7 @@ Zasady użycia określa plik LICENSE.
     <div id="finList" class="grid" style="gap:10px"></div>
   </section>
 
-  <!-- MAGAZYN -->
+  <!-- MAGAZYN (bez -1/+1) -->
   <section id="viewInventory" class="hidden">
     <div class="card mb-2" style="border-top:5px solid var(--slate)">
       <h3 style="margin:0 0 10px 0;font-weight:1000">Magazyn (historia stanów)</h3>
@@ -266,7 +265,7 @@ Zasady użycia określa plik LICENSE.
   </section>
 </main>
 
-<!-- MODAL (zostawiam, ale w tej wersji nie jest używany do wszystkiego) -->
+<!-- MODAL (nieużywany w tej wersji) -->
 <div id="modalOverlay" class="modal-overlay" aria-hidden="true">
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
     <div class="modal-header">
@@ -285,7 +284,7 @@ Zasady użycia określa plik LICENSE.
 /* =========================
    Pasiecznik ULTRA – CLEAN JS
    Naprawia: routing/nav, Finanse, Magazyn, brak parsowania
-   ZMIANA: usunięto szybkie przyciski +1/-1 w magazynie (UI + obsługa)
+   WERSJA: bez przycisków -1/+1 w magazynie
 ========================= */
 
 (() => {
@@ -319,12 +318,6 @@ Zasady użycia określa plik LICENSE.
     const [y,m,d] = String(iso).split("-").map(Number);
     if (!y || !m || !d) return null;
     return new Date(y, m-1, d, 12, 0, 0, 0);
-  };
-
-  const addDaysISO = (iso, days) => {
-    const dt = parseISODate(iso) || parseISODate(todayISO());
-    dt.setDate(dt.getDate() + days);
-    return dt.toISOString().slice(0,10);
   };
 
   const thisYear = new Date().getFullYear();
@@ -370,15 +363,14 @@ Zasady użycia określa plik LICENSE.
     view: "hives",
     currentHive: null,
 
-    hives: [],
-    reviews: [],
-
+    hives: [],      // {id,label,place,kind,year,nextVisitDate}
+    reviews: [],    // (zostaje na przyszłość)
     calendar: {},
 
     finance: [],
 
-    invItems: [],
-    invMoves: [],
+    invItems: [],   // {id,name}
+    invMoves: [],   // {id,itemId,date,delta,note,ts}
 
     topics: [],
     knowledge: []
@@ -606,6 +598,7 @@ Zasady użycia określa plik LICENSE.
     if (newId !== oldId){
       hive.id = newId;
       hive.label = newLabel;
+
       State.reviews.forEach(r => { if (r.hiveId === oldId) r.hiveId = newId; });
       await save("reviews");
 
@@ -795,8 +788,6 @@ Zasady użycia określa plik LICENSE.
             <div style="font-weight:1000">${esc(it.name)}</div>
             <div class="small">Aktualnie: <b>${qty.toFixed(2)}</b></div>
           </div>
-
-          <!-- ZMIANA: usunięto przyciski -1 / +1 -->
           <div class="flex gap-2 items-center" style="flex-wrap:wrap;justify-content:flex-end">
             <button class="btn btn-slate" style="padding:6px 10px" data-del="invitem" data-id="${esc(it.id)}">USUŃ</button>
           </div>
@@ -1123,7 +1114,6 @@ Zasady użycia określa plik LICENSE.
       await openDB();
       await loadAll();
 
-      // NAV
       $("topNav").addEventListener("click",(e)=>{
         const btn = e.target.closest("button[data-view]");
         if (!btn) return;
@@ -1133,29 +1123,23 @@ Zasady użycia określa plik LICENSE.
       $("addHiveBtn").addEventListener("click", addHive);
       $("backBtn").addEventListener("click", ()=>renderView("hives", null, true));
 
-      // Filters
       $("fltReviewBtn").addEventListener("click", ()=>{ Filters.review=!Filters.review; renderHives(); });
       $("fltQueenBtn").addEventListener("click", ()=>{ Filters.queen=!Filters.queen; renderHives(); });
       $("fltClearBtn").addEventListener("click", ()=>{ Filters.review=false; Filters.queen=false; renderHives(); });
 
-      // Details save
       $("saveHiveMetaBtn").addEventListener("click", saveHiveMeta);
 
-      // Finance
       $("addFinBtn").addEventListener("click", addFinance);
       $("finDate").value = todayISO();
 
-      // Inventory
       $("invAddMoveBtn").addEventListener("click", invAddMove);
       $("invQueryBtn").addEventListener("click", invQuery);
       $("invMoveDate").value = todayISO();
       $("invQueryDate").value = todayISO();
 
-      // Knowledge
       $("addTopicBtn").addEventListener("click", addTopic);
       $("addKnowBtn").addEventListener("click", addKnowledge);
 
-      // Export / Import
       $("exportBtn").addEventListener("click", exportBackup);
       $("importFile").addEventListener("change", async (e)=>{
         const f = e.target.files?.[0];
@@ -1164,13 +1148,11 @@ Zasady użycia określa plik LICENSE.
         await importBackup(f);
       });
 
-      // Delegation (ZMIANA: nie ma już obsługi data-invquick)
       document.body.addEventListener("click", async (e)=>{
         const d = e.target.closest("[data-del]");
         if (d) return handleDelete(d.getAttribute("data-del"), d.getAttribute("data-id"));
       });
 
-      // Router start
       const p = new URLSearchParams(location.search);
       const v = p.get("v") || "hives";
       const id = p.get("id");
