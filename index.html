@@ -429,6 +429,7 @@
     reviews: [],
     queens: [],
     feedings: [],
+    treatments: [],
     harvests: [],
 
     calendar: {},
@@ -445,6 +446,7 @@
     State.reviews   = (await dbGet("reviews"))   || [];
     State.queens    = (await dbGet("queens"))    || [];
     State.feedings  = (await dbGet("feedings"))  || [];
+    State.treatments = (await dbGet("treatments")) || [];
     State.harvests  = (await dbGet("harvests"))  || [];
     State.calendar  = (await dbGet("calendar"))  || {};
     State.finance   = (await dbGet("finance"))   || [];
@@ -734,6 +736,15 @@
       State.reviews.forEach(r => { if (r.hiveId === oldId) r.hiveId = newId; });
       State.queens.forEach(q => { if (q.hiveId === oldId) q.hiveId = newId; });
       State.feedings.forEach(f => { if (f.hiveId === oldId) f.hiveId = newId; });
+      State.treatments.forEach(tr => { if (tr.hiveId === oldId) tr.hiveId = newId; });
+
+
+    State.treatments.forEach(tr => {
+      if (!tr.id) tr.id = uid();
+      if (!tr.ts) tr.ts = Date.now();
+      if (tr.type == null) tr.type = "";
+      if (tr.qty == null) tr.qty = "";
+    });
       State.harvests.forEach(x => { if (x.hiveId === oldId) x.hiveId = newId; });
 
       await save("reviews"); await save("queens"); await save("feedings"); await save("harvests");
@@ -1637,6 +1648,7 @@
         reviews: State.reviews,
         queens: State.queens,
         feedings: State.feedings,
+        treatments: State.treatments,
         harvests: State.harvests,
         calendar: State.calendar,
         finance: State.finance,
@@ -1667,6 +1679,7 @@
     State.reviews   = data.reviews   || [];
     State.queens    = data.queens    || [];
     State.feedings  = data.feedings  || [];
+    State.treatments = data.treatments || [];
     State.harvests  = data.harvests  || [];
     State.calendar  = data.calendar  || {};
     State.finance   = data.finance   || [];
@@ -1687,6 +1700,7 @@
     await dbSet("reviews", State.reviews);
     await dbSet("queens", State.queens);
     await dbSet("feedings", State.feedings);
+    await dbSet("treatments", State.treatments);
     await dbSet("harvests", State.harvests);
     await dbSet("calendar", State.calendar);
     await dbSet("finance", State.finance);
@@ -1780,6 +1794,10 @@
 
       $("feedSaveBtn").addEventListener("click", saveFeeding);
       $("feedClearBtn").addEventListener("click", ()=>{ clearFeedingEdit(); });
+
+      // Leczenie
+      $("treatSaveBtn").addEventListener("click", addTreatment);
+      $("treatClearBtn").addEventListener("click", ()=>{ $("treatType").value=""; $("treatQty").value=""; });
 
       $("queenSaveBtn").addEventListener("click", saveQueen);
       $("queenClearBtn").addEventListener("click", ()=>{ clearQueenEdit(); });
