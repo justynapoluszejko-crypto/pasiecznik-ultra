@@ -160,8 +160,12 @@
       <div class="details-content">
         <div class="row cols3">
           <input id="feedDate" type="date" class="input">
-          <input id="feedType" type="text" class="input" placeholder="Rodzaj leku / środka (np. Apiwarol, KW szczawiowy)">
-          <input id="feedQty" type="number" step="0.01" class="input" placeholder="Ilość">
+          <select id="feedType" class="input">
+            <option value="syrop">Syrop</option>
+            <option value="ciasto">Ciasto</option>
+            <option value="inny">Inny</option>
+          </select>
+          <input id="feedQty" type="number" step="0.01" class="input" placeholder="Ilość (kg lub l)">
         </div>
         <input id="feedNote" type="text" class="input" placeholder="Notatka (opcjonalnie)">
         <div class="row cols2">
@@ -171,6 +175,24 @@
         <div id="feedList" class="grid" style="gap:10px"></div>
       </div>
     </details>
+
+
+    <details>
+      <summary>💊 Leczenie <span class="small" id="treatCount">0</span></summary>
+      <div class="details-content">
+        <div class="row cols3">
+          <input id="treatDate" type="date" class="input">
+          <input id="treatType" type="text" class="input" placeholder="Lek / środek">
+          <input id="treatQty" type="text" class="input" placeholder="Ilość (np. ml, g, paski)">
+        </div>
+        <div class="row cols2">
+          <button id="treatSaveBtn" class="btn btn-red">ZAPISZ LECZENIE</button>
+          <button id="treatClearBtn" class="btn btn-ghost">WYCZYŚĆ</button>
+        </div>
+        <div id="treatList" class="grid" style="gap:10px"></div>
+      </div>
+    </details>
+
 
     <details>
       <summary>👑 Matki (historia) <span class="small" id="queenCount">0</span></summary>
@@ -651,7 +673,7 @@
 
     if (!editFeedId){
       $("feedDate").value = todayISO();
-      $("feedType").value = "";
+      $("feedType").value = "syrop";
       $("feedQty").value = "";
       $("feedNote").value = "";
     } else {
@@ -832,7 +854,7 @@
         <div class="flex justify-between items-center" style="gap:10px">
           <div style="flex:1">
             <div style="font-weight:1000">${isoToPL(f.date)} • ${esc(f.type||"")}</div>
-            <div class="small">Ilość: <b>${Number(f.qty||0).toFixed(2)}</b></div>
+            <div class="small">Ilość: <b>${Number(f.qty||0).toFixed(2)}</b> (kg/l)</div>
             ${f.note ? `<div style="white-space:pre-wrap;margin-top:6px">${esc(f.note)}</div>` : ``}
           </div>
           <div class="flex gap-2" style="flex-wrap:wrap;justify-content:flex-end">
@@ -848,11 +870,10 @@
   async function saveFeeding(){
     const hiveId = State.currentHive;
     const date = $("feedDate").value || todayISO();
-    const type = ($("feedType").value || "").trim();
+    const type = $("feedType").value || "syrop";
     const qty = Number($("feedQty").value);
     const note = ($("feedNote").value || "").trim();
 
-    if (!type) return alert("Podaj rodzaj leku / środka.");
     if (!Number.isFinite(qty) || qty === 0) return alert("Podaj ilość (różną od 0).");
 
     if (editFeedId){
@@ -874,14 +895,14 @@
     if (!f) return;
     editFeedId = id;
     $("feedDate").value = f.date || todayISO();
-    $("feedType").value = f.type || "";
+    $("feedType").value = f.type || "syrop";
     $("feedQty").value = f.qty ?? "";
     $("feedNote").value = f.note || "";
   }
 
   function clearFeedingEdit(){
     editFeedId = null;
-    $("feedType").value = "";
+    $("feedType").value = "syrop";
     $("feedQty").value = "";
     $("feedNote").value = "";
   }
