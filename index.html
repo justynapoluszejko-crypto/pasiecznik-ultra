@@ -69,6 +69,11 @@
     .row{display:grid;grid-template-columns:1fr;gap:10px}
     @media(min-width:700px){.row.cols2{grid-template-columns:1fr 1fr}}
     @media(min-width:900px){.row.cols3{grid-template-columns:1fr 1fr 1fr}}
+  
+    @media(min-width:600px){.row.cols3{grid-template-columns:1fr 1fr 1fr}}
+    .micbtn{border:1px solid var(--border);background:#fff;border-radius:10px;padding:10px 12px;font-weight:1000;cursor:pointer}
+    .micbtn.on{border-color:#fecaca;background:#fff1f2;color:#991b1b}
+
   </style>
 </head>
 <body>
@@ -192,6 +197,27 @@
         <div id="treatList" class="grid" style="gap:10px"></div>
       </div>
     </details>
+    <details>
+      <summary>🎙️ Notatki głosowe <span class="small">dyktowanie do tekstu</span></summary>
+      <div class="details-content">
+        <div class="row cols2">
+          <input id="vnDate" type="date" class="input">
+          <button id="vnMicBtn" class="micbtn">🎙️ START</button>
+        </div>
+        <textarea id="vnText" class="input mt-2" style="height:110px" placeholder="Powiedz notatkę… (po dyktowaniu możesz poprawić ręcznie)"></textarea>
+        <div class="row cols2 mt-2">
+          <button id="addVnBtn" class="btn btn-blue">ZAPISZ NOTATKĘ</button>
+          <button id="vnClearBtn" class="btn btn-ghost" style="padding:10px 14px">WYCZYŚĆ</button>
+        </div>
+        <div class="hr"></div>
+        <div id="vnList" class="grid" style="gap:10px"></div>
+        <div class="help mt-2">
+          Dyktowanie działa w Chrome/Edge. Jeśli system zapyta o mikrofon – zezwól.
+        </div>
+      </div>
+    </details>
+
+
 
 
     <details>
@@ -387,7 +413,7 @@
 
   /* ===== IndexedDB ===== */
   const DB_NAME = "pasiecznik_ultra_db";
-  const DB_VER  = 7;
+  const DB_VER  = 10; // bump: voice notes + avoid downgrade errors
   let db = null;
 
   function openDB(){
@@ -430,6 +456,8 @@
     queens: [],
     feedings: [],
     treatments: [],
+
+    voiceNotes: [], // {id,hiveId,date,text,ts}
     harvests: [],
 
     calendar: {},
@@ -737,6 +765,13 @@
       State.queens.forEach(q => { if (q.hiveId === oldId) q.hiveId = newId; });
       State.feedings.forEach(f => { if (f.hiveId === oldId) f.hiveId = newId; });
       State.treatments.forEach(tr => { if (tr.hiveId === oldId) tr.hiveId = newId; });
+
+    State.voiceNotes.forEach(v => {
+      if (!v.id) v.id = uid();
+      if (!v.ts) v.ts = Date.now();
+      if (v.text == null) v.text = "";
+      if (v.date == null) v.date = "";
+    });
 
 
     State.treatments.forEach(tr => {
@@ -1649,6 +1684,7 @@
         queens: State.queens,
         feedings: State.feedings,
         treatments: State.treatments,
+        voiceNotes: State.voiceNotes,
         harvests: State.harvests,
         calendar: State.calendar,
         finance: State.finance,
@@ -1680,6 +1716,7 @@
     State.queens    = data.queens    || [];
     State.feedings  = data.feedings  || [];
     State.treatments = data.treatments || [];
+    State.voiceNotes = data.voiceNotes || [];
     State.harvests  = data.harvests  || [];
     State.calendar  = data.calendar  || {};
     State.finance   = data.finance   || [];
@@ -1701,6 +1738,7 @@
     await dbSet("queens", State.queens);
     await dbSet("feedings", State.feedings);
     await dbSet("treatments", State.treatments);
+    await dbSet("voiceNotes", State.voiceNotes);
     await dbSet("harvests", State.harvests);
     await dbSet("calendar", State.calendar);
     await dbSet("finance", State.finance);
@@ -1767,6 +1805,175 @@
     if (act === "invDelItem") return invDeleteItem(id);
 
     if (act === "knowDel") return deleteKnowledge(id);
+  }
+
+
+  /* ===== Voice Notes (Dictation) ===== */
+  let _rec = null;
+  let _recTarget = null;
+  let _recBtn = null;
+
+  function speechSupported(){
+    return !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+  }
+
+  function startDictation(targetEl, btnEl){
+    if (!speechSupported()){
+      alert("Dyktowanie nie jest wspierane w tej przeglądarce. Użyj Chrome/Edge na Androidzie.");
+      return;
+    }
+
+    // stop if already running
+    if (_rec){
+      try { _rec.stop(); } catch {}
+      return;
+    }
+
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const rec = new SR();
+    rec.lang = "pl-PL";
+    rec.continuous = true;
+    rec.interimResults = true;
+
+    _rec = rec;
+    _recTarget = targetEl;
+    _recBtn = btnEl;
+
+    if (_recBtn){
+      _recBtn.classList.add("on");
+      _recBtn.textContent = "⏹ STOP";
+    }
+
+    let finalText = "";
+
+    rec.onresult = (e) => {
+      let interim = "";
+      for (let i = e.resultIndex; i < e.results.length; i++){
+        const txt = e.results[i][0].transcript;
+        if (e.results[i].isFinal) finalText += txt;
+        else interim += txt;
+      }
+      const base = (_recTarget.value || "");
+      const prefix = base && !base.endsWith(" ") ? base + " " : base;
+      _recTarget.value = prefix + finalText + interim;
+    };
+
+    rec.onerror = () => {
+      alert("Nie udało się uruchomić dyktowania. Sprawdź uprawnienia mikrofonu dla tej strony.");
+    };
+
+    rec.onend = () => {
+      _rec = null;
+      _recTarget = null;
+      if (_recBtn){
+        _recBtn.classList.remove("on");
+        _recBtn.textContent = "🎙️ START";
+      }
+      _recBtn = null;
+    };
+
+    try { rec.start(); } catch {
+      rec.onend();
+    }
+  }
+
+  function stopDictation(){
+    if (_rec){
+      try { _rec.stop(); } catch {}
+    }
+  }
+
+  function renderVoiceNotes(){
+    const hiveId = State.currentHive;
+    const list = $("vnList");
+    if (!list) return;
+    list.innerHTML = "";
+
+    const items = State.voiceNotes
+      .filter(v => v.hiveId === hiveId)
+      .sort((a,b) => (b.date||"").localeCompare(a.date||"") || (b.ts||0)-(a.ts||0));
+
+    if (!items.length){
+      list.innerHTML = `<div class="card text-center"><div style="font-weight:1000">Brak notatek głosowych.</div><div class="small mt-2">Nagraj (dyktuj) i zapisz pierwszą notatkę.</div></div>`;
+      return;
+    }
+
+    items.forEach(v => {
+      const el = document.createElement("div");
+      el.className = "card";
+      el.innerHTML = `
+        <div class="kv">
+          <div>
+            <div style="font-weight:1000">🎙️ ${isoToPL(v.date)} </div>
+            <div style="white-space:pre-wrap;margin-top:6px">${esc(v.text||"")}</div>
+          </div>
+          <div class="flex gap-1" style="justify-content:flex-end;flex-wrap:wrap">
+            <button class="btn btn-blue tinybtn" data-act="editVn" data-id="${esc(v.id)}">EDYTUJ</button>
+            <button class="btn btn-slate tinybtn" data-act="delVn" data-id="${esc(v.id)}">USUŃ</button>
+          </div>
+        </div>
+      `;
+      list.appendChild(el);
+    });
+  }
+
+  async function addVoiceNote(){
+    const hiveId = State.currentHive;
+    const date = ($("vnDate").value || "").trim();
+    const text = ($("vnText").value || "").trim();
+
+    if (!date) return alert("Podaj datę notatki.");
+    if (!text) return alert("Wpisz treść (lub użyj dyktowania).");
+
+    State.voiceNotes.push({ id: uid(), hiveId, date, text, ts: Date.now() });
+    await save("voiceNotes");
+
+    $("vnText").value = "";
+    renderVoiceNotes();
+  }
+
+  function editVoiceNoteModal(id){
+    const v = State.voiceNotes.find(x => x.id === id);
+    if (!v) return;
+
+    modalOpen("Edycja notatki głosowej", `
+      <div class="row cols2">
+        <label class="help">Data
+          <input id="mVnDate" type="date" class="input" value="${esc(v.date||"")}">
+        </label>
+        <button id="mVnMic" class="micbtn">🎙️ START</button>
+      </div>
+      <label class="help">Treść
+        <textarea id="mVnText" class="input" style="height:140px">${esc(v.text||"")}</textarea>
+      </label>
+    `, async ()=>{
+      const d = ($("mVnDate").value || "").trim();
+      const t = ($("mVnText").value || "").trim();
+      if (!d) return alert("Data jest wymagana.");
+      if (!t) return alert("Treść jest wymagana.");
+
+      v.date = d;
+      v.text = t;
+      v.ts = Date.now();
+      await save("voiceNotes");
+      modalClose();
+      renderVoiceNotes();
+    });
+
+    setTimeout(()=>{
+      const btn = $("mVnMic");
+      const ta  = $("mVnText");
+      if (btn && ta){
+        btn.addEventListener("click", ()=> startDictation(ta, btn));
+      }
+    }, 0);
+  }
+
+  async function deleteVoiceNote(id){
+    if (!confirm("Usunąć notatkę głosową?")) return;
+    State.voiceNotes = State.voiceNotes.filter(x => x.id !== id);
+    await save("voiceNotes");
+    renderVoiceNotes();
   }
 
   /* ===== START ===== */
