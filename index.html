@@ -271,6 +271,22 @@ Zasady użycia określa plik LICENSE.
           <div id="queenList" class="grid" style="gap:10px;margin-top:10px"></div>
         </div>
       </details>
+
+    <details open>
+      <summary>🍯 MIODOBRANIE (historia)</summary>
+      <div class="details-content">
+        <div class="row cols2">
+          <input id="harvDate" class="input" type="date">
+          <input id="harvType" class="input" type="text" placeholder="Rodzaj miodu (np. lipowy)">
+        </div>
+        <div class="row cols2 mt-2">
+          <input id="harvQty" class="input" type="number" step="0.01" placeholder="Ilość (kg)">
+          <button id="addHarvBtn" class="btn btn-orange">DODAJ MIODOBRANIE</button>
+        </div>
+        <div class="small mt-2">Wpisy możesz edytować i usuwać.</div>
+        <div id="harvList" class="grid" style="gap:10px;margin-top:10px"></div>
+      </div>
+    </details>
     </div>
   </section>
 
@@ -492,6 +508,8 @@ Zasady użycia określa plik LICENSE.
 
     queens: [], // {id,hiveId,year,month,name,insemination,breederLine,opalite,gentleness,note,isCurrent,ts}
 
+    harvests: [], // {id,hiveId,date,type,qty,ts}
+
     calendar: {}, // { [year]: {0:'',...} }
     finance: [], // {id,type,date,amount,desc}
     invItems: [], // {id,name}
@@ -505,6 +523,7 @@ Zasady użycia określa plik LICENSE.
     State.reviews   = (await dbGet("reviews"))   || [];
     State.feedings  = (await dbGet("feedings"))  || [];
     State.queens    = (await dbGet("queens"))    || [];
+    State.harvests  = (await dbGet("harvests"))  || [];
     State.calendar  = (await dbGet("calendar"))  || {};
     State.finance   = (await dbGet("finance"))   || [];
     State.invItems  = (await dbGet("invItems"))  || [];
@@ -829,12 +848,14 @@ Zasady użycia określa plik LICENSE.
     $("revDate").value = $("revDate").value || todayISO();
     $("revNext").value = $("revNext").value || hive.nextVisitDate || "";
     $("feedDate").value = $("feedDate").value || todayISO();
+    $("harvDate").value = $("harvDate").value || todayISO();
 
     fillQueenYearMonthSelects();
 
     renderReviews();
     renderFeedings();
     renderQueens();
+    renderHarvests();
   }
 
   async function saveHiveMeta(){
@@ -866,10 +887,12 @@ Zasady użycia określa plik LICENSE.
       State.reviews.forEach(r => { if (r.hiveId === oldId) r.hiveId = newId; });
       State.feedings.forEach(f => { if (f.hiveId === oldId) f.hiveId = newId; });
       State.queens.forEach(q => { if (q.hiveId === oldId) q.hiveId = newId; });
+      State.harvests.forEach(hh => { if (hh.hiveId === oldId) hh.hiveId = newId; });
 
       await save("reviews");
       await save("feedings");
       await save("queens");
+      await save("harvests");
 
       State.currentHive = newId;
       const p = new URLSearchParams(location.search);
@@ -1359,7 +1382,113 @@ Zasady użycia określa plik LICENSE.
 
   async function deleteQueen(id){
     if (!confirm("Usunąć wpis matki?")) return;
-    State.queens = State.queens.filter(x => x.id !== id);
+    State.queens = State.queens.filter(x => x.i
+  /* ===== Honey Harvests (Miodobranie) ===== */
+  function renderHarvests(){
+    const hiveId = State.currentHive;
+    const wrap = $("harvList");
+    if (!wrap) return;
+    wrap.innerHTML = "";
+
+    const items = State.harvests
+      .filter(x => x.hiveId === hiveId)
+      .sort((a,b) => (b.date||"").localeCompare(a.date||"") || (b.ts||0)-(a.ts||0));
+
+    if (!items.length){
+      wrap.innerHTML = `
+        <div class="card text-center">
+          <div style="font-weight:1000">Brak wpisów miodobrania.</div>
+          <div class="small mt-2">Dodaj pierwszy wpis poniżej.</div>
+        </div>
+      `;
+      return;
+    }
+
+    items.forEach(hh => {
+      const el = document.createElement("div");
+      el.className = "card";
+      el.style.borderLeft = "4px solid var(--orange)";
+      el.innerHTML = `
+        <div class="flex justify-between items-center" style="gap:10px">
+          <div style="flex:1">
+            <div style="font-weight:1000">${esc(hh.type || "Miód")}</div>
+            <div class="small">${isoToPL(hh.date)} • ${Number(hh.qty||0).toFixed(2)} kg</div>
+          </div>
+          <div class="flex gap-2" style="justify-content:flex-end;flex-wrap:wrap">
+            <button class="btn btn-slate" style="padding:6px 10px" data-act="editHarvest" data-id="${esc(hh.id)}">EDYTUJ</button>
+            <button class="btn btn-slate" style="padding:6px 10px" data-del="harv" data-id="${esc(hh.id)}">USUŃ</button>
+          </div>
+        </div>
+      `;
+      wrap.appendChild(el);
+    });
+  }
+
+  async function addHarvest(){
+    const hiveId = State.currentHive;
+    const date = ($("harvDate").value || "").trim() || todayISO();
+    const type = ($("harvType").value || "").trim();
+    const qty  = Number($("harvQty").value);
+
+    if (!date) return alert("Podaj datę.");
+    if (!type) return alert("Podaj rodzaj miodu.");
+    if (!Number.isFinite(qty) || qty <= 0) return alert("Podaj ilość (kg) > 0.");
+
+    State.harvests.push({ id:uid(), hiveId, date, type, qty, ts:Date.now() });
+    await save("harvests");
+
+    $("harvType").value = "";
+    $("harvQty").value = "";
+    $("harvDate").value = date;
+
+    renderHarvests();
+  }
+
+  function editHarvest(id){
+    const hh = State.harvests.find(x => x.id === id);
+    if (!hh) return;
+
+    modalOpen({
+      title: "Edycja miodobrania",
+      body: `
+        <div class="row cols2">
+          <div>
+            <div class="muted mb-2">Data</div>
+            <input id="mHarvDate" class="input" type="date" value="${esc(hh.date||todayISO())}">
+          </div>
+          <div>
+            <div class="muted mb-2">Ilość (kg)</div>
+            <input id="mHarvQty" class="input" type="number" step="0.01" value="${Number(hh.qty||0)}">
+          </div>
+        </div>
+        <div>
+          <div class="muted mb-2">Rodzaj miodu</div>
+          <input id="mHarvType" class="input" type="text" value="${esc(hh.type||"")}">
+        </div>
+      `,
+      onSave: async () => {
+        const date = ($("mHarvDate").value || "").trim() || todayISO();
+        const type = ($("mHarvType").value || "").trim();
+        const qty  = Number($("mHarvQty").value);
+
+        if (!date) return alert("Podaj datę.");
+        if (!type) return alert("Podaj rodzaj miodu.");
+        if (!Number.isFinite(qty) || qty <= 0) return alert("Podaj ilość (kg) > 0.");
+
+        hh.date = date;
+        hh.type = type;
+        hh.qty  = qty;
+        hh.ts   = Date.now();
+
+        await save("harvests");
+        renderHarvests();
+        modalClose();
+      }
+    });
+  }
+
+
+d !== id);
     await save("queens");
     renderQueens();
     renderHives();
@@ -1373,17 +1502,21 @@ Zasady użycia określa plik LICENSE.
   function renderCalendar(){
     const months = ["Styczeń","Luty","Marzec","Kwiecień","Maj","Czerwiec","Lipiec","Sierpień","Wrzesień","Październik","Listopad","Grudzień"];
     const yearSel = $("calYear");
+    if (!yearSel) return;
 
-    if (!yearSel.options.length){
-      for (let y=2022;y<=2027;y++){
-        const o=document.createElement("option");
-        o.value=String(y); o.textContent=String(y);
-        yearSel.appendChild(o);
-      }
+    // --- LATA: zawsze buduj listę lat (żeby nigdy nie zniknęła po aktualizacjach) ---
+    const cur = Number(yearSel.value) || thisYear;
+    const startY = thisYear - 5;
+    const endY   = thisYear + 5;
+
+    yearSel.innerHTML = "";
+    for (let y = startY; y <= endY; y++){
+      const o = document.createElement("option");
+      o.value = String(y);
+      o.textContent = String(y);
+      yearSel.appendChild(o);
     }
-
-    const current = yearSel.value || String(thisYear);
-    yearSel.value = (Number(current)>=2022 && Number(current)<=2027) ? current : String(thisYear);
+    yearSel.value = String((cur>=startY && cur<=endY) ? cur : thisYear);
 
     ensureCalendarYear(yearSel.value);
 
@@ -1408,7 +1541,7 @@ Zasady użycia określa plik LICENSE.
     });
 
     yearSel.onchange = () => renderCalendar();
-  }
+  }    
 
   /* ===== Finance ===== */
   function renderFinance(){
@@ -1737,6 +1870,7 @@ Zasady użycia określa plik LICENSE.
         reviews: State.reviews,
         feedings: State.feedings,
         queens: State.queens,
+        harvests: State.harvests,
         calendar: State.calendar,
         finance: State.finance,
         invItems: State.invItems,
@@ -1766,6 +1900,7 @@ Zasady użycia określa plik LICENSE.
     State.reviews   = data.reviews   || [];
     State.feedings  = data.feedings  || [];
     State.queens    = data.queens    || [];
+    State.harvests  = data.harvests  || [];
     State.calendar  = data.calendar  || {};
     State.finance   = data.finance   || [];
     State.invItems  = data.invItems  || [];
@@ -1786,6 +1921,7 @@ Zasady użycia określa plik LICENSE.
     await dbSet("reviews", State.reviews);
     await dbSet("feedings", State.feedings);
     await dbSet("queens", State.queens);
+    await dbSet("harvests", State.harvests);
     await dbSet("calendar", State.calendar);
     await dbSet("finance", State.finance);
     await dbSet("invItems", State.invItems);
@@ -1857,6 +1993,13 @@ Zasady użycia określa plik LICENSE.
       return;
     }
 
+    if (type === "harv"){
+      State.harvests = State.harvests.filter(x => x.id !== id);
+      await save("harvests");
+      renderHarvests();
+      return;
+    }
+
     if (type === "know"){
       State.knowledge = State.knowledge.filter(x => x.id !== id);
       await save("knowledge");
@@ -1907,6 +2050,10 @@ Zasady użycia określa plik LICENSE.
         $("qIsCurrent").checked=false;
       });
 
+      // Honey harvest
+      $("addHarvBtn").addEventListener("click", addHarvest);
+      $("harvDate").value = todayISO();
+
       // Finance
       $("addFinBtn").addEventListener("click", addFinance);
       $("finDate").value = todayISO();
@@ -1951,6 +2098,8 @@ Zasady użycia określa plik LICENSE.
         if (act === "setCurrentQueen") return setCurrentQueen(id);
         if (act === "editQueen") return editQueenModal(id);
         if (act === "delQueen")  return deleteQueen(id);
+
+        if (act === "editHarvest") return editHarvest(id);
       });
 
       // Router start
