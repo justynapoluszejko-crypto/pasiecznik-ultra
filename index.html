@@ -1,11 +1,3 @@
-<!--
-PASIECZNIK ULTRA
-© 2025 Justyna Poluszejko-Kłoda
-
-Kod źródłowy objęty prawami autorskimi.
-Repozytorium publiczne wyłącznie w celach demonstracyjnych.
-Zasady użycia określa plik LICENSE.
--->
 <!DOCTYPE html>
 <html lang="pl">
 <head>
@@ -53,7 +45,6 @@ Zasady użycia określa plik LICENSE.
     .input:focus{outline:2px solid var(--primary);border-color:transparent}
     .hidden{display:none!important}
     .flex{display:flex}
-    .gap-1{gap:6px}
     .gap-2{gap:8px}
     .gap-3{gap:12px}
     .justify-between{justify-content:space-between}
@@ -70,32 +61,14 @@ Zasady użycia określa plik LICENSE.
     details{border:1px solid var(--border);border-radius:12px;margin-bottom:10px;overflow:hidden;background:#fff}
     details>summary{background:#f8fafc;padding:12px;font-weight:1000;cursor:pointer;list-style:none;font-size:.8rem;text-transform:uppercase;color:#475569;display:flex;justify-content:space-between;align-items:center}
     details[open]>summary{background:#e2e8f0}
-    .details-content{padding:12px;border-top:1px solid var(--border)}
+    .details-content{padding:12px;border-top:1px solid var(--border);display:grid;gap:10px}
     .pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;font-weight:1000;font-size:11px;border:1px solid var(--border);background:#fff}
-    .pill.bad{border-color:#fecaca;background:#fff1f2;color:#991b1b}
     .muted{color:#64748b;font-weight:1000;font-size:11px;text-transform:uppercase;letter-spacing:1px}
     .small{font-size:12px;color:#64748b;font-weight:700}
     .hr{height:1px;background:var(--border);margin:10px 0}
     .row{display:grid;grid-template-columns:1fr;gap:10px}
-    @media(min-width:600px){.row.cols2{grid-template-columns:1fr 1fr}}
-    .tinybtn{padding:6px 10px;font-size:.7rem;border-radius:10px}
-    .kv{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center}
-    .badge{display:inline-flex;align-items:center;gap:6px;font-weight:1000;font-size:11px;padding:6px 10px;border-radius:999px;border:1px solid var(--border);background:#fff}
-    .badge.red{border-color:#fecaca;background:#fff1f2;color:#991b1b}
-    .badge.green{border-color:#bbf7d0;background:#f0fdf4;color:#166534}
-    .badge.blue{border-color:#bfdbfe;background:#eff6ff;color:#1d4ed8}
-
-    /* Modal */
-    .modal-overlay{position:fixed;inset:0;background:rgba(15,23,42,.55);display:none;align-items:flex-end;justify-content:center;padding:16px;z-index:9999}
-    .modal-overlay.show{display:flex}
-    .modal{width:min(820px,100%);background:#fff;border-radius:18px;border:1px solid var(--border);box-shadow:0 12px 40px rgba(0,0,0,.25);overflow:hidden;animation:slideUp .18s ease-out}
-    @keyframes slideUp{from{transform:translateY(18px);opacity:.5}to{transform:translateY(0);opacity:1}}
-    .modal-header{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:10px}
-    .modal-title{font-weight:1000;text-transform:uppercase;letter-spacing:1px;font-size:14px}
-    .modal-body{padding:16px;display:grid;gap:10px}
-    .modal-footer{padding:12px 16px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px}
-
-    .help{font-size:12px;color:#475569;font-weight:700}
+    @media(min-width:700px){.row.cols2{grid-template-columns:1fr 1fr}}
+    @media(min-width:900px){.row.cols3{grid-template-columns:1fr 1fr 1fr}}
   </style>
 </head>
 <body>
@@ -103,7 +76,7 @@ Zasady użycia określa plik LICENSE.
 <header class="header">
   <div class="header-top">
     <div class="flex items-center gap-2">
-      <button id="backBtn" class="btn btn-nav hidden">⬅</button>
+      <button id="backBtn" class="btn btn-nav hidden" aria-label="Wstecz">⬅</button>
       <div id="appTitle" class="header-title">PASIECZNIK ULTRA</div>
     </div>
     <div class="flex gap-2">
@@ -133,11 +106,12 @@ Zasady użycia określa plik LICENSE.
       <div class="flex gap-2" style="flex-wrap:wrap">
         <button id="fltReviewBtn" class="btn btn-chip">🔎 DO PRZEGLĄDU</button>
         <button id="fltQueenBtn" class="btn btn-chip">👑 MATKA DO WYMIANY</button>
+        |
         <button id="fltClearBtn" class="btn btn-ghost" style="padding:8px 10px">WYCZYŚĆ</button>
       </div>
       <div class="small mt-2">
-        „Do przeglądu” = ul z <b>terminem następnego przeglądu</b> na dziś / wstecz, albo (jeśli brak terminu) ostatni przegląd starszy niż <b>6 dni</b>.
-        „Matka do wymiany” = <b>aktualna matka</b> starsza niż <b>24 miesiące</b>.
+        „Do przeglądu” = ul z terminem następnego przeglądu na dziś / wstecz, albo (jeśli brak terminu) ostatni przegląd starszy niż 6 dni.<br/>
+        „Matka do wymiany” = aktualna matka ma wiek &gt;= 24 miesiące.
       </div>
     </div>
     <div id="hivesGrid" class="grid grid-hives"></div>
@@ -150,128 +124,107 @@ Zasady użycia określa plik LICENSE.
       <div id="detailsTitle" style="font-weight:1000;font-size:18px;margin-top:6px"></div>
       <div class="hr"></div>
 
-      <details open>
-        <summary>Metadane ula <span class="small">numer / typ / rok / termin</span></summary>
-        <div class="details-content">
-          <div class="row cols2">
-            <input id="hLabel" class="input" type="text" placeholder="Numer / nazwa ula (np. 12, A1)">
-            <input id="hPlace" class="input" type="text" placeholder="Położenie (np. Rząd 2 / 3 od lewej)">
-          </div>
-          <div class="row cols2 mt-2">
-            <select id="hType" class="input">
-              <option value="rodzina">Rodzina</option>
-              <option value="odklad">Odkład</option>
-            </select>
-            <input id="hYear" class="input" type="number" placeholder="Rok (np. 2025)">
-          </div>
-          <div class="row cols2 mt-2">
-            <input id="hNextVisit" class="input" type="date" title="Termin następnego przeglądu (ręcznie)">
-            <button id="saveHiveMetaBtn" class="btn btn-blue">ZAPISZ</button>
-          </div>
-          <div class="help mt-2">Termin następnego przeglądu wpisujesz <b>konkretną datą</b> (ręcznie).</div>
-        </div>
-      </details>
-
-      <details open>
-        <summary>Przeglądy <span class="small">dodaj • edytuj • usuń</span></summary>
-        <div class="details-content">
-          <div class="row cols2">
-            <input id="revDate" type="date" class="input">
-            <input id="revNext" type="date" class="input" placeholder="Termin następnego przeglądu">
-          </div>
-          <textarea id="revNote" class="input" style="height:90px" placeholder="Notatka z przeglądu..."></textarea>
-          <div class="row cols2">
-            <button id="addReviewBtn" class="btn btn-green">DODAJ PRZEGLĄD</button>
-            <button id="revClearBtn" class="btn btn-ghost" style="padding:10px 14px">WYCZYŚĆ POLA</button>
-          </div>
-          <div class="small mt-2">Po dodaniu przeglądu możesz edytować datę i treść.</div>
-          <div class="hr"></div>
-          <div id="revList" class="grid" style="gap:10px"></div>
-        </div>
-      </details>
-
-      <details open>
-        <summary>Karmienie <span class="small">historia karmień</span></summary>
-        <div class="details-content">
-          <div class="row cols2">
-            <input id="feedDate" type="date" class="input">
-            <input id="feedType" type="text" class="input" placeholder="Rodzaj pokarmu (np. syrop 3:2, ciasto)">
-          </div>
-          <div class="row cols2 mt-2">
-            <input id="feedQty" type="number" step="0.01" class="input" placeholder="Ilość">
-            <select id="feedUnit" class="input">
-              <option value="kg">kg</option>
-              <option value="l">l</option>
-            </select>
-          </div>
-          <input id="feedNote" type="text" class="input mt-2" placeholder="Wolna notatka (opcjonalnie)">
-          <div class="row cols2 mt-2">
-            <button id="addFeedBtn" class="btn btn-orange">DODAJ KARMienie</button>
-            <button id="feedClearBtn" class="btn btn-ghost" style="padding:10px 14px">WYCZYŚĆ POLA</button>
-          </div>
-          <div class="hr"></div>
-          <div id="feedList" class="grid" style="gap:10px"></div>
-        </div>
-      </details>
-
-      <details open>
-        <summary>Matki <span class="small">historia + aktualna</span></summary>
-        <div class="details-content">
-          <div class="row cols2">
-            <input id="qName" type="text" class="input" placeholder="Nazwa matki (np. AGA-12)">
-            <input id="qBreederLine" type="text" class="input" placeholder="Linia / hodowca (opcjonalnie)">
-          </div>
-
-          <div class="row cols2 mt-2">
-            <select id="qYear" class="input"></select>
-            <select id="qMonth" class="input"></select>
-          </div>
-
-          <div class="row cols2 mt-2">
-            <select id="qInsem" class="input">
-              <option value="">Typ unasienniania (opcjonalnie)</option>
-              <option value="naturalne">Naturalne</option>
-              <option value="sztuczne">Sztuczne (AI)</option>
-              <option value="nieznane">Nieznane</option>
-            </select>
-            <select id="qOpalit" class="input">
-              <option value="">Kolor opalitki (opcjonalnie)</option>
-              <option value="brak">Brak opalitki</option>
-              <option value="biała">Biała</option>
-              <option value="żółta">Żółta</option>
-              <option value="czerwona">Czerwona</option>
-              <option value="zielona">Zielona</option>
-              <option value="niebieska">Niebieska</option>
-            </select>
-          </div>
-
-          <div class="row cols2 mt-2">
-            <select id="qGentle" class="input">
-              <option value="">Łagodność (opcjonalnie)</option>
-              <option value="1">1 (słaba)</option>
-              <option value="2">2</option>
-              <option value="3">3</option>
-              <option value="4">4</option>
-              <option value="5">5 (super)</option>
-            </select>
-            <label class="input" style="display:flex;align-items:center;gap:10px;cursor:pointer">
-              <input id="qIsCurrent" type="checkbox" style="width:18px;height:18px">
-              Ustaw jako <b>aktualną</b>
-            </label>
-          </div>
-
-          <textarea id="qNote" class="input mt-2" style="height:90px" placeholder="Wolna notatka (opcjonalnie)"></textarea>
-          <div class="row cols2 mt-2">
-            <button id="addQueenBtn" class="btn" style="background:var(--purple)">DODAJ MATKĘ</button>
-            <button id="qClearBtn" class="btn btn-ghost" style="padding:10px 14px">WYCZYŚĆ POLA</button>
-          </div>
-
-          <div class="hr"></div>
-          <div id="queenStatus" class="small"></div>
-          <div id="queenList" class="grid" style="gap:10px;margin-top:10px"></div>
-        </div>
-      </details>
+      <div class="row cols2">
+        <input id="hLabel" class="input" type="text" placeholder="Numer / nazwa ula (np. 12, A1)">
+        <input id="hPlace" class="input" type="text" placeholder="Położenie (np. Rząd 2 / 3 od lewej)">
+      </div>
+      <div class="row cols3">
+        <select id="hType" class="input">
+          <option value="rodzina">Rodzina</option>
+          <option value="odklad">Odkład</option>
+        </select>
+        <input id="hYear" class="input" type="number" placeholder="Rok (np. 2025)">
+        <input id="hNextVisit" class="input" type="date" title="Termin następnego przeglądu">
+      </div>
+      <div class="row">
+        <button id="saveHiveMetaBtn" class="btn btn-blue w-full">ZAPISZ METADANE ULA</button>
+      </div>
     </div>
+
+    <details open>
+      <summary>🔎 Przeglądy <span class="small" id="reviewsCount">0</span></summary>
+      <div class="details-content">
+        <div class="row cols3">
+          <input id="revDate" type="date" class="input">
+          <input id="revNext" type="date" class="input" placeholder="Kolejny termin">
+          <button id="revSaveBtn" class="btn btn-blue">ZAPISZ</button>
+        </div>
+        <textarea id="revNote" class="input" style="height:90px" placeholder="Notatka z przeglądu..."></textarea>
+        <div class="small">Możesz edytować wpis: kliknij „Edytuj” przy przeglądzie.</div>
+        <div id="revList" class="grid" style="gap:10px"></div>
+      </div>
+    </details>
+
+    <details>
+      <summary>🍯 Karmienie <span class="small" id="feedCount">0</span></summary>
+      <div class="details-content">
+        <div class="row cols3">
+          <input id="feedDate" type="date" class="input">
+          <select id="feedType" class="input">
+            <option value="syrop">Syrop</option>
+            <option value="ciasto">Ciasto</option>
+            <option value="inny">Inny</option>
+          </select>
+          <input id="feedQty" type="number" step="0.01" class="input" placeholder="Ilość (kg lub l)">
+        </div>
+        <input id="feedNote" type="text" class="input" placeholder="Notatka (opcjonalnie)">
+        <div class="row cols2">
+          <button id="feedSaveBtn" class="btn btn-slate">ZAPISZ KARMIENIE</button>
+          <button id="feedClearBtn" class="btn btn-ghost">WYCZYŚĆ EDYCJĘ</button>
+        </div>
+        <div id="feedList" class="grid" style="gap:10px"></div>
+      </div>
+    </details>
+
+    <details>
+      <summary>👑 Matki (historia) <span class="small" id="queenCount">0</span></summary>
+      <div class="details-content">
+        <div class="row cols3">
+          <input id="qName" type="text" class="input" placeholder="Nazwa matki (np. Mira)">
+          <input id="qYear" type="number" class="input" placeholder="Rocznik (np. 2024)">
+          <input id="qMonth" type="number" min="1" max="12" class="input" placeholder="Miesiąc (1-12)">
+        </div>
+        <div class="row cols3">
+          <input id="qMating" type="text" class="input" placeholder="Typ unasienniania (opcjonalnie)">
+          <input id="qLine" type="text" class="input" placeholder="Linia / hodowca (opcjonalnie)">
+          <input id="qOpalit" type="text" class="input" placeholder="Kolor opalitki / brak (opcjonalnie)">
+        </div>
+        <div class="row cols2">
+          <select id="qGentle" class="input">
+            <option value="">Łagodność (opcjonalnie)</option>
+            <option value="1">1 – trudna</option>
+            <option value="2">2</option>
+            <option value="3">3 – OK</option>
+            <option value="4">4</option>
+            <option value="5">5 – super</option>
+          </select>
+          <button id="queenSaveBtn" class="btn" style="background:var(--purple)">ZAPISZ MATKĘ</button>
+        </div>
+        <textarea id="qNote" class="input" style="height:80px" placeholder="Wolna notatka (opcjonalnie)"></textarea>
+        <div class="row cols2">
+          <button id="queenClearBtn" class="btn btn-ghost">WYCZYŚĆ EDYCJĘ</button>
+          <div class="small">Kliknij „Ustaw aktualną” na wpisie, żeby oznaczyć aktualną matkę w ulu.</div>
+        </div>
+        <div id="queenList" class="grid" style="gap:10px"></div>
+      </div>
+    </details>
+
+    <details>
+      <summary>🍯 Miodobranie <span class="small" id="harvCount">0</span></summary>
+      <div class="details-content">
+        <div class="row cols3">
+          <input id="harvDate" type="date" class="input">
+          <input id="harvType" type="text" class="input" placeholder="Rodzaj miodu (np. lipowy)">
+          <input id="harvKg" type="number" step="0.01" class="input" placeholder="Ilość (kg)">
+        </div>
+        <div class="row cols2">
+          <button id="harvSaveBtn" class="btn btn-orange">ZAPISZ MIODOBRANIE</button>
+          <button id="harvClearBtn" class="btn btn-ghost">WYCZYŚĆ EDYCJĘ</button>
+        </div>
+        <div id="harvList" class="grid" style="gap:10px"></div>
+      </div>
+    </details>
+
   </section>
 
   <!-- KALENDARZ -->
@@ -302,13 +255,13 @@ Zasady użycia określa plik LICENSE.
         </select>
         <input id="finDate" type="date" class="input">
       </div>
-      <div class="row cols2 mt-2">
+      <div class="row cols2">
         <input id="finAmount" type="number" placeholder="PLN" class="input">
         <input id="finDesc" type="text" placeholder="Opis (np. Cukier)" class="input">
       </div>
       <div class="mt-2">
         <button id="addFinBtn" class="btn btn-green w-full">DODAJ</button>
-        <div class="small mt-2">Data w finansach jest <b>Twoja (ręczna)</b>. Pozycje możesz usuwać.</div>
+        <div class="small mt-2">Pozycje możesz usuwać.</div>
       </div>
     </div>
 
@@ -335,7 +288,7 @@ Zasady użycia określa plik LICENSE.
         <button id="invAddMoveBtn" class="btn btn-slate">DODAJ RUCH</button>
       </div>
       <div class="small mt-2">
-        Każdy wpis to <b>ruch magazynowy</b> z datą. Dzięki temu możesz sprawdzić stan na dowolny dzień.
+        Każdy wpis to ruch magazynowy z datą. Dzięki temu możesz sprawdzić stan na dowolny dzień.
       </div>
     </div>
 
@@ -363,7 +316,7 @@ Zasady użycia określa plik LICENSE.
         <input id="knowNewTopic" type="text" placeholder="Nowy temat (np. Odkłady)" class="input">
         <button id="addTopicBtn" class="btn" style="background:var(--purple)">DODAJ TEMAT</button>
       </div>
-      <div class="row cols2 mt-2">
+      <div class="row cols2">
         <select id="knowTopic" class="input"></select>
         <input id="knowTitle" type="text" placeholder="Tytuł notatki" class="input">
       </div>
@@ -375,40 +328,17 @@ Zasady użycia określa plik LICENSE.
   </section>
 </main>
 
-<!-- MODAL -->
-<div id="modalOverlay" class="modal-overlay" aria-hidden="true">
-  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-    <div class="modal-header">
-      <div id="modalTitle" class="modal-title">EDYCJA</div>
-      <button id="modalClose" class="btn btn-ghost" style="padding:6px 10px">✕</button>
-    </div>
-    <div id="modalBody" class="modal-body"></div>
-    <div class="modal-footer">
-      <button id="modalCancel" class="btn btn-slate" style="padding:10px 14px">ANULUJ</button>
-      <button id="modalSave" class="btn btn-green" style="padding:10px 14px">ZAPISZ</button>
-    </div>
-  </div>
-</div>
-
 <script>
-/* =========================
-   Pasiecznik ULTRA – STABILNY JS
-   - routing/nav stabilny
-   - finanse + magazyn + wiedza
-   - przeglądy: dodaj/edytuj/usuń + termin następnego przeglądu (konkretna data)
-   - karmienie: historia + edycja/usuwanie
-   - matki: historia + aktualna + alarm >24 mies (filtr + czerwone oznaczenie)
-   - magazyn: BEZ przycisków -1/+1
-========================= */
-
 (() => {
   "use strict";
 
   /* ===== Helpers ===== */
   const $ = (id) => document.getElementById(id);
-  const uid = () =>
-    (crypto && crypto.randomUUID) ? crypto.randomUUID() :
-      (Date.now().toString(36) + Math.random().toString(36).slice(2));
+
+  // FIX: crypto może nie istnieć (wtedy "crypto && ..." potrafi rzucić ReferenceError)
+  const uid = () => (window.crypto && window.crypto.randomUUID)
+    ? window.crypto.randomUUID()
+    : (Date.now().toString(36) + Math.random().toString(36).slice(2));
 
   const esc = (s) =>
     String(s ?? "")
@@ -419,6 +349,7 @@ Zasady użycia określa plik LICENSE.
       .replaceAll("'","&#039;");
 
   const todayISO = () => new Date().toISOString().slice(0,10);
+  const thisYear = new Date().getFullYear();
 
   const isoToPL = (iso) => {
     if (!iso) return "—";
@@ -434,25 +365,16 @@ Zasady użycia określa plik LICENSE.
     return new Date(y, m-1, d, 12, 0, 0, 0);
   };
 
-  const thisYear = new Date().getFullYear();
-
-  function monthsDiffFromYearMonth(y, m, now=new Date()){
-    const yy = Number(y), mm = Number(m);
-    if (!yy || !mm) return null;
-    const nY = now.getFullYear();
-    const nM = now.getMonth()+1;
-    return (nY-yy)*12 + (nM-mm);
-  }
+  const monthsDiff = (y1,m1,y2,m2) => (y2*12 + (m2-1)) - (y1*12 + (m1-1));
 
   /* ===== IndexedDB ===== */
   const DB_NAME = "pasiecznik_ultra_db";
-  const DB_VER  = 7; // bump -> nowe klucze (feedings, queens)
+  const DB_VER  = 7;
   let db = null;
 
   function openDB(){
     return new Promise((resolve, reject) => {
       const req = indexedDB.open(DB_NAME, DB_VER);
-
       req.onupgradeneeded = (e) => {
         const d = e.target.result;
         if (!d.objectStoreNames.contains("data")) d.createObjectStore("data", { keyPath:"key" });
@@ -485,26 +407,27 @@ Zasady użycia określa plik LICENSE.
     view: "hives",
     currentHive: null,
 
-    hives: [], // {id,label,place,kind,year,nextVisitDate}
-    reviews: [], // {id,hiveId,visitDate,note,nextVisitDate,ts}
+    hives: [],
+    reviews: [],
+    queens: [],
+    feedings: [],
+    harvests: [],
 
-    feedings: [], // {id,hiveId,date,type,qty,unit,note,ts}
+    calendar: {},
+    finance: [],
+    invItems: [],
+    invMoves: [],
 
-    queens: [], // {id,hiveId,year,month,name,insemination,breederLine,opalite,gentleness,note,isCurrent,ts}
-
-    calendar: {}, // { [year]: {0:'',...} }
-    finance: [], // {id,type,date,amount,desc}
-    invItems: [], // {id,name}
-    invMoves: [], // {id,itemId,date,delta,note,ts}
     topics: [],
-    knowledge: [] // {id,topic,title,body,dateTS}
+    knowledge: []
   };
 
   async function loadAll(){
     State.hives     = (await dbGet("hives"))     || [];
     State.reviews   = (await dbGet("reviews"))   || [];
-    State.feedings  = (await dbGet("feedings"))  || [];
     State.queens    = (await dbGet("queens"))    || [];
+    State.feedings  = (await dbGet("feedings"))  || [];
+    State.harvests  = (await dbGet("harvests"))  || [];
     State.calendar  = (await dbGet("calendar"))  || {};
     State.finance   = (await dbGet("finance"))   || [];
     State.invItems  = (await dbGet("invItems"))  || [];
@@ -512,7 +435,6 @@ Zasady użycia określa plik LICENSE.
     State.topics    = (await dbGet("topics"))    || ["Ogólne"];
     State.knowledge = (await dbGet("knowledge")) || [];
 
-    // seed minimal
     if (!State.hives.length){
       State.hives = ["1","2","3"].map(s => ({
         id: s, label: s, place: "", kind: "rodzina", year: thisYear, nextVisitDate: ""
@@ -520,7 +442,6 @@ Zasady użycia określa plik LICENSE.
       await dbSet("hives", State.hives);
     }
 
-    // normalize
     State.hives.forEach(h => {
       if (h.label == null) h.label = h.id;
       if (h.place == null) h.place = "";
@@ -528,69 +449,9 @@ Zasady użycia określa plik LICENSE.
       if (h.year == null) h.year = thisYear;
       if (h.nextVisitDate == null) h.nextVisitDate = "";
     });
-
-    State.reviews.forEach(r => {
-      if (!r.id) r.id = uid();
-      if (!r.ts) r.ts = Date.now();
-      if (r.note == null) r.note = "";
-      if (r.nextVisitDate == null) r.nextVisitDate = "";
-    });
-
-    State.feedings.forEach(f => {
-      if (!f.id) f.id = uid();
-      if (!f.ts) f.ts = Date.now();
-      if (f.type == null) f.type = "";
-      if (f.unit == null) f.unit = "kg";
-      if (f.note == null) f.note = "";
-    });
-
-    State.queens.forEach(q => {
-      if (!q.id) q.id = uid();
-      if (!q.ts) q.ts = Date.now();
-      if (q.name == null) q.name = "";
-      if (q.note == null) q.note = "";
-      if (q.breederLine == null) q.breederLine = "";
-      if (q.insemination == null) q.insemination = "";
-      if (q.opalite == null) q.opalite = "";
-      if (q.gentleness == null) q.gentleness = "";
-      if (q.isCurrent == null) q.isCurrent = false;
-    });
   }
 
-  async function save(key){
-    await dbSet(key, State[key]);
-  }
-
-  /* ===== Modal ===== */
-  const Modal = {
-    ctx: null, // {type, id}
-    onSave: null
-  };
-
-  function modalOpen(title, bodyHTML, onSave){
-    $("modalTitle").textContent = title;
-    $("modalBody").innerHTML = bodyHTML;
-    Modal.onSave = onSave;
-    $("modalOverlay").classList.add("show");
-    $("modalOverlay").setAttribute("aria-hidden","false");
-  }
-  function modalClose(){
-    $("modalOverlay").classList.remove("show");
-    $("modalOverlay").setAttribute("aria-hidden","true");
-    $("modalBody").innerHTML = "";
-    Modal.onSave = null;
-  }
-
-  $("modalClose").addEventListener("click", modalClose);
-  $("modalCancel").addEventListener("click", modalClose);
-  $("modalOverlay").addEventListener("click", (e)=>{
-    if (e.target === $("modalOverlay")) modalClose();
-  });
-  $("modalSave").addEventListener("click", async ()=>{
-    if (typeof Modal.onSave === "function"){
-      await Modal.onSave();
-    }
-  });
+  async function save(key){ await dbSet(key, State[key]); }
 
   /* ===== Router ===== */
   function hideAll(){
@@ -656,6 +517,7 @@ Zasady użycia określa plik LICENSE.
       .sort((a,b) => (b.visitDate||"").localeCompare(a.visitDate||"") || (b.ts||0)-(a.ts||0));
     return rs[0] || null;
   }
+
   function lastReviewDateForHive(hiveId){
     return lastReviewForHive(hiveId)?.visitDate || "";
   }
@@ -671,36 +533,19 @@ Zasady użycia określa plik LICENSE.
     return diffDays >= 6;
   }
 
-  function lastFeedingForHive(hiveId){
-    return State.feedings
-      .filter(f => f.hiveId === hiveId && f.date)
-      .sort((a,b) => (b.date||"").localeCompare(a.date||"") || (b.ts||0)-(a.ts||0))[0] || null;
-  }
-
   function currentQueenForHive(hiveId){
     const qs = State.queens.filter(q => q.hiveId === hiveId);
-    const current = qs.filter(q => q.isCurrent);
-    if (current.length){
-      return current.sort((a,b) => (b.ts||0)-(a.ts||0))[0];
-    }
-    // fallback: najnowsza po roku/miesiącu/ts
-    return qs.sort((a,b) => {
-      const aKey = (Number(a.year)||0)*100 + (Number(a.month)||0);
-      const bKey = (Number(b.year)||0)*100 + (Number(b.month)||0);
-      if (bKey !== aKey) return bKey - aKey;
-      return (b.ts||0)-(a.ts||0);
-    })[0] || null;
+    const current = qs.find(q => q.isCurrent);
+    if (current) return current;
+    return qs.sort((a,b)=>(b.ts||0)-(a.ts||0))[0] || null;
   }
 
-  function queenAgeMonths(q){
-    if (!q) return null;
-    const diff = monthsDiffFromYearMonth(q.year, q.month);
-    return (diff == null) ? null : diff;
-  }
-
-  function queenNeedsReplace(q){
-    const m = queenAgeMonths(q);
-    return (m != null && m >= 24);
+  function queenNeedsChange(hiveId){
+    const q = currentQueenForHive(hiveId);
+    if (!q || !q.year || !q.month) return false;
+    const now = new Date();
+    const ageM = monthsDiff(Number(q.year), Number(q.month), now.getFullYear(), now.getMonth()+1);
+    return ageM >= 24;
   }
 
   /* ===== Filters ===== */
@@ -716,7 +561,7 @@ Zasady użycia określa plik LICENSE.
   function filterHives(list){
     let out = [...list];
     if (Filters.review) out = out.filter(h => needsReview(h));
-    if (Filters.queen) out = out.filter(h => queenNeedsReplace(currentQueenForHive(h.id)));
+    if (Filters.queen) out = out.filter(h => queenNeedsChange(h.id));
     return out;
   }
 
@@ -734,10 +579,7 @@ Zasady użycia określa plik LICENSE.
     filtered.forEach(h => {
       const due = needsReview(h);
       const lastRev = lastReviewDateForHive(h.id);
-      const lastFeed = lastFeedingForHive(h.id);
-      const q = currentQueenForHive(h.id);
-      const qAge = queenAgeMonths(q);
-      const qBad = queenNeedsReplace(q);
+      const qChange = queenNeedsChange(h.id);
 
       const el = document.createElement("div");
       el.className = "card hive-card";
@@ -750,24 +592,20 @@ Zasady użycia określa plik LICENSE.
               ${h.place ? `<span class="pill">📍 ${esc(h.place)}</span>` : ``}
               ${
                 h.nextVisitDate
-                  ? `<span class="pill ${due?'bad':''}">⏭ ${esc(isoToPL(h.nextVisitDate))}</span>`
-                  : (due ? `<span class="pill bad">⏭ BRAK (DO PRZEGLĄDU)</span>` : ``)
+                  ? `<span class="pill" style="border-color:${due?'#fecaca':'var(--border)'}">⏭ ${esc(isoToPL(h.nextVisitDate))}</span>`
+                  : (due ? `<span class="pill" style="border-color:#fecaca">⏭ BRAK (DO PRZEGLĄDU)</span>` : ``)
               }
-            </div>
-
-            <div class="small" style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
-              <span class="badge blue">🔎 Ostatni: <b>${lastRev ? isoToPL(lastRev) : "—"}</b></span>
-              <span class="badge ${qBad?'red':'green'}">👑 ${q?.name ? esc(q.name) : "brak"}${(qAge!=null)?` • ${qAge} mies.`:""}</span>
-              <span class="badge">🍯 Karmienie: <b>${lastFeed?.date ? isoToPL(lastFeed.date) : "—"}</b></span>
+              ${qChange ? `<span class="pill" style="border-color:#fecaca">👑 MATKA DO WYMIANY</span>` : ``}
             </div>
           </div>
-
-          <div style="text-align:right;min-width:110px">
-            <div class="muted">Status</div>
-            <div class="${due?'text-alert':''}" style="margin-top:6px;font-weight:1000">
-              ${due ? "🔎 DO PRZEGLĄDU" : "✅ OK"}
-            </div>
-            ${qBad ? `<div class="small" style="margin-top:6px;color:#991b1b;font-weight:1000">MATKA DO WYMIANY</div>` : ``}
+          <div style="text-align:right">
+            <div class="muted">Ostatni przegląd</div>
+            <div style="font-weight:1000">${lastRev ? isoToPL(lastRev) : "—"}</div>
+          </div>
+        </div>
+        <div style="margin-top:10px;font-size:12px">
+          <div class="${due?'text-alert':''}" style="margin-top:6px;font-weight:1000">
+            ${due ? "🔎 DO PRZEGLĄDU" : "✅ OK"}
           </div>
         </div>
       `;
@@ -787,35 +625,15 @@ Zasady użycia określa plik LICENSE.
   }
 
   /* ===== Details ===== */
-  function fillQueenYearMonthSelects(){
-    const ys = $("qYear");
-    const ms = $("qMonth");
-    if (!ys.options.length){
-      for (let y=thisYear-5; y<=thisYear+1; y++){
-        const o=document.createElement("option");
-        o.value=String(y); o.textContent=String(y);
-        ys.appendChild(o);
-      }
-    }
-    if (!ms.options.length){
-      const names = ["01","02","03","04","05","06","07","08","09","10","11","12"];
-      names.forEach((n,i)=>{
-        const o=document.createElement("option");
-        o.value=String(i+1); o.textContent=n;
-        ms.appendChild(o);
-      });
-    }
-    ys.value = ys.value || String(thisYear);
-    ms.value = ms.value || String(new Date().getMonth()+1);
-  }
+  let editReviewId = null;
+  let editFeedId = null;
+  let editQueenId = null;
+  let editHarvId = null;
 
   function renderDetails(){
     const hiveId = State.currentHive;
     const hive = State.hives.find(h => h.id === hiveId);
-    if (!hive){
-      renderView("hives", null, true);
-      return;
-    }
+    if (!hive){ renderView("hives", null, true); return; }
 
     $("detailsTitle").textContent = `${hive.label} • ${hive.kind==="odklad"?"Odkład":"Rodzina"} • ${hive.year}`;
 
@@ -825,16 +643,48 @@ Zasady użycia określa plik LICENSE.
     $("hYear").value  = hive.year || thisYear;
     $("hNextVisit").value = hive.nextVisitDate || "";
 
-    // defaults for forms
-    $("revDate").value = $("revDate").value || todayISO();
-    $("revNext").value = $("revNext").value || hive.nextVisitDate || "";
-    $("feedDate").value = $("feedDate").value || todayISO();
+    // FIX: nie resetuj pól w trakcie edycji
+    if (!editReviewId){
+      $("revDate").value = todayISO();
+      $("revNext").value = hive.nextVisitDate || "";
+      $("revNote").value = "";
+    } else {
+      if (!$("revDate").value) $("revDate").value = todayISO();
+      if ($("revNext").value == null) $("revNext").value = hive.nextVisitDate || "";
+    }
 
-    fillQueenYearMonthSelects();
+    if (!editFeedId){
+      $("feedDate").value = todayISO();
+      $("feedType").value = "syrop";
+      $("feedQty").value = "";
+      $("feedNote").value = "";
+    } else {
+      if (!$("feedDate").value) $("feedDate").value = todayISO();
+    }
+
+    if (!editQueenId){
+      $("qName").value="";
+      $("qYear").value=thisYear;
+      $("qMonth").value=new Date().getMonth()+1;
+      $("qMating").value="";
+      $("qLine").value="";
+      $("qOpalit").value="";
+      $("qGentle").value="";
+      $("qNote").value="";
+    }
+
+    if (!editHarvId){
+      $("harvDate").value = todayISO();
+      $("harvType").value="";
+      $("harvKg").value="";
+    } else {
+      if (!$("harvDate").value) $("harvDate").value = todayISO();
+    }
 
     renderReviews();
     renderFeedings();
     renderQueens();
+    renderHarvests();
   }
 
   async function saveHiveMeta(){
@@ -859,17 +709,15 @@ Zasady użycia określa plik LICENSE.
     hive.nextVisitDate = newNext;
 
     if (newId !== oldId){
-      // zmiana ID -> przenieś powiązane rekordy
       hive.id = newId;
       hive.label = newLabel;
 
       State.reviews.forEach(r => { if (r.hiveId === oldId) r.hiveId = newId; });
-      State.feedings.forEach(f => { if (f.hiveId === oldId) f.hiveId = newId; });
       State.queens.forEach(q => { if (q.hiveId === oldId) q.hiveId = newId; });
+      State.feedings.forEach(f => { if (f.hiveId === oldId) f.hiveId = newId; });
+      State.harvests.forEach(x => { if (x.hiveId === oldId) x.hiveId = newId; });
 
-      await save("reviews");
-      await save("feedings");
-      await save("queens");
+      await save("reviews"); await save("queens"); await save("feedings"); await save("harvests");
 
       State.currentHive = newId;
       const p = new URLSearchParams(location.search);
@@ -890,28 +738,24 @@ Zasady użycia określa plik LICENSE.
     const list = $("revList");
     list.innerHTML = "";
 
-    const items = State.reviews
-      .filter(r => r.hiveId === hiveId)
+    const items = State.reviews.filter(r => r.hiveId === hiveId)
       .sort((a,b) => (b.visitDate||"").localeCompare(a.visitDate||"") || (b.ts||0)-(a.ts||0));
 
-    if (!items.length){
-      list.innerHTML = `<div class="card text-center"><div style="font-weight:1000">Brak przeglądów.</div><div class="small mt-2">Dodaj pierwszy przegląd powyżej.</div></div>`;
-      return;
-    }
+    $("reviewsCount").textContent = String(items.length);
 
     items.forEach(r => {
       const el = document.createElement("div");
       el.className = "card";
-      const next = r.nextVisitDate ? isoToPL(r.nextVisitDate) : "—";
+      el.style.borderLeft = "4px solid " + (r.nextVisitDate && r.nextVisitDate <= todayISO() ? "var(--danger)" : "var(--blue)");
       el.innerHTML = `
-        <div class="kv">
-          <div>
-            <div style="font-weight:1000">📅 ${isoToPL(r.visitDate)} <span class="small"> • następny: <b>${next}</b></span></div>
-            <div style="white-space:pre-wrap;margin-top:6px">${esc(r.note||"") || "<span class='small'>—</span>"}</div>
+        <div class="flex justify-between items-center" style="gap:10px">
+          <div style="flex:1">
+            <div style="font-weight:1000">${isoToPL(r.visitDate)} ${r.nextVisitDate?`• ⏭ ${isoToPL(r.nextVisitDate)}`:""}</div>
+            <div style="white-space:pre-wrap;margin-top:6px">${esc(r.note||"")}</div>
           </div>
-          <div class="flex gap-1" style="justify-content:flex-end;flex-wrap:wrap">
-            <button class="btn btn-blue tinybtn" data-act="editReview" data-id="${esc(r.id)}">EDYTUJ</button>
-            <button class="btn btn-slate tinybtn" data-act="delReview" data-id="${esc(r.id)}">USUŃ</button>
+          <div class="flex gap-2" style="flex-wrap:wrap;justify-content:flex-end">
+            <button class="btn btn-slate" style="padding:6px 10px" data-act="revEdit" data-id="${esc(r.id)}">EDYTUJ</button>
+            <button class="btn btn-red" style="padding:6px 10px" data-act="revDel" data-id="${esc(r.id)}">USUŃ</button>
           </div>
         </div>
       `;
@@ -919,85 +763,56 @@ Zasady użycia określa plik LICENSE.
     });
   }
 
-  async function addReview(){
+  async function saveReview(){
     const hiveId = State.currentHive;
-    const visitDate = ($("revDate").value || "").trim();
-    const note = ($("revNote").value || "").trim();
+    const visitDate = $("revDate").value || todayISO();
     const nextVisitDate = ($("revNext").value || "").trim();
+    const note = ($("revNote").value || "").trim();
 
     if (!visitDate) return alert("Podaj datę przeglądu.");
 
-    State.reviews.push({
-      id: uid(),
-      hiveId,
-      visitDate,
-      note,
-      nextVisitDate,
-      ts: Date.now()
-    });
-
-    // opcjonalnie: od razu ustaw w ulu termin kolejnego przeglądu
-    const hive = State.hives.find(h => h.id === hiveId);
-    if (hive && nextVisitDate){
-      hive.nextVisitDate = nextVisitDate;
-      await save("hives");
-      $("hNextVisit").value = nextVisitDate;
+    if (editReviewId){
+      const r = State.reviews.find(x => x.id === editReviewId);
+      if (!r) { editReviewId=null; return; }
+      r.visitDate = visitDate;
+      r.nextVisitDate = nextVisitDate;
+      r.note = note;
+      r.ts = Date.now();
+    } else {
+      State.reviews.push({ id:uid(), hiveId, visitDate, nextVisitDate, note, ts:Date.now() });
     }
 
-    await save("reviews");
+    const hive = State.hives.find(h => h.id === hiveId);
+    if (hive && nextVisitDate) hive.nextVisitDate = nextVisitDate;
 
+    await save("reviews");
+    await save("hives");
+
+    editReviewId = null;
     $("revNote").value = "";
-    // zostaw daty, żeby łatwo dodawać kolejne
+    $("revDate").value = todayISO();
+    $("revNext").value = (State.hives.find(h => h.id === hiveId)?.nextVisitDate) || "";
     renderReviews();
     renderHives();
   }
 
-  function editReviewModal(id){
+  function startEditReview(id){
     const r = State.reviews.find(x => x.id === id);
     if (!r) return;
-
-    modalOpen("Edycja przeglądu", `
-      <div class="row cols2">
-        <label class="help">Data przeglądu
-          <input id="mRevDate" type="date" class="input" value="${esc(r.visitDate||"")}">
-        </label>
-        <label class="help">Termin następnego przeglądu
-          <input id="mRevNext" type="date" class="input" value="${esc(r.nextVisitDate||"")}">
-        </label>
-      </div>
-      <label class="help">Notatka
-        <textarea id="mRevNote" class="input" style="height:120px">${esc(r.note||"")}</textarea>
-      </label>
-      <div class="small">Możesz edytować zarówno datę, jak i treść.</div>
-    `, async ()=>{
-      const d = ($("mRevDate").value || "").trim();
-      if (!d) return alert("Data przeglądu jest wymagana.");
-
-      r.visitDate = d;
-      r.nextVisitDate = ($("mRevNext").value || "").trim();
-      r.note = ($("mRevNote").value || "").trim();
-      r.ts = Date.now();
-
-      await save("reviews");
-
-      // jeśli edytujesz termin następnego – aktualizuj ul (opcjonalnie)
-      const hive = State.hives.find(h => h.id === r.hiveId);
-      if (hive && r.nextVisitDate){
-        hive.nextVisitDate = r.nextVisitDate;
-        await save("hives");
-        if (State.view === "details") $("hNextVisit").value = hive.nextVisitDate || "";
-      }
-
-      modalClose();
-      renderReviews();
-      renderHives();
-    });
+    editReviewId = id;
+    $("revDate").value = r.visitDate || todayISO();
+    $("revNext").value = r.nextVisitDate || "";
+    $("revNote").value = r.note || "";
+    window.scrollTo({top:0, behavior:"smooth"});
   }
 
   async function deleteReview(id){
     if (!confirm("Usunąć przegląd?")) return;
     State.reviews = State.reviews.filter(x => x.id !== id);
     await save("reviews");
+    editReviewId = null;
+    $("revNote").value = "";
+    $("revDate").value = todayISO();
     renderReviews();
     renderHives();
   }
@@ -1008,27 +823,25 @@ Zasady użycia określa plik LICENSE.
     const list = $("feedList");
     list.innerHTML = "";
 
-    const items = State.feedings
-      .filter(f => f.hiveId === hiveId)
+    const items = State.feedings.filter(f => f.hiveId === hiveId)
       .sort((a,b) => (b.date||"").localeCompare(a.date||"") || (b.ts||0)-(a.ts||0));
 
-    if (!items.length){
-      list.innerHTML = `<div class="card text-center"><div style="font-weight:1000">Brak karmień.</div><div class="small mt-2">Dodaj pierwsze karmienie powyżej.</div></div>`;
-      return;
-    }
+    $("feedCount").textContent = String(items.length);
 
     items.forEach(f => {
       const el = document.createElement("div");
       el.className = "card";
+      el.style.borderLeft = "4px solid var(--slate)";
       el.innerHTML = `
-        <div class="kv">
-          <div>
-            <div style="font-weight:1000">🍯 ${isoToPL(f.date)} • ${esc(f.type||"—")} • <b>${Number(f.qty||0).toFixed(2)}</b> ${esc(f.unit||"")}</div>
-            ${f.note ? `<div class="small" style="margin-top:6px">${esc(f.note)}</div>` : `<div class="small" style="margin-top:6px">—</div>`}
+        <div class="flex justify-between items-center" style="gap:10px">
+          <div style="flex:1">
+            <div style="font-weight:1000">${isoToPL(f.date)} • ${esc(f.type||"")}</div>
+            <div class="small">Ilość: <b>${Number(f.qty||0).toFixed(2)}</b> (kg/l)</div>
+            ${f.note ? `<div style="white-space:pre-wrap;margin-top:6px">${esc(f.note)}</div>` : ``}
           </div>
-          <div class="flex gap-1" style="justify-content:flex-end;flex-wrap:wrap">
-            <button class="btn btn-blue tinybtn" data-act="editFeeding" data-id="${esc(f.id)}">EDYTUJ</button>
-            <button class="btn btn-slate tinybtn" data-act="delFeeding" data-id="${esc(f.id)}">USUŃ</button>
+          <div class="flex gap-2" style="flex-wrap:wrap;justify-content:flex-end">
+            <button class="btn btn-slate" style="padding:6px 10px" data-act="feedEdit" data-id="${esc(f.id)}">EDYTUJ</button>
+            <button class="btn btn-red" style="padding:6px 10px" data-act="feedDel" data-id="${esc(f.id)}">USUŃ</button>
           </div>
         </div>
       `;
@@ -1036,83 +849,53 @@ Zasady użycia określa plik LICENSE.
     });
   }
 
-  async function addFeeding(){
+  async function saveFeeding(){
     const hiveId = State.currentHive;
-    const date = ($("feedDate").value || "").trim();
-    const type = ($("feedType").value || "").trim();
+    const date = $("feedDate").value || todayISO();
+    const type = $("feedType").value || "syrop";
     const qty = Number($("feedQty").value);
-    const unit = ($("feedUnit").value || "kg").trim();
     const note = ($("feedNote").value || "").trim();
 
-    if (!date) return alert("Podaj datę karmienia.");
-    if (!type) return alert("Podaj rodzaj pokarmu.");
-    if (!Number.isFinite(qty) || qty <= 0) return alert("Podaj ilość > 0.");
+    if (!Number.isFinite(qty) || qty === 0) return alert("Podaj ilość (różną od 0).");
 
-    State.feedings.push({ id:uid(), hiveId, date, type, qty, unit, note, ts:Date.now() });
+    if (editFeedId){
+      const f = State.feedings.find(x => x.id === editFeedId);
+      if (!f) { editFeedId=null; return; }
+      f.date = date; f.type = type; f.qty = qty; f.note = note; f.ts = Date.now();
+    } else {
+      State.feedings.push({ id:uid(), hiveId, date, type, qty, note, ts:Date.now() });
+    }
+
     await save("feedings");
-
-    $("feedType").value = "";
-    $("feedQty").value = "";
-    $("feedNote").value = "";
+    clearFeedingEdit();
+    $("feedDate").value = todayISO();
     renderFeedings();
-    renderHives();
   }
 
-  function editFeedingModal(id){
+  function startEditFeeding(id){
     const f = State.feedings.find(x => x.id === id);
     if (!f) return;
+    editFeedId = id;
+    $("feedDate").value = f.date || todayISO();
+    $("feedType").value = f.type || "syrop";
+    $("feedQty").value = f.qty ?? "";
+    $("feedNote").value = f.note || "";
+  }
 
-    modalOpen("Edycja karmienia", `
-      <div class="row cols2">
-        <label class="help">Data
-          <input id="mFeedDate" type="date" class="input" value="${esc(f.date||"")}">
-        </label>
-        <label class="help">Rodzaj pokarmu
-          <input id="mFeedType" type="text" class="input" value="${esc(f.type||"")}">
-        </label>
-      </div>
-      <div class="row cols2">
-        <label class="help">Ilość
-          <input id="mFeedQty" type="number" step="0.01" class="input" value="${esc(f.qty ?? "")}">
-        </label>
-        <label class="help">Jednostka
-          <select id="mFeedUnit" class="input">
-            <option value="kg" ${f.unit==="kg"?"selected":""}>kg</option>
-            <option value="l" ${f.unit==="l"?"selected":""}>l</option>
-          </select>
-        </label>
-      </div>
-      <label class="help">Notatka
-        <input id="mFeedNote" type="text" class="input" value="${esc(f.note||"")}">
-      </label>
-    `, async ()=>{
-      const d = ($("mFeedDate").value || "").trim();
-      const t = ($("mFeedType").value || "").trim();
-      const q = Number($("mFeedQty").value);
-      if (!d) return alert("Data jest wymagana.");
-      if (!t) return alert("Rodzaj jest wymagany.");
-      if (!Number.isFinite(q) || q<=0) return alert("Ilość > 0.");
-
-      f.date = d;
-      f.type = t;
-      f.qty = q;
-      f.unit = ($("mFeedUnit").value || "kg").trim();
-      f.note = ($("mFeedNote").value || "").trim();
-      f.ts = Date.now();
-
-      await save("feedings");
-      modalClose();
-      renderFeedings();
-      renderHives();
-    });
+  function clearFeedingEdit(){
+    editFeedId = null;
+    $("feedType").value = "syrop";
+    $("feedQty").value = "";
+    $("feedNote").value = "";
   }
 
   async function deleteFeeding(id){
-    if (!confirm("Usunąć wpis karmienia?")) return;
+    if (!confirm("Usunąć karmienie?")) return;
     State.feedings = State.feedings.filter(x => x.id !== id);
     await save("feedings");
+    clearFeedingEdit();
+    $("feedDate").value = todayISO();
     renderFeedings();
-    renderHives();
   }
 
   /* ===== Queens ===== */
@@ -1121,301 +904,227 @@ Zasady użycia określa plik LICENSE.
     const list = $("queenList");
     list.innerHTML = "";
 
-    const qs = State.queens
-      .filter(q => q.hiveId === hiveId)
-      .sort((a,b) => {
-        const aKey = (Number(a.year)||0)*100 + (Number(a.month)||0);
-        const bKey = (Number(b.year)||0)*100 + (Number(b.month)||0);
-        if (bKey !== aKey) return bKey - aKey;
-        return (b.ts||0)-(a.ts||0);
-      });
+    const items = State.queens.filter(q => q.hiveId === hiveId)
+      .sort((a,b) => (b.isCurrent?1:0)-(a.isCurrent?1:0) || (b.ts||0)-(a.ts||0));
 
-    const cur = currentQueenForHive(hiveId);
-    if (!cur){
-      $("queenStatus").innerHTML = `Aktualna matka: <b>brak</b>.`;
-    } else {
-      const age = queenAgeMonths(cur);
-      const bad = queenNeedsReplace(cur);
-      $("queenStatus").innerHTML = `Aktualna matka: <b>${esc(cur.name||"") || "—"}</b> • rocznik: <b>${esc(cur.year)}-${String(cur.month).padStart(2,"0")}</b> • wiek: <b>${age!=null?age+" mies.":"—"}</b> ${bad?`<span style="color:#991b1b;font-weight:1000">• MATKA DO WYMIANY</span>`:""}`;
-    }
+    $("queenCount").textContent = String(items.length);
 
-    if (!qs.length){
-      list.innerHTML = `<div class="card text-center"><div style="font-weight:1000">Brak historii matek.</div><div class="small mt-2">Dodaj pierwszą matkę powyżej.</div></div>`;
-      return;
-    }
-
-    qs.forEach(q => {
-      const age = queenAgeMonths(q);
-      const bad = queenNeedsReplace(q);
-      const isCur = !!q.isCurrent || (cur && cur.id === q.id);
-
+    const now = new Date();
+    items.forEach(q => {
+      const ageM = (q.year && q.month) ? monthsDiff(Number(q.year), Number(q.month), now.getFullYear(), now.getMonth()+1) : null;
+      const warn = (ageM != null && ageM >= 24);
       const el = document.createElement("div");
       el.className = "card";
-      el.style.borderLeft = "4px solid " + (bad ? "var(--danger)" : (isCur ? "var(--purple)" : "var(--border)"));
-
+      el.style.borderLeft = "4px solid " + (warn ? "var(--danger)" : "var(--purple)");
       el.innerHTML = `
-        <div class="kv">
-          <div>
+        <div class="flex justify-between items-center" style="gap:10px">
+          <div style="flex:1">
             <div style="font-weight:1000">
-              👑 ${esc(q.name||"(bez nazwy)")}
-              ${isCur ? `<span class="badge blue" style="margin-left:6px">AKTUALNA</span>` : ``}
-              ${bad ? `<span class="badge red" style="margin-left:6px">MATKA DO WYMIANY</span>` : ``}
+              ${q.isCurrent ? "✅ AKTUALNA • " : ""}${esc(q.name||"(bez nazwy)")}
+              ${q.year?` • ${esc(q.year)}/${String(q.month||"").padStart(2,"0")}`:""}
+            </div>
+            <div class="small">
+              ${ageM!=null ? `Wiek: <b>${ageM}</b> mies.` : "Wiek: —"}
+              ${warn ? ` • <span style="color:var(--danger);font-weight:1000">MATKA DO WYMIANY</span>` : ``}
             </div>
             <div class="small" style="margin-top:6px">
-              Rocznik: <b>${esc(q.year)}-${String(q.month).padStart(2,"0")}</b>
-              ${age!=null ? ` • Wiek: <b>${age} mies.</b>` : ``}
-              ${q.insemination ? ` • Unasiennianie: <b>${esc(q.insemination)}</b>` : ``}
-              ${q.breederLine ? ` • Linia/Hodowca: <b>${esc(q.breederLine)}</b>` : ``}
+              ${q.mating?`Unasiennianie: <b>${esc(q.mating)}</b> • `:""}
+              ${q.line?`Linia/Hodowca: <b>${esc(q.line)}</b> • `:""}
+              ${q.opalit?`Opalitka: <b>${esc(q.opalit)}</b>`:""}
             </div>
-            <div class="small" style="margin-top:6px">
-              ${q.opalite ? `Opalitka: <b>${esc(q.opalite)}</b>` : `Opalitka: <b>—</b>`}
-              ${q.gentleness ? ` • Łagodność: <b>${esc(q.gentleness)}/5</b>` : ``}
-            </div>
-            ${q.note ? `<div class="small" style="margin-top:8px;white-space:pre-wrap">${esc(q.note)}</div>` : `<div class="small" style="margin-top:8px">—</div>`}
+            ${q.gentle?`<div class="small">Łagodność: <b>${esc(q.gentle)}</b></div>`:""}
+            ${q.note?`<div style="white-space:pre-wrap;margin-top:6px">${esc(q.note)}</div>`:""}
           </div>
-
-          <div class="flex gap-1" style="justify-content:flex-end;flex-wrap:wrap">
-            <button class="btn btn-orange tinybtn" data-act="setCurrentQueen" data-id="${esc(q.id)}">USTAW AKT.</button>
-            <button class="btn btn-blue tinybtn" data-act="editQueen" data-id="${esc(q.id)}">EDYTUJ</button>
-            <button class="btn btn-slate tinybtn" data-act="delQueen" data-id="${esc(q.id)}">USUŃ</button>
+          <div class="flex gap-2" style="flex-wrap:wrap;justify-content:flex-end">
+            <button class="btn btn-blue" style="padding:6px 10px" data-act="queenSetCurrent" data-id="${esc(q.id)}">USTAW AKTUALNĄ</button>
+            <button class="btn btn-slate" style="padding:6px 10px" data-act="queenEdit" data-id="${esc(q.id)}">EDYTUJ</button>
+            <button class="btn btn-red" style="padding:6px 10px" data-act="queenDel" data-id="${esc(q.id)}">USUŃ</button>
           </div>
         </div>
       `;
-
       list.appendChild(el);
     });
   }
 
-  async function addQueen(){
+  async function saveQueen(){
     const hiveId = State.currentHive;
     const name = ($("qName").value || "").trim();
-    const breederLine = ($("qBreederLine").value || "").trim();
-    const year = Number(($("qYear").value || "").trim());
-    const month = Number(($("qMonth").value || "").trim());
-    const insemination = ($("qInsem").value || "").trim();
-    const opalite = ($("qOpalit").value || "").trim();
-    const gentleness = ($("qGentle").value || "").trim();
+    const year = Number($("qYear").value);
+    const month = Number($("qMonth").value);
+    const mating = ($("qMating").value || "").trim();
+    const line = ($("qLine").value || "").trim();
+    const opalit = ($("qOpalit").value || "").trim();
+    const gentle = ($("qGentle").value || "").trim();
     const note = ($("qNote").value || "").trim();
-    const isCurrent = !!$("qIsCurrent").checked;
 
-    if (!name) return alert("Podaj nazwę matki.");
-    if (!year || !month) return alert("Podaj rocznik i miesiąc.");
+    if (!name && (!Number.isFinite(year) || !Number.isFinite(month))) return alert("Podaj nazwę lub rocznik+miesiąc.");
+    if (month && (month < 1 || month > 12)) return alert("Miesiąc 1-12.");
 
-    const rec = {
-      id: uid(), hiveId,
-      year, month,
-      name,
-      insemination,
-      breederLine,
-      opalite,
-      gentleness,
-      note,
-      isCurrent,
-      ts: Date.now()
-    };
-
-    if (isCurrent){
-      // zdejmij aktualną z pozostałych w ulu
-      State.queens.forEach(q => {
-        if (q.hiveId === hiveId) q.isCurrent = false;
+    if (editQueenId){
+      const q = State.queens.find(x => x.id === editQueenId);
+      if (!q) { editQueenId=null; return; }
+      q.name = name || q.name;
+      q.year = Number.isFinite(year) ? year : q.year;
+      q.month = Number.isFinite(month) ? month : q.month;
+      q.mating = mating; q.line = line; q.opalit = opalit; q.gentle = gentle; q.note = note;
+      q.ts = Date.now();
+    } else {
+      State.queens.push({
+        id:uid(), hiveId,
+        name: name || "(bez nazwy)",
+        year: Number.isFinite(year) ? year : null,
+        month: Number.isFinite(month) ? month : null,
+        mating, line, opalit, gentle, note,
+        isCurrent: false,
+        ts: Date.now()
       });
     }
 
-    State.queens.push(rec);
     await save("queens");
+    clearQueenEdit();
+    renderQueens();
+    renderHives();
+  }
 
-    $("qName").value = "";
-    $("qBreederLine").value = "";
-    $("qInsem").value = "";
-    $("qOpalit").value = "";
-    $("qGentle").value = "";
-    $("qNote").value = "";
-    $("qIsCurrent").checked = false;
+  function startEditQueen(id){
+    const q = State.queens.find(x => x.id === id);
+    if (!q) return;
+    editQueenId = id;
+    $("qName").value = q.name || "";
+    $("qYear").value = q.year ?? "";
+    $("qMonth").value = q.month ?? "";
+    $("qMating").value = q.mating || "";
+    $("qLine").value = q.line || "";
+    $("qOpalit").value = q.opalit || "";
+    $("qGentle").value = q.gentle || "";
+    $("qNote").value = q.note || "";
+  }
 
+  function clearQueenEdit(){
+    editQueenId = null;
+    $("qName").value="";
+    $("qYear").value=thisYear;
+    $("qMonth").value=new Date().getMonth()+1;
+    $("qMating").value="";
+    $("qLine").value="";
+    $("qOpalit").value="";
+    $("qGentle").value="";
+    $("qNote").value="";
+  }
+
+  async function deleteQueen(id){
+    if (!confirm("Usunąć wpis o matce?")) return;
+    State.queens = State.queens.filter(x => x.id !== id);
+    await save("queens");
+    clearQueenEdit();
     renderQueens();
     renderHives();
   }
 
   async function setCurrentQueen(id){
     const hiveId = State.currentHive;
-    const q = State.queens.find(x => x.id === id);
-    if (!q) return;
-
-    State.queens.forEach(x => {
-      if (x.hiveId === hiveId) x.isCurrent = false;
-    });
-    q.isCurrent = true;
-    q.ts = Date.now();
-
+    State.queens.forEach(q => { if (q.hiveId === hiveId) q.isCurrent = (q.id === id); });
     await save("queens");
     renderQueens();
     renderHives();
   }
 
-  function editQueenModal(id){
-    const q = State.queens.find(x => x.id === id);
-    if (!q) return;
+  /* ===== Harvests ===== */
+  function renderHarvests(){
+    const hiveId = State.currentHive;
+    const list = $("harvList");
+    list.innerHTML = "";
 
-    modalOpen("Edycja matki", `
-      <div class="row cols2">
-        <label class="help">Nazwa
-          <input id="mQName" type="text" class="input" value="${esc(q.name||"")}">
-        </label>
-        <label class="help">Linia / hodowca
-          <input id="mQBreeder" type="text" class="input" value="${esc(q.breederLine||"")}">
-        </label>
-      </div>
+    const items = State.harvests.filter(x => x.hiveId === hiveId)
+      .sort((a,b) => (b.date||"").localeCompare(a.date||"") || (b.ts||0)-(a.ts||0));
 
-      <div class="row cols2">
-        <label class="help">Rok
-          <input id="mQYear" type="number" class="input" value="${esc(q.year||"")}">
-        </label>
-        <label class="help">Miesiąc
-          <input id="mQMonth" type="number" min="1" max="12" class="input" value="${esc(q.month||"")}">
-        </label>
-      </div>
+    $("harvCount").textContent = String(items.length);
 
-      <div class="row cols2">
-        <label class="help">Typ unasienniania
-          <select id="mQInsem" class="input">
-            <option value="" ${q.insemination===""?"selected":""}>—</option>
-            <option value="naturalne" ${q.insemination==="naturalne"?"selected":""}>Naturalne</option>
-            <option value="sztuczne" ${q.insemination==="sztuczne"?"selected":""}>Sztuczne (AI)</option>
-            <option value="nieznane" ${q.insemination==="nieznane"?"selected":""}>Nieznane</option>
-          </select>
-        </label>
-        <label class="help">Kolor opalitki
-          <select id="mQOpalit" class="input">
-            <option value="" ${q.opalite===""?"selected":""}>—</option>
-            <option value="brak" ${q.opalite==="brak"?"selected":""}>Brak opalitki</option>
-            <option value="biała" ${q.opalite==="biała"?"selected":""}>Biała</option>
-            <option value="żółta" ${q.opalite==="żółta"?"selected":""}>Żółta</option>
-            <option value="czerwona" ${q.opalite==="czerwona"?"selected":""}>Czerwona</option>
-            <option value="zielona" ${q.opalite==="zielona"?"selected":""}>Zielona</option>
-            <option value="niebieska" ${q.opalite==="niebieska"?"selected":""}>Niebieska</option>
-          </select>
-        </label>
-      </div>
-
-      <div class="row cols2">
-        <label class="help">Łagodność
-          <select id="mQGentle" class="input">
-            <option value="" ${q.gentleness===""?"selected":""}>—</option>
-            <option value="1" ${q.gentleness==="1"?"selected":""}>1</option>
-            <option value="2" ${q.gentleness==="2"?"selected":""}>2</option>
-            <option value="3" ${q.gentleness==="3"?"selected":""}>3</option>
-            <option value="4" ${q.gentleness==="4"?"selected":""}>4</option>
-            <option value="5" ${q.gentleness==="5"?"selected":""}>5</option>
-          </select>
-        </label>
-        <label class="help" style="display:flex;align-items:center;gap:10px;cursor:pointer">
-          <input id="mQCurrent" type="checkbox" style="width:18px;height:18px" ${q.isCurrent?"checked":""}>
-          Ustaw jako <b>aktualną</b>
-        </label>
-      </div>
-
-      <label class="help">Wolna notatka
-        <textarea id="mQNote" class="input" style="height:120px">${esc(q.note||"")}</textarea>
-      </label>
-    `, async ()=>{
-      const name = ($("mQName").value || "").trim();
-      const breederLine = ($("mQBreeder").value || "").trim();
-      const year = Number(($("mQYear").value || "").trim());
-      const month = Number(($("mQMonth").value || "").trim());
-      const insemination = ($("mQInsem").value || "").trim();
-      const opalite = ($("mQOpalit").value || "").trim();
-      const gentleness = ($("mQGentle").value || "").trim();
-      const note = ($("mQNote").value || "").trim();
-      const isCurrent = !!$("mQCurrent").checked;
-
-      if (!name) return alert("Nazwa matki jest wymagana.");
-      if (!year || !month || month<1 || month>12) return alert("Rok/miesiąc są wymagane (miesiąc 1-12).");
-
-      q.name = name;
-      q.breederLine = breederLine;
-      q.year = year;
-      q.month = month;
-      q.insemination = insemination;
-      q.opalite = opalite;
-      q.gentleness = gentleness;
-      q.note = note;
-      q.ts = Date.now();
-
-      if (isCurrent){
-        State.queens.forEach(x => {
-          if (x.hiveId === q.hiveId) x.isCurrent = false;
-        });
-        q.isCurrent = true;
-      } else {
-        q.isCurrent = false;
-      }
-
-      await save("queens");
-      modalClose();
-      renderQueens();
-      renderHives();
+    items.forEach(h => {
+      const el = document.createElement("div");
+      el.className = "card";
+      el.style.borderLeft = "4px solid var(--orange)";
+      el.innerHTML = `
+        <div class="flex justify-between items-center" style="gap:10px">
+          <div style="flex:1">
+            <div style="font-weight:1000">${isoToPL(h.date)} • ${esc(h.type||"")}</div>
+            <div class="small">Ilość: <b>${Number(h.kg||0).toFixed(2)}</b> kg</div>
+          </div>
+          <div class="flex gap-2" style="flex-wrap:wrap;justify-content:flex-end">
+            <button class="btn btn-slate" style="padding:6px 10px" data-act="harvEdit" data-id="${esc(h.id)}">EDYTUJ</button>
+            <button class="btn btn-red" style="padding:6px 10px" data-act="harvDel" data-id="${esc(h.id)}">USUŃ</button>
+          </div>
+        </div>
+      `;
+      list.appendChild(el);
     });
   }
 
-  async function deleteQueen(id){
-    if (!confirm("Usunąć wpis matki?")) return;
-    State.queens = State.queens.filter(x => x.id !== id);
-    await save("queens");
-    renderQueens();
-    renderHives();
+  async function saveHarvest(){
+    const hiveId = State.currentHive;
+    const date = $("harvDate").value || todayISO();
+    const type = ($("harvType").value || "").trim();
+    const kg = Number($("harvKg").value);
+
+    if (!date) return alert("Podaj datę.");
+    if (!type) return alert("Podaj rodzaj miodu.");
+    if (!Number.isFinite(kg) || kg <= 0) return alert("Podaj ilość > 0.");
+
+    if (editHarvId){
+      const h = State.harvests.find(x => x.id === editHarvId);
+      if (!h) { editHarvId=null; return; }
+      h.date=date; h.type=type; h.kg=kg; h.ts=Date.now();
+    } else {
+      State.harvests.push({ id:uid(), hiveId, date, type, kg, ts:Date.now() });
+    }
+
+    await save("harvests");
+    clearHarvestEdit();
+    $("harvDate").value = todayISO();
+    renderHarvests();
+  }
+
+  function startEditHarvest(id){
+    const h = State.harvests.find(x => x.id === id);
+    if (!h) return;
+    editHarvId = id;
+    $("harvDate").value = h.date || todayISO();
+    $("harvType").value = h.type || "";
+    $("harvKg").value = h.kg ?? "";
+  }
+
+  function clearHarvestEdit(){
+    editHarvId = null;
+    $("harvType").value="";
+    $("harvKg").value="";
+  }
+
+  async function deleteHarvest(id){
+    if (!confirm("Usunąć miodobranie?")) return;
+    State.harvests = State.harvests.filter(x => x.id !== id);
+    await save("harvests");
+    clearHarvestEdit();
+    $("harvDate").value = todayISO();
+    renderHarvests();
   }
 
   /* ===== Calendar ===== */
-  function ensureCalendarYear(y){
-    if (!State.calendar[y]) State.calendar[y] = {};
-  }
+  function ensureCalendarYear(y){ if (!State.calendar[y]) State.calendar[y] = {}; }
 
   function renderCalendar(){
     const months = ["Styczeń","Luty","Marzec","Kwiecień","Maj","Czerwiec","Lipiec","Sierpień","Wrzesień","Październik","Listopad","Grudzień"];
     const yearSel = $("calYear");
-    if (!yearSel) return;
 
-    // --- LATA: zawsze buduj listę lat (żeby nigdy nie zniknęła po aktualizacjach) ---
-    const cur = Number(yearSel.value) || thisYear;
-    const startY = thisYear - 5;
-    const endY   = thisYear + 5;
-
-    yearSel.innerHTML = "";
-    for (let y = startY; y <= endY; y++){
-      const o = document.createElement("option");
-      o.value = String(y);
-      o.textContent = String(y);
-      yearSel.appendChild(o);
+    if (!yearSel.options.length){
+      for (let y=2022;y<=2029;y++){
+        const o=document.createElement("option");
+        o.value=String(y); o.textContent=String(y);
+        yearSel.appendChild(o);
+      }
     }
-    yearSel.value = String((cur>=startY && cur<=endY) ? cur : thisYear);
-
-    ensureCalendarYear(yearSel.value);
-
-    const grid = $("calendarGrid");
-    grid.innerHTML = "";
-
-    months.forEach((m,idx) => {
-      const card = document.createElement("div");
-      card.className = "card";
-      card.innerHTML = `<div style="font-weight:1000;color:#4f46e5;margin-bottom:6px">${m} ${yearSel.value}</div>`;
-      const area = document.createElement("textarea");
-      area.className="input";
-      area.style.height="75px";
-      area.value = State.calendar[yearSel.value][idx] || "";
-      area.addEventListener("change", async (e) => {
-        ensureCalendarYear(yearSel.value);
-        State.calendar[yearSel.value][idx] = e.target.value;
-        await save("calendar");
-      });
-      card.appendChild(area);
-      grid.appendChild(card);
-    });
-
-    yearSel.onchange = () => renderCalendar();
-  }    }
 
     const current = yearSel.value || String(thisYear);
-    yearSel.value = (Number(current)>=2022 && Number(current)<=2027) ? current : String(thisYear);
+    yearSel.value = (Number(current)>=2022 && Number(current)<=2029) ? current : String(thisYear);
 
     ensureCalendarYear(yearSel.value);
 
@@ -1468,7 +1177,7 @@ Zasady użycia określa plik LICENSE.
               ${f.type==="income"?"+":"-"}${Number(f.amount||0).toFixed(2)} zł
             </div>
             <div class="flex gap-2" style="justify-content:flex-end;margin-top:8px">
-              <button class="btn btn-slate tinybtn" data-del="fin" data-id="${esc(f.id)}">USUŃ</button>
+              <button class="btn btn-slate" style="padding:6px 10px" data-act="finDel" data-id="${esc(f.id)}">USUŃ</button>
             </div>
           </div>
         </div>
@@ -1489,15 +1198,20 @@ Zasady użycia określa plik LICENSE.
     const amount = Number($("finAmount").value);
     const desc = ($("finDesc").value || "").trim();
 
-    if (!desc || !Number.isFinite(amount) || amount<=0){
-      return alert("Podaj opis i kwotę > 0.");
-    }
+    if (!desc || !Number.isFinite(amount) || amount<=0) return alert("Podaj opis i kwotę > 0.");
 
     State.finance.push({ id:uid(), type, date, amount, desc });
     await save("finance");
 
     $("finAmount").value = "";
     $("finDesc").value = "";
+    renderFinance();
+  }
+
+  async function deleteFinance(id){
+    if (!confirm("Usunąć wpis w finansach?")) return;
+    State.finance = State.finance.filter(x => x.id !== id);
+    await save("finance");
     renderFinance();
   }
 
@@ -1562,7 +1276,7 @@ Zasady użycia określa plik LICENSE.
       const lastMoves = State.invMoves
         .filter(m => m.itemId === it.id)
         .sort((a,b) => (b.date||"").localeCompare(a.date||"") || (b.ts||0)-(a.ts||0))
-        .slice(0,5);
+        .slice(0,6);
 
       el.innerHTML = `
         <div class="flex justify-between items-center" style="gap:10px">
@@ -1571,7 +1285,7 @@ Zasady użycia określa plik LICENSE.
             <div class="small">Aktualnie: <b>${qty.toFixed(2)}</b></div>
           </div>
           <div class="flex gap-2 items-center" style="flex-wrap:wrap;justify-content:flex-end">
-            <button class="btn btn-slate tinybtn" data-del="invitem" data-id="${esc(it.id)}">USUŃ</button>
+            <button class="btn btn-slate" style="padding:6px 10px" data-act="invDelItem" data-id="${esc(it.id)}">USUŃ</button>
           </div>
         </div>
         <div class="hr"></div>
@@ -1584,7 +1298,7 @@ Zasady użycia określa plik LICENSE.
                 <div style="font-weight:1000;color:${Number(m.delta)>=0?'var(--success)':'var(--danger)'}">
                   ${Number(m.delta)>=0?'+':''}${Number(m.delta||0).toFixed(2)}
                 </div>
-                <button class="btn btn-slate tinybtn" data-del="invmove" data-id="${esc(m.id)}">✕</button>
+                <button class="btn btn-slate" style="padding:6px 10px" data-act="invDelMove" data-id="${esc(m.id)}">✕</button>
               </div>
             `).join("") : `<div class="small">Brak ruchów.</div>`
           }
@@ -1642,7 +1356,7 @@ Zasady użycia określa plik LICENSE.
     const moves = State.invMoves
       .filter(m => m.itemId === itemId && (m.date||"") <= date)
       .sort((a,b) => (b.date||"").localeCompare(a.date||"") || (b.ts||0)-(a.ts||0))
-      .slice(0,25);
+      .slice(0,15);
 
     box.innerHTML = `
       <div class="card" style="border-left:4px solid var(--blue);padding:12px">
@@ -1651,7 +1365,7 @@ Zasady użycia określa plik LICENSE.
         <div class="small" style="margin-top:6px">Stan na dzień <b>${isoToPL(date)}</b>:</div>
         <div style="font-weight:1000;font-size:26px;margin-top:6px;color:var(--blue)">${qty.toFixed(2)}</div>
         <div class="hr"></div>
-        <div class="small"><b>Ruchy do tego dnia</b> (ostatnie 25):</div>
+        <div class="small"><b>Ruchy do tego dnia</b> (ostatnie 15):</div>
         <div style="display:grid;gap:6px;margin-top:8px">
           ${
             moves.length ? moves.map(m => `
@@ -1666,6 +1380,24 @@ Zasady użycia określa plik LICENSE.
         </div>
       </div>
     `;
+  }
+
+  async function invDeleteMove(id){
+    if (!confirm("Usunąć ruch?")) return;
+    State.invMoves = State.invMoves.filter(x => x.id !== id);
+    await save("invMoves");
+    renderInventory();
+  }
+
+  async function invDeleteItem(id){
+    const it = State.invItems.find(x => x.id === id);
+    if (!it) return;
+    if (!confirm(`Usunąć produkt "${it.name}" oraz całą historię ruchów?`)) return;
+    State.invItems = State.invItems.filter(x => x.id !== id);
+    State.invMoves = State.invMoves.filter(x => x.itemId !== id);
+    await save("invItems");
+    await save("invMoves");
+    renderInventory();
   }
 
   /* ===== Knowledge ===== */
@@ -1724,7 +1456,7 @@ Zasady użycia określa plik LICENSE.
                 <div class="small">${new Date(n.dateTS||Date.now()).toLocaleDateString("pl-PL")}</div>
               </div>
               <div class="flex gap-2">
-                <button class="btn btn-slate tinybtn" data-del="know" data-id="${esc(n.id)}">USUŃ</button>
+                <button class="btn btn-slate" style="padding:6px 10px" data-act="knowDel" data-id="${esc(n.id)}">USUŃ</button>
               </div>
             </div>
             <div style="white-space:pre-wrap;margin-top:6px">${esc(n.body||"")}</div>
@@ -1760,6 +1492,13 @@ Zasady użycia określa plik LICENSE.
     renderKnowledge();
   }
 
+  async function deleteKnowledge(id){
+    if (!confirm("Usunąć notatkę?")) return;
+    State.knowledge = State.knowledge.filter(x => x.id !== id);
+    await save("knowledge");
+    renderKnowledge();
+  }
+
   /* ===== Export / Import ===== */
   async function exportBackup(){
     const out = {
@@ -1767,8 +1506,9 @@ Zasady użycia określa plik LICENSE.
       data:{
         hives: State.hives,
         reviews: State.reviews,
-        feedings: State.feedings,
         queens: State.queens,
+        feedings: State.feedings,
+        harvests: State.harvests,
         calendar: State.calendar,
         finance: State.finance,
         invItems: State.invItems,
@@ -1781,7 +1521,7 @@ Zasady użycia określa plik LICENSE.
     const blob = new Blob([JSON.stringify(out, null, 2)], {type:"application/json"});
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = "pasiecznik_backup_" + new Date().toLocaleDateString("pl-PL") + ".json";
+    a.download = "pasiecznik_backup_" + new Date().toLocaleDateString("pl-PL").replaceAll("/","-") + ".json";
     a.click();
   }
 
@@ -1796,8 +1536,9 @@ Zasady użycia określa plik LICENSE.
 
     State.hives     = data.hives     || [];
     State.reviews   = data.reviews   || [];
-    State.feedings  = data.feedings  || [];
     State.queens    = data.queens    || [];
+    State.feedings  = data.feedings  || [];
+    State.harvests  = data.harvests  || [];
     State.calendar  = data.calendar  || {};
     State.finance   = data.finance   || [];
     State.invItems  = data.invItems  || [];
@@ -1805,7 +1546,6 @@ Zasady użycia określa plik LICENSE.
     State.topics    = data.topics    || ["Ogólne"];
     State.knowledge = data.knowledge || [];
 
-    // normalize minimal
     State.hives.forEach(h => {
       if (h.label == null) h.label = h.id;
       if (h.place == null) h.place = "";
@@ -1816,8 +1556,9 @@ Zasady użycia określa plik LICENSE.
 
     await dbSet("hives", State.hives);
     await dbSet("reviews", State.reviews);
-    await dbSet("feedings", State.feedings);
     await dbSet("queens", State.queens);
+    await dbSet("feedings", State.feedings);
+    await dbSet("harvests", State.harvests);
     await dbSet("calendar", State.calendar);
     await dbSet("finance", State.finance);
     await dbSet("invItems", State.invItems);
@@ -1857,53 +1598,40 @@ Zasady użycia określa plik LICENSE.
     renderHives();
   }
 
-  /* ===== Delete dispatcher ===== */
-  async function handleDelete(type, id){
-    if (!confirm("Usunąć?")) return;
+  /* ===== Global click delegation ===== */
+  async function onBodyClick(e){
+    const b = e.target.closest("[data-act]");
+    if (!b) return;
+    const act = b.getAttribute("data-act");
+    const id = b.getAttribute("data-id");
 
-    if (type === "fin"){
-      State.finance = State.finance.filter(x => x.id !== id);
-      await save("finance");
-      renderFinance();
-      return;
-    }
+    if (act === "revEdit") return startEditReview(id);
+    if (act === "revDel") return deleteReview(id);
 
-    if (type === "invmove"){
-      State.invMoves = State.invMoves.filter(x => x.id !== id);
-      await save("invMoves");
-      renderInventory();
-      return;
-    }
+    if (act === "feedEdit") return startEditFeeding(id);
+    if (act === "feedDel") return deleteFeeding(id);
 
-    if (type === "invitem"){
-      const it = State.invItems.find(x => x.id === id);
-      if (!it) return;
-      if (!confirm(`Usunąć produkt "${it.name}" oraz całą historię ruchów?`)) return;
+    if (act === "queenEdit") return startEditQueen(id);
+    if (act === "queenDel") return deleteQueen(id);
+    if (act === "queenSetCurrent") return setCurrentQueen(id);
 
-      State.invItems = State.invItems.filter(x => x.id !== id);
-      State.invMoves = State.invMoves.filter(x => x.itemId !== id);
+    if (act === "harvEdit") return startEditHarvest(id);
+    if (act === "harvDel") return deleteHarvest(id);
 
-      await save("invItems");
-      await save("invMoves");
-      renderInventory();
-      return;
-    }
+    if (act === "finDel") return deleteFinance(id);
 
-    if (type === "know"){
-      State.knowledge = State.knowledge.filter(x => x.id !== id);
-      await save("knowledge");
-      renderKnowledge();
-      return;
-    }
+    if (act === "invDelMove") return invDeleteMove(id);
+    if (act === "invDelItem") return invDeleteItem(id);
+
+    if (act === "knowDel") return deleteKnowledge(id);
   }
 
   /* ===== START ===== */
   document.addEventListener("DOMContentLoaded", async () => {
-    try {
+    try{
       await openDB();
       await loadAll();
 
-      // NAV
       $("topNav").addEventListener("click",(e)=>{
         const btn = e.target.closest("button[data-view]");
         if (!btn) return;
@@ -1913,47 +1641,34 @@ Zasady użycia określa plik LICENSE.
       $("addHiveBtn").addEventListener("click", addHive);
       $("backBtn").addEventListener("click", ()=>renderView("hives", null, true));
 
-      // Filters
       $("fltReviewBtn").addEventListener("click", ()=>{ Filters.review=!Filters.review; renderHives(); });
       $("fltQueenBtn").addEventListener("click", ()=>{ Filters.queen=!Filters.queen; renderHives(); });
       $("fltClearBtn").addEventListener("click", ()=>{ Filters.review=false; Filters.queen=false; renderHives(); });
 
-      // Details save
       $("saveHiveMetaBtn").addEventListener("click", saveHiveMeta);
 
-      // Reviews
-      $("addReviewBtn").addEventListener("click", addReview);
-      $("revClearBtn").addEventListener("click", ()=>{ $("revNote").value=""; });
+      $("revSaveBtn").addEventListener("click", saveReview);
 
-      // Feedings
-      $("addFeedBtn").addEventListener("click", addFeeding);
-      $("feedClearBtn").addEventListener("click", ()=>{
-        $("feedType").value=""; $("feedQty").value=""; $("feedNote").value="";
-      });
+      $("feedSaveBtn").addEventListener("click", saveFeeding);
+      $("feedClearBtn").addEventListener("click", ()=>{ clearFeedingEdit(); });
 
-      // Queens
-      $("addQueenBtn").addEventListener("click", addQueen);
-      $("qClearBtn").addEventListener("click", ()=>{
-        $("qName").value=""; $("qBreederLine").value=""; $("qInsem").value="";
-        $("qOpalit").value=""; $("qGentle").value=""; $("qNote").value="";
-        $("qIsCurrent").checked=false;
-      });
+      $("queenSaveBtn").addEventListener("click", saveQueen);
+      $("queenClearBtn").addEventListener("click", ()=>{ clearQueenEdit(); });
 
-      // Finance
+      $("harvSaveBtn").addEventListener("click", saveHarvest);
+      $("harvClearBtn").addEventListener("click", ()=>{ clearHarvestEdit(); });
+
       $("addFinBtn").addEventListener("click", addFinance);
       $("finDate").value = todayISO();
 
-      // Inventory
       $("invAddMoveBtn").addEventListener("click", invAddMove);
       $("invQueryBtn").addEventListener("click", invQuery);
       $("invMoveDate").value = todayISO();
       $("invQueryDate").value = todayISO();
 
-      // Knowledge
       $("addTopicBtn").addEventListener("click", addTopic);
       $("addKnowBtn").addEventListener("click", addKnowledge);
 
-      // Export / Import
       $("exportBtn").addEventListener("click", exportBackup);
       $("importFile").addEventListener("change", async (e)=>{
         const f = e.target.files?.[0];
@@ -1962,39 +1677,17 @@ Zasady użycia określa plik LICENSE.
         await importBackup(f);
       });
 
-      // Delegation + actions
-      document.body.addEventListener("click", async (e)=>{
-        // deletes (global)
-        const d = e.target.closest("[data-del]");
-        if (d) return handleDelete(d.getAttribute("data-del"), d.getAttribute("data-id"));
+      document.body.addEventListener("click", onBodyClick);
 
-        // review actions
-        const ar = e.target.closest("[data-act]");
-        if (!ar) return;
-        const act = ar.getAttribute("data-act");
-        const id  = ar.getAttribute("data-id");
-
-        if (act === "editReview") return editReviewModal(id);
-        if (act === "delReview")  return deleteReview(id);
-
-        if (act === "editFeeding") return editFeedingModal(id);
-        if (act === "delFeeding")  return deleteFeeding(id);
-
-        if (act === "setCurrentQueen") return setCurrentQueen(id);
-        if (act === "editQueen") return editQueenModal(id);
-        if (act === "delQueen")  return deleteQueen(id);
-      });
-
-      // Router start
       const p = new URLSearchParams(location.search);
       const v = p.get("v") || "hives";
       const id = p.get("id");
       if (v === "details" && id) renderView("details", id, false);
       else renderView(v, null, false);
 
-    } catch (e) {
-      console.error(e);
-      document.body.innerHTML = `<h1 style="color:red;padding:16px">Błąd aplikacji: ${esc(e?.message||String(e))}</h1>`;
+    } catch(err){
+      console.error(err);
+      document.body.innerHTML = `<h1 style="color:red;padding:16px">Błąd aplikacji: ${esc(err?.message||String(err))}</h1>`;
     }
   });
 
@@ -2002,11 +1695,9 @@ Zasady użycia określa plik LICENSE.
 </script>
 
 <script>
-  // Service Worker
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("./sw.js").catch(console.warn);
   }
 </script>
-
 </body>
 </html>
