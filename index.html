@@ -668,6 +668,7 @@ Zasady użycia określa plik LICENSE.
   /* ===== Details ===== */
   let editReviewId = null;
   let editFeedId = null;
+  let editTreatId = null;
   let editQueenId = null;
   let editHarvId = null;
 
@@ -949,6 +950,19 @@ Zasady użycia określa plik LICENSE.
     $("feedNote").value = "";
   }
 
+function clearTreatmentEdit(){
+  editTreatId = null;
+  const btn = $("treatSaveBtn");
+  if (btn){
+    btn.textContent = "ZAPISZ LECZENIE";
+    btn.classList.add("btn-red");
+    btn.classList.remove("btn-blue");
+  }
+  $("treatType").value = "";
+  $("treatQty").value = "";
+}
+
+
   async function deleteFeeding(id){
     if (!confirm("Usunąć karmienie?")) return;
     State.feedings = State.feedings.filter(x => x.id !== id);
@@ -999,56 +1013,61 @@ Zasady użycia określa plik LICENSE.
   }
 
   async function addTreatment(){
-    const hiveId = State.currentHive;
-    const date = ($("treatDate").value || "").trim();
-    const type = ($("treatType").value || "").trim();
-    const qty  = ($("treatQty").value || "").trim();
+  const hiveId = State.currentHive;
+  const date = ($("treatDate").value || "").trim();
+  const type = ($("treatType").value || "").trim();
+  const qty  = ($("treatQty").value || "").trim();
 
-    if (!date) return alert("Podaj datę leczenia.");
-    if (!type) return alert("Podaj rodzaj leku/środka.");
-    if (!qty)  return alert("Podaj ilość.");
+  if (!date) return alert("Podaj datę leczenia.");
+  if (!type) return alert("Podaj rodzaj leku/środka.");
+  if (!qty)  return alert("Podaj ilość.");
 
+  if (editTreatId){
+    const t = State.treatments.find(x => x.id === editTreatId);
+    if (t){
+      t.date = date;
+      t.type = type;
+      t.qty  = qty;
+      t.ts   = Date.now();
+    }
+    editTreatId = null;
+
+    const btn = $("treatSaveBtn");
+    if (btn){
+      btn.textContent = "ZAPISZ LECZENIE";
+      btn.classList.add("btn-red");
+      btn.classList.remove("btn-blue");
+    }
+  } else {
     State.treatments.push({ id:uid(), hiveId, date, type, qty, ts:Date.now() });
-    await save("treatments");
-
-    $("treatType").value = "";
-    $("treatQty").value = "";
-    renderTreatments();
   }
 
-  function editTreatmentModal(id){
-    const t = State.treatments.find(x => x.id === id);
-    if (!t) return;
+  await save("treatments");
+  $("treatType").value = "";
+  $("treatQty").value = "";
+  renderTreatments();
+}
 
-    modalOpen("Edycja leczenia", `
-      <div class="row cols3">
-        <label class="help">Data
-          <input id="mTreatDate" type="date" class="input" value="${esc(t.date||"")}">
-        </label>
-        <label class="help">Lek / środek
-          <input id="mTreatType" type="text" class="input" value="${esc(t.type||"")}">
-        </label>
-        <label class="help">Ilość
-          <input id="mTreatQty" type="text" class="input" value="${esc(t.qty||"")}">
-        </label>
-      </div>
-    `, async ()=>{
-      const d = ($("mTreatDate").value || "").trim();
-      const ty = ($("mTreatType").value || "").trim();
-      const q = ($("mTreatQty").value || "").trim();
-      if (!d) return alert("Data jest wymagana.");
-      if (!ty) return alert("Lek/środek jest wymagany.");
-      if (!q) return alert("Ilość jest wymagana.");
+  function startEditTreatment(id){
+  const t = State.treatments.find(x => x.id === id);
+  if (!t) return;
 
-      t.date = d;
-      t.type = ty;
-      t.qty  = q;
-      t.ts   = Date.now();
+  editTreatId = id;
 
-      await save("treatments");
-      modalClose();
-      renderTreatments();
-    });
+  $("treatDate").value = t.date || todayISO();
+  $("treatType").value = t.type || "";
+  $("treatQty").value  = t.qty  || "";
+
+  const btn = $("treatSaveBtn");
+  if (btn){
+    btn.textContent = "ZAPISZ ZMIANY";
+    btn.classList.remove("btn-red");
+    btn.classList.add("btn-blue");
+  }
+
+  const det = $("treatList")?.closest("details");
+  if (det) det.open = true;
+});
   }
 
   async function deleteTreatment(id){
@@ -1775,6 +1794,9 @@ Zasady użycia określa plik LICENSE.
     if (act === "feedEdit") return startEditFeeding(id);
     if (act === "feedDel") return deleteFeeding(id);
 
+    if (act === "editTreat") return startEditTreatment(id);
+    if (act === "delTreat")  return deleteTreatment(id);
+
     if (act === "queenEdit") return startEditQueen(id);
     if (act === "queenDel") return deleteQueen(id);
     if (act === "queenSetCurrent") return setCurrentQueen(id);
@@ -1818,7 +1840,7 @@ Zasady użycia określa plik LICENSE.
 
       // Leczenie
       $("treatSaveBtn").addEventListener("click", addTreatment);
-      $("treatClearBtn").addEventListener("click", ()=>{ $("treatType").value=""; $("treatQty").value=""; });
+      $("treatClearBtn").addEventListener("click", ()=>{ clearTreatmentEdit(); });
 
       $("queenSaveBtn").addEventListener("click", saveQueen);
       $("queenClearBtn").addEventListener("click", ()=>{ clearQueenEdit(); });
