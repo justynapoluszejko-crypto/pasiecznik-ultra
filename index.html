@@ -97,7 +97,17 @@ body::before{
   background-size:320px 320px;
 }
 
-</style>
+
+    /* Confirm dialog (zamiast window.confirm) */
+    .confirm-overlay{position:fixed;inset:0;background:rgba(15,23,42,.55);display:none;align-items:center;justify-content:center;padding:16px;z-index:9999}
+    .confirm-overlay.show{display:flex}
+    .confirm-box{width:min(520px,100%);background:#fff;border-radius:18px;border:1px solid var(--border);box-shadow:0 12px 40px rgba(0,0,0,.25);overflow:hidden}
+    .confirm-head{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:10px}
+    .confirm-title{font-weight:1000;text-transform:uppercase;letter-spacing:1px;font-size:14px}
+    .confirm-body{padding:16px}
+    .confirm-foot{padding:12px 16px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px}
+
+  </style>
 </head>
 <body>
 
@@ -374,6 +384,26 @@ body::before{
   </section>
 </main>
 
+
+<!-- CONFIRM (zamiast okienek przeglądarki) -->
+<div id="confirmOverlay" class="confirm-overlay" aria-hidden="true">
+  <div class="confirm-box" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+    <div class="confirm-head">
+      <div id="confirmTitle" class="confirm-title">POTWIERDŹ</div>
+      <button id="confirmClose" class="btn btn-ghost" style="padding:6px 10px">✕</button>
+    </div>
+    <div class="confirm-body">
+      <div id="confirmMessage" style="font-weight:1000;font-size:16px"></div>
+      <div id="confirmHint" class="small" style="margin-top:6px">Tej operacji nie da się cofnąć.</div>
+    </div>
+    <div class="confirm-foot">
+      <button id="confirmCancel" class="btn btn-slate" style="padding:10px 14px">ANULUJ</button>
+      <button id="confirmOk" class="btn btn-red" style="padding:10px 14px">TAK, USUŃ</button>
+    </div>
+  </div>
+</div>
+
+
 <script>
 (() => {
   "use strict";
@@ -393,6 +423,54 @@ body::before{
       .replaceAll(">","&gt;")
       .replaceAll('"',"&quot;")
       .replaceAll("'","&#039;");
+
+
+  /* ===== Confirm (bez window.confirm) ===== */
+  function confirmDialog({ title="POTWIERDŹ", message="", confirmText="TAK", confirmClass="btn-blue", hint="Tej operacji nie da się cofnąć." } = {}){
+    return new Promise((resolve) => {
+      const ov = $("confirmOverlay");
+      const tt = $("confirmTitle");
+      const msg = $("confirmMessage");
+      const hintEl = $("confirmHint");
+      const ok = $("confirmOk");
+      const cancel = $("confirmCancel");
+      const close = $("confirmClose");
+
+      tt.textContent = title;
+      msg.textContent = message;
+      hintEl.textContent = hint || "";
+
+      // ustaw przycisk OK
+      ok.textContent = confirmText;
+      ok.classList.remove("btn-blue","btn-green","btn-red","btn-slate","btn-orange");
+      ok.classList.add(confirmClass);
+
+      // pokaż
+      ov.classList.add("show");
+      ov.setAttribute("aria-hidden","false");
+
+      const finish = (val) => {
+        // sprzątanie listenerów
+        ok.onclick = null;
+        cancel.onclick = null;
+        close.onclick = null;
+        ov.onclick = null;
+
+        ov.classList.remove("show");
+        ov.setAttribute("aria-hidden","true");
+        resolve(val);
+      };
+
+      ok.onclick = () => finish(true);
+      cancel.onclick = () => finish(false);
+      close.onclick = () => finish(false);
+      ov.onclick = (e) => { if (e.target === ov) finish(false); };
+    });
+  }
+
+  function confirmDelete(message){
+    return confirmDialog({ title:"USUWANIE", message, confirmText:"TAK, USUŃ", confirmClass:"btn-red", hint:"Tej operacji nie da się cofnąć." });
+  }
 
   const todayISO = () => new Date().toISOString().slice(0,10);
   const thisYear = new Date().getFullYear();
@@ -875,7 +953,7 @@ let editQueenId = null;
   }
 
   async function deleteReview(id){
-    if (!confirm("Usunąć przegląd?")) return;
+    if (!await confirmDelete("Usunąć przegląd?")) return;
     State.reviews = State.reviews.filter(x => x.id !== id);
     await save("reviews");
     editReviewId = null;
@@ -958,7 +1036,7 @@ let editQueenId = null;
   }
 
   async function deleteFeeding(id){
-    if (!confirm("Usunąć karmienie?")) return;
+    if (!await confirmDelete("Usunąć karmienie?")) return;
     State.feedings = State.feedings.filter(x => x.id !== id);
     await save("feedings");
     clearFeedingEdit();
@@ -1062,7 +1140,7 @@ let editQueenId = null;
   }
 
   async function deleteTreatment(id){
-    if (!confirm("Usunąć wpis leczenia?")) return;
+    if (!await confirmDelete("Usunąć wpis leczenia?")) return;
     State.treatments = State.treatments.filter(t => t.id !== id);
     await save("treatments");
 
@@ -1196,7 +1274,7 @@ let editQueenId = null;
   }
 
   async function deleteQueen(id){
-    if (!confirm("Usunąć wpis o matce?")) return;
+    if (!await confirmDelete("Usunąć wpis o matce?")) return;
     State.queens = State.queens.filter(x => x.id !== id);
     await save("queens");
     clearQueenEdit();
@@ -1283,7 +1361,7 @@ let editQueenId = null;
   }
 
   async function deleteHarvest(id){
-    if (!confirm("Usunąć miodobranie?")) return;
+    if (!await confirmDelete("Usunąć miodobranie?")) return;
     State.harvests = State.harvests.filter(x => x.id !== id);
     await save("harvests");
     clearHarvestEdit();
@@ -1392,7 +1470,7 @@ let editQueenId = null;
   }
 
   async function deleteFinance(id){
-    if (!confirm("Usunąć wpis w finansach?")) return;
+    if (!await confirmDelete("Usunąć wpis w finansach?")) return;
     State.finance = State.finance.filter(x => x.id !== id);
     await save("finance");
     renderFinance();
@@ -1566,7 +1644,7 @@ let editQueenId = null;
   }
 
   async function invDeleteMove(id){
-    if (!confirm("Usunąć ruch?")) return;
+    if (!await confirmDelete("Usunąć ruch?")) return;
     State.invMoves = State.invMoves.filter(x => x.id !== id);
     await save("invMoves");
     renderInventory();
@@ -1575,7 +1653,7 @@ let editQueenId = null;
   async function invDeleteItem(id){
     const it = State.invItems.find(x => x.id === id);
     if (!it) return;
-    if (!confirm(`Usunąć produkt "${it.name}" oraz całą historię ruchów?`)) return;
+    if (!await confirmDialog({title:"USUWANIE", message:`Usunąć produkt "${it.name}" oraz całą historię ruchów?`, confirmText:"TAK, USUŃ", confirmClass:"btn-red"})) return;
     State.invItems = State.invItems.filter(x => x.id !== id);
     State.invMoves = State.invMoves.filter(x => x.itemId !== id);
     await save("invItems");
@@ -1676,7 +1754,7 @@ let editQueenId = null;
   }
 
   async function deleteKnowledge(id){
-    if (!confirm("Usunąć notatkę?")) return;
+    if (!await confirmDelete("Usunąć notatkę?")) return;
     State.knowledge = State.knowledge.filter(x => x.id !== id);
     await save("knowledge");
     renderKnowledge();
@@ -1714,7 +1792,7 @@ let editQueenId = null;
     let parsed;
     try { parsed = JSON.parse(txt); } catch { return alert("Błędny plik."); }
 
-    if (!confirm("Nadpisać wszystkie dane w aplikacji?")) return;
+    if (!await confirmDialog({title:"IMPORT", message:"Nadpisać wszystkie dane w aplikacji?", confirmText:"TAK, NADPISZ", confirmClass:"btn-red", hint:"To nadpisze wszystkie dane w aplikacji."})) return;
 
     const data = parsed.data || parsed;
 
