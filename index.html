@@ -1060,6 +1060,27 @@ let editQueenId = null;
     const details = $("treatList")?.closest("details");
     if (details) details.open = true;
   }
+
+  async function deleteTreatment(id){
+    if (!confirm("Usunąć wpis leczenia?")) return;
+    State.treatments = State.treatments.filter(t => t.id !== id);
+    await save("treatments");
+
+    // jeśli usuwałaś właśnie edytowany wpis, wyjdź z trybu edycji
+    if (editTreatId === id){
+      editTreatId = null;
+      const btn = $("treatSaveBtn");
+      if (btn){
+        btn.textContent = "ZAPISZ LECZENIE";
+        btn.classList.remove("btn-blue");
+        btn.classList.add("btn-red");
+      }
+    }
+
+    renderTreatments();
+    renderHives();
+  }
+
 /* ===== Queens ===== */
   function renderQueens(){
     const hiveId = State.currentHive;
