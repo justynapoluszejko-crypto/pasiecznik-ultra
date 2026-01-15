@@ -1,11 +1,3 @@
-<!--
-PASIECZNIK ULTRA
-© 2025 Justyna Poluszejko-Kłoda
-
-Kod źródłowy objęty prawami autorskimi.
-Repozytorium publiczne wyłącznie w celach demonstracyjnych.
-Zasady użycia określa plik LICENSE.
--->
 <!DOCTYPE html>
 <html lang="pl">
 <head>
@@ -90,7 +82,22 @@ Zasady użycia określa plik LICENSE.
     .row{display:grid;grid-template-columns:1fr;gap:10px}
     @media(min-width:700px){.row.cols2{grid-template-columns:1fr 1fr}}
     @media(min-width:900px){.row.cols3{grid-template-columns:1fr 1fr 1fr}}
-  </style>
+  
+/* ===== TŁO: miodowo-leśne (plaster + pszczoła) ===== */
+body{position:relative}
+body::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+  z-index:-1;
+  opacity:.10;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240' viewBox='0 0 240 240'%3E%3Cdefs%3E%3Cpattern id='p' width='120' height='104' patternUnits='userSpaceOnUse'%3E%3Cpath d='M30 2 L90 2 L118 52 L90 102 L30 102 L2 52 Z' fill='none' stroke='%23A9711C' stroke-width='2' opacity='0.55'/%3E%3Cpath d='M150 2 L210 2 L238 52 L210 102 L150 102 L122 52 Z' fill='none' stroke='%23A9711C' stroke-width='2' opacity='0.35'/%3E%3Cpath d='M90 52 L150 52 L178 102 L150 152 L90 152 L62 102 Z' fill='none' stroke='%232F5D50' stroke-width='2' opacity='0.25'/%3E%3C/pattern%3E%3C/defs%3E%3Crect width='240' height='240' fill='url(%23p)'/%3E%3Cg transform='translate(170 168)' opacity='0.45'%3E%3Cellipse cx='0' cy='0' rx='10' ry='7' fill='%23D9A441'/%3E%3Cpath d='M-8 -1 H8' stroke='%237A5C3E' stroke-width='2'/%3E%3Cpath d='M-6 3 H6' stroke='%237A5C3E' stroke-width='2'/%3E%3Ccircle cx='8' cy='-1' r='2' fill='%231F2A24'/%3E%3Cpath d='M-2 -8 C-10 -16 -16 -6 -6 -2' fill='none' stroke='%232F5D50' stroke-width='2'/%3E%3Cpath d='M2 -8 C10 -16 16 -6 6 -2' fill='none' stroke='%232F5D50' stroke-width='2'/%3E%3C/g%3E%3C/svg%3E");
+  background-repeat:repeat;
+  background-size:320px 320px;
+}
+
+</style>
 </head>
 <body>
 
@@ -669,7 +676,7 @@ Zasady użycia określa plik LICENSE.
   let editReviewId = null;
   let editFeedId = null;
   let editTreatId = null;
-  let editQueenId = null;
+let editQueenId = null;
   let editHarvId = null;
 
   function renderDetails(){
@@ -950,19 +957,6 @@ Zasady użycia określa plik LICENSE.
     $("feedNote").value = "";
   }
 
-function clearTreatmentEdit(){
-  editTreatId = null;
-  const btn = $("treatSaveBtn");
-  if (btn){
-    btn.textContent = "ZAPISZ LECZENIE";
-    btn.classList.add("btn-red");
-    btn.classList.remove("btn-blue");
-  }
-  $("treatType").value = "";
-  $("treatQty").value = "";
-}
-
-
   async function deleteFeeding(id){
     if (!confirm("Usunąć karmienie?")) return;
     State.feedings = State.feedings.filter(x => x.id !== id);
@@ -1012,73 +1006,61 @@ function clearTreatmentEdit(){
     });
   }
 
+  
+  /* ===== Leczenie (formularz: dodaj / edytuj) ===== */
   async function addTreatment(){
-  const hiveId = State.currentHive;
-  const date = ($("treatDate").value || "").trim();
-  const type = ($("treatType").value || "").trim();
-  const qty  = ($("treatQty").value || "").trim();
+    const hiveId = State.currentHive;
+    const date = ($("treatDate").value || "").trim();
+    const type = ($("treatType").value || "").trim();
+    const qty  = ($("treatQty").value || "").trim();
 
-  if (!date) return alert("Podaj datę leczenia.");
-  if (!type) return alert("Podaj rodzaj leku/środka.");
-  if (!qty)  return alert("Podaj ilość.");
+    if (!date) return alert("Podaj datę leczenia.");
+    if (!type) return alert("Podaj rodzaj leku/środka.");
+    if (!qty)  return alert("Podaj ilość.");
 
-  if (editTreatId){
-    const t = State.treatments.find(x => x.id === editTreatId);
-    if (t){
-      t.date = date;
-      t.type = type;
-      t.qty  = qty;
-      t.ts   = Date.now();
-    }
-    editTreatId = null;
+    if (editTreatId){
+      const t = State.treatments.find(x => x.id === editTreatId);
+      if (t){
+        t.date = date;
+        t.type = type;
+        t.qty  = qty;
+        t.ts   = Date.now();
+      }
+      editTreatId = null;
 
-    const btn = $("treatSaveBtn");
-    if (btn){
+      const btn = $("treatSaveBtn");
       btn.textContent = "ZAPISZ LECZENIE";
-      btn.classList.add("btn-red");
       btn.classList.remove("btn-blue");
+      btn.classList.add("btn-red");
+    } else {
+      State.treatments.push({ id:uid(), hiveId, date, type, qty, ts:Date.now() });
     }
-  } else {
-    State.treatments.push({ id:uid(), hiveId, date, type, qty, ts:Date.now() });
-  }
 
-  await save("treatments");
-  $("treatType").value = "";
-  $("treatQty").value = "";
-  renderTreatments();
-}
-
-  function startEditTreatment(id){
-  const t = State.treatments.find(x => x.id === id);
-  if (!t) return;
-
-  editTreatId = id;
-
-  $("treatDate").value = t.date || todayISO();
-  $("treatType").value = t.type || "";
-  $("treatQty").value  = t.qty  || "";
-
-  const btn = $("treatSaveBtn");
-  if (btn){
-    btn.textContent = "ZAPISZ ZMIANY";
-    btn.classList.remove("btn-red");
-    btn.classList.add("btn-blue");
-  }
-
-  const det = $("treatList")?.closest("details");
-  if (det) det.open = true;
-});
-  }
-
-  async function deleteTreatment(id){
-    if (!confirm("Usunąć wpis leczenia?")) return;
-    State.treatments = State.treatments.filter(x => x.id !== id);
     await save("treatments");
+
+    $("treatType").value = "";
+    $("treatQty").value = "";
     renderTreatments();
   }
 
+  function startEditTreatment(id){
+    const t = State.treatments.find(x => x.id === id);
+    if (!t) return;
+    editTreatId = id;
 
-  /* ===== Queens ===== */
+    $("treatDate").value = t.date || todayISO();
+    $("treatType").value = t.type || "";
+    $("treatQty").value  = t.qty  || "";
+
+    const btn = $("treatSaveBtn");
+    btn.textContent = "ZAPISZ ZMIANY";
+    btn.classList.remove("btn-red");
+    btn.classList.add("btn-blue");
+
+    const details = $("treatList")?.closest("details");
+    if (details) details.open = true;
+  }
+/* ===== Queens ===== */
   function renderQueens(){
     const hiveId = State.currentHive;
     const list = $("queenList");
@@ -1794,10 +1776,10 @@ function clearTreatmentEdit(){
     if (act === "feedEdit") return startEditFeeding(id);
     if (act === "feedDel") return deleteFeeding(id);
 
+    
     if (act === "editTreat") return startEditTreatment(id);
     if (act === "delTreat")  return deleteTreatment(id);
-
-    if (act === "queenEdit") return startEditQueen(id);
+if (act === "queenEdit") return startEditQueen(id);
     if (act === "queenDel") return deleteQueen(id);
     if (act === "queenSetCurrent") return setCurrentQueen(id);
 
@@ -1840,7 +1822,7 @@ function clearTreatmentEdit(){
 
       // Leczenie
       $("treatSaveBtn").addEventListener("click", addTreatment);
-      $("treatClearBtn").addEventListener("click", ()=>{ clearTreatmentEdit(); });
+      $("treatClearBtn").addEventListener("click", ()=>{ $("treatType").value=""; $("treatQty").value=""; editTreatId=null; const btn=$("treatSaveBtn"); btn.textContent="ZAPISZ LECZENIE"; btn.classList.remove("btn-blue"); btn.classList.add("btn-red"); });
 
       $("queenSaveBtn").addEventListener("click", saveQueen);
       $("queenClearBtn").addEventListener("click", ()=>{ clearQueenEdit(); });
