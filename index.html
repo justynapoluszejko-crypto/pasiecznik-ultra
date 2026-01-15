@@ -13,14 +13,27 @@ Zasady użycia określa plik LICENSE.
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
   <title>Pasiecznik ULTRA PRO</title>
   <link rel="manifest" href="manifest.webmanifest">
-  <meta name="theme-color" content="#ca8a04">
+  <meta name="theme-color" content="#A9711C">
   <style>
     :root{
-      --primary:#ca8a04; --primary-dark:#854d0e;
-      --bg:#f1f5f9; --white:#fff; --text:#0f172a;
-      --danger:#dc2626; --success:#16a34a; --blue:#2563eb;
-      --slate:#334155; --purple:#7e22ce; --emerald:#059669; --orange:#f97316;
-      --border:#e2e8f0;
+      /* Miodowo-leśny (B1) */
+      --primary:#D9A441;          /* miód jasny */
+      --primary-dark:#A9711C;     /* bursztyn */
+
+      --bg:#F4F1EC;               /* ciepły beż tła */
+      --white:#FFFDF8;            /* ciepła biel kart */
+      --text:#1F2A24;             /* ciemna zieleń-czerń */
+
+      --danger:#9C3A2B;           /* naturalna czerwień */
+      --success:#2F5D50;          /* zieleń lasu */
+      --blue:#6B7F3E;             /* oliwka (akcje pomocnicze) */
+
+      --slate:#7A5C3E;            /* drewno */
+      --purple:#2F5D50;           /* leśny akcent (zamiast fioletu) */
+      --emerald:#2F5D50;          /* leśny */
+      --orange:#E3B23C;           /* zgaszony żółty */
+
+      --border:#E6DCCF;           /* ciepły obrys */
     }
     body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text);margin:0;padding-bottom:90px}
     .header{background:var(--primary);color:#fff;padding:12px;position:sticky;top:0;z-index:50;box-shadow:0 4px 6px -1px rgba(0,0,0,.1)}
@@ -98,7 +111,7 @@ Zasady użycia określa plik LICENSE.
 
   <div class="nav-scroll" id="topNav">
     <button data-view="hives" class="btn btn-nav">🐝 Pasieka</button>
-    <button data-view="calendar" class="btn btn-nav" style="background:#4f46e5">📅 Kalendarz</button>
+    <button data-view="calendar" class="btn btn-nav" style="background:var(--success)">📅 Kalendarz</button>
     <button data-view="finance" class="btn btn-nav" style="background:var(--emerald)">💰 Finanse</button>
     <button data-view="inventory" class="btn btn-nav" style="background:var(--slate)">📦 Magazyn</button>
     <button data-view="knowledge" class="btn btn-nav" style="background:var(--purple)">🧠 Wiedza</button>
@@ -395,7 +408,7 @@ Zasady użycia określa plik LICENSE.
 
   /* ===== IndexedDB ===== */
   const DB_NAME = "pasiecznik_ultra_db";
-  const DB_VER  = 10;
+  const DB_VER  = 11; // bump: visual refresh + avoid downgrade errors
   let db = null;
 
   function openDB(){
@@ -1282,7 +1295,7 @@ Zasady użycia określa plik LICENSE.
     months.forEach((m,idx) => {
       const card = document.createElement("div");
       card.className = "card";
-      card.innerHTML = `<div style="font-weight:1000;color:#4f46e5;margin-bottom:6px">${m} ${yearSel.value}</div>`;
+      card.innerHTML = `<div style="font-weight:1000;color:var(--success);margin-bottom:6px">${m} ${yearSel.value}</div>`;
       const area = document.createElement("textarea");
       area.className="input";
       area.style.height="75px";
@@ -1856,4 +1869,3 @@ Zasady użycia określa plik LICENSE.
 </script>
 </body>
 </html>
-
