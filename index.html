@@ -2301,6 +2301,22 @@
 
           let isRecording = false;
 
+          // WAKE LOCK LOGIC
+          let wakeLock = null;
+          async function requestWakeLock() {
+            try {
+              if ('wakeLock' in navigator) {
+                wakeLock = await navigator.wakeLock.request('screen');
+              }
+            } catch (err) { console.warn("Wake Lock error:", err); }
+          }
+          async function releaseWakeLock() {
+            if (wakeLock) {
+              await wakeLock.release();
+              wakeLock = null;
+            }
+          }
+
           micBtn.addEventListener("click", () => {
               if (isRecording) {
                   recognition.stop();
@@ -2315,12 +2331,14 @@
 
           recognition.onstart = () => {
               isRecording = true;
+              requestWakeLock(); // START WAKE LOCK
               micBtn.classList.add("btn-mic-active");
               micBtn.textContent = "🎤 SŁUCHAM... (MÓW TERAZ)";
           };
 
           recognition.onend = () => {
               isRecording = false;
+              releaseWakeLock(); // STOP WAKE LOCK
               micBtn.classList.remove("btn-mic-active");
               micBtn.textContent = "🎤 NAGRAJ NOTATKĘ (Start/Stop)";
           };
@@ -2357,9 +2375,10 @@
           recognition.onerror = (e) => {
               console.error(e);
               isRecording = false;
+              releaseWakeLock();
               micBtn.classList.remove("btn-mic-active");
               micBtn.textContent = "🎤 NAGRAJ NOTATKĘ (Start/Stop)";
-              // notify("Błąd rozpoznawania mowy.");
+              notify("Błąd rozpoznawania mowy lub brak internetu.");
           };
       } else {
           micBtn.style.display = "none";
