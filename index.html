@@ -2289,17 +2289,18 @@
         await importBackup(f);
       });
 
-      // VOICE NOTE LOGIC
+      // VOICE NOTE LOGIC (ULTRA ROBUST + WAKE LOCK)
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       const micBtn = $("voiceNoteBtn");
       
       if (SpeechRecognition) {
           const recognition = new SpeechRecognition();
           recognition.lang = "pl-PL";
-          recognition.continuous = true; // ZMIANA: Ciągłe nasłuchiwanie
+          recognition.continuous = true; 
           recognition.interimResults = false;
 
           let isRecording = false;
+          let isIntentionalStop = false; // NOWE: Flaga intencji użytkownika
 
           // WAKE LOCK LOGIC
           let wakeLock = null;
@@ -2319,8 +2320,12 @@
 
           micBtn.addEventListener("click", () => {
               if (isRecording) {
+                  // Użytkownik klika STOP
+                  isIntentionalStop = true;
                   recognition.stop();
               } else {
+                  // Użytkownik klika START
+                  isIntentionalStop = false;
                   try {
                       recognition.start();
                   } catch(e) {
@@ -2331,16 +2336,26 @@
 
           recognition.onstart = () => {
               isRecording = true;
-              requestWakeLock(); // START WAKE LOCK
+              requestWakeLock(); 
               micBtn.classList.add("btn-mic-active");
               micBtn.textContent = "🎤 SŁUCHAM... (MÓW TERAZ)";
           };
 
           recognition.onend = () => {
               isRecording = false;
-              releaseWakeLock(); // STOP WAKE LOCK
-              micBtn.classList.remove("btn-mic-active");
-              micBtn.textContent = "🎤 NAGRAJ NOTATKĘ (Start/Stop)";
+              
+              if (isIntentionalStop) {
+                  // To był nasz koniec (przycisk lub komenda)
+                  micBtn.classList.remove("btn-mic-active");
+                  micBtn.textContent = "🎤 NAGRAJ NOTATKĘ (Start/Stop)";
+                  releaseWakeLock();
+              } else {
+                  // To samo się wyłączyło (cisza) -> restartujemy natychmiast!
+                  console.log("Auto-restart nagrywania...");
+                  try {
+                      recognition.start();
+                  } catch(e) { /* ignore */ }
+              }
           };
 
           recognition.onresult = (event) => {
@@ -2357,6 +2372,8 @@
                       noteBox.value = currentVal ? (currentVal + " " + cleanedText) : cleanedText;
                   }
 
+                  // To jest intencjonalny stop
+                  isIntentionalStop = true;
                   recognition.stop();
                   
                   // AUTO SAVE
@@ -2373,8 +2390,12 @@
           };
           
           recognition.onerror = (e) => {
+              // Ignoruj błąd 'no-speech', bo to normalne przy ciszy przed restartem
+              if (e.error === 'no-speech') return; 
+
               console.error(e);
               isRecording = false;
+              isIntentionalStop = true; // Wymuś stop przy błędzie
               releaseWakeLock();
               micBtn.classList.remove("btn-mic-active");
               micBtn.textContent = "🎤 NAGRAJ NOTATKĘ (Start/Stop)";
