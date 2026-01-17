@@ -29,8 +29,6 @@
     }
     
     /* STYL CZCIONKI: SYSTEM NATIVE (Apple/Android style) */
-    /* To sprawi, że na iPhone będzie San Francisco, a na Androidzie Roboto. 
-       Działa offline, wygląda nowocześnie i miękko. */
     body {
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
         background-color:var(--bg);
@@ -854,7 +852,7 @@
                   : (due && !isArch ? `<span class="pill" style="border-color:#fecaca">⏭ Następny przegląd: BRAK</span>` : ``)
               }
               <span class="pill" style="border-color:${qChange?'#fecaca':'var(--border)'}">👑 ${esc(qName)}${ageStr}</span>
-              ${qChange && !isArch ? `<span class="pill" style="border-color:#fecaca">⚠ DO WYMIANY</span>` : ``}
+              ${qChange && !isArch ? `<span class="pill" style="border-color:#fecaca">👑 ⚠ DO WYMIANY</span>` : ``}
             </div>
           </div>
           <div style="text-align:right">
