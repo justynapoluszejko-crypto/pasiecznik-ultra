@@ -53,6 +53,7 @@
     .btn-chip{background:#0f172a;color:#fff;border:1px solid rgba(255,255,255,.12);padding:8px 10px}
     .btn-chip.active{background:var(--blue)}
     .btn-chip.active-red{background:var(--danger)}
+    .btn-chip.active-slate{background:var(--slate); border-color:#fff;}
     .card{background:var(--white);border-radius:14px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.1);border:1px solid var(--border)}
     .input{width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:10px;font-size:14px;box-sizing:border-box;background:#fff}
     .input:focus{outline:2px solid var(--primary);border-color:transparent}
@@ -69,6 +70,9 @@
     .mt-3{margin-top:12px}
     .hive-card{border-bottom:6px solid var(--primary);cursor:pointer;transition:transform .2s}
     .hive-card:hover{transform:translateY(-2px)}
+    /* Styl dla zarchiwizowanego ula */
+    .hive-card.archived{opacity:0.7; filter:grayscale(0.8); border-bottom-color:#94a3b8;}
+    
     .text-alert{color:var(--danger);font-weight:1000;animation:blink 2s infinite}
     @keyframes blink{0%{opacity:1}50%{opacity:.55}100%{opacity:1}}
     details{border:1px solid var(--border);border-radius:12px;margin-bottom:10px;overflow:hidden;background:#fff}
@@ -159,11 +163,13 @@
         <button id="fltReviewBtn" class="btn btn-chip">🔎 DO PRZEGLĄDU</button>
         <button id="fltQueenBtn" class="btn btn-chip">👑 MATKA DO WYMIANY</button>
         |
+        <button id="fltArchivedBtn" class="btn btn-chip">🗄️ ARCHIWUM</button>
         <button id="fltClearBtn" class="btn btn-ghost" style="padding:8px 10px">WYCZYŚĆ</button>
       </div>
       <div class="small mt-2">
         „Do przeglądu” = ul z terminem następnego przeglądu na dziś / wstecz, albo (jeśli brak terminu) ostatni przegląd starszy niż 6 dni.<br/>
-        „Matka do wymiany” = aktualna matka ma wiek &gt;= 24 miesiące.
+        „Matka do wymiany” = aktualna matka ma wiek &gt;= 24 miesiące.<br/>
+        „Archiwum” = ule nieaktywne (np. połączone).
       </div>
     </div>
     <div id="hivesGrid" class="grid grid-hives"></div>
@@ -190,6 +196,13 @@
       <div class="row">
         <button id="saveHiveMetaBtn" class="btn btn-blue w-full">ZAPISZ METADANE ULA</button>
       </div>
+      
+      <div class="hr" style="margin-top:20px"></div>
+      <div class="muted">ZARZĄDZANIE ULEM</div>
+      <div class="row mt-2">
+         <button id="archiveHiveBtn" class="btn btn-slate w-full">📦 ARCHIWIZUJ / POŁĄCZ</button>
+      </div>
+      <div class="small mt-2">Użyj tej opcji, gdy łączysz rodziny lub likwidujesz ul. Ul zostanie oznaczony jako nieaktywny, ale zachowasz jego historię.</div>
     </div>
 
     <details open>
@@ -440,6 +453,24 @@
   </div>
 </div>
 
+<div id="archiveHiveOverlay" class="confirm-overlay" aria-hidden="true">
+  <div class="confirm-box" role="dialog" aria-modal="true">
+    <div class="confirm-head">
+      <div class="confirm-title">ARCHIWIZACJA / ŁĄCZENIE</div>
+      <button id="archiveHiveClose" class="btn btn-ghost" style="padding:6px 10px">✕</button>
+    </div>
+    <div class="confirm-body">
+      <div style="font-weight:1000; margin-bottom:10px;">Z jakim ulem łączysz tę rodzinę?</div>
+      <input id="archiveReason" class="input" placeholder="Np. Połączono z ulem nr 5">
+      <div class="small mt-2">Ul zostanie oznaczony jako "nieaktywny" i ukryty na głównym widoku (będzie dostępny w filtrze "Archiwum").</div>
+    </div>
+    <div class="confirm-foot">
+      <button id="archiveHiveCancel" class="btn btn-slate" style="padding:10px 14px">ANULUJ</button>
+      <button id="archiveHiveConfirm" class="btn btn-blue" style="padding:10px 14px">ARCHIWIZUJ</button>
+    </div>
+  </div>
+</div>
+
 
 <script>
 (() => {
@@ -612,7 +643,7 @@
 
     if (!State.hives.length){
       State.hives = ["1","2","3"].map(s => ({
-        id: s, label: s, place: "", kind: "rodzina", year: thisYear, nextVisitDate: ""
+        id: s, label: s, place: "", kind: "rodzina", year: thisYear, nextVisitDate: "", isArchived: false
       }));
       await dbSet("hives", State.hives);
     }
@@ -623,6 +654,7 @@
       if (h.kind == null) h.kind = "rodzina";
       if (h.year == null) h.year = thisYear;
       if (h.nextVisitDate == null) h.nextVisitDate = "";
+      if (h.isArchived == null) h.isArchived = false;
     });
   }
 
@@ -724,17 +756,27 @@
   }
 
   /* ===== Filters ===== */
-  const Filters = { review:false, queen:false };
+  const Filters = { review:false, queen:false, archived:false };
   function applyFilterFlags(btn, isOn, style){
     btn.classList.toggle("active", !!isOn);
     if (style==="red") btn.classList.toggle("active-red", !!isOn);
+    if (style==="slate") btn.classList.toggle("active-slate", !!isOn);
   }
   function renderFilterButtons(){
     applyFilterFlags($("fltReviewBtn"), Filters.review);
     applyFilterFlags($("fltQueenBtn"), Filters.queen, "red");
+    applyFilterFlags($("fltArchivedBtn"), Filters.archived, "slate");
   }
   function filterHives(list){
     let out = [...list];
+    
+    // ARCHIVE LOGIC
+    if (Filters.archived) {
+        out = out.filter(h => h.isArchived === true);
+    } else {
+        out = out.filter(h => !h.isArchived); // show only active by default
+    }
+
     if (Filters.review) out = out.filter(h => needsReview(h));
     if (Filters.queen) out = out.filter(h => queenNeedsChange(h.id));
     return out;
@@ -762,23 +804,25 @@
         ? monthsDiff(Number(q.year), Number(q.month), now.getFullYear(), now.getMonth()+1)
         : null;
       const qName = (q && q.name) ? String(q.name) : "brak";
+      
+      const isArch = !!h.isArchived;
 
       const el = document.createElement("div");
-      el.className = "card hive-card";
+      el.className = "card hive-card" + (isArch ? " archived" : "");
       el.innerHTML = `
         <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
           <div>
-            <div style="font-size:22px;font-weight:1000">${esc(h.label)}</div>
+            <div style="font-size:22px;font-weight:1000">${esc(h.label)} ${isArch ? "(ARCH)" : ""}</div>
             <div class="small" style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">
               <span class="pill">${h.kind==="odklad"?"Odkład":"Rodzina"} ${esc(h.year)}</span>
               ${h.place ? `<span class="pill">📍 ${esc(h.place)}</span>` : ``}
               ${
-                h.nextVisitDate
+                h.nextVisitDate && !isArch
                   ? `<span class="pill" style="border-color:${due?'#fecaca':'var(--border)'}">⏭ Następny przegląd: ${esc(isoToPL(h.nextVisitDate))}</span>`
-                  : (due ? `<span class="pill" style="border-color:#fecaca">⏭ Następny przegląd: BRAK</span>` : ``)
+                  : (due && !isArch ? `<span class="pill" style="border-color:#fecaca">⏭ Następny przegląd: BRAK</span>` : ``)
               }
               <span class="pill" style="border-color:${qChange?'#fecaca':'var(--border)'}">👑 ${esc(qName)}${qAgeM!=null ? ` • ${qAgeM} mies.` : ``}</span>
-              ${qChange ? `<span class="pill" style="border-color:#fecaca">⚠ DO WYMIANY</span>` : ``}
+              ${qChange && !isArch ? `<span class="pill" style="border-color:#fecaca">⚠ DO WYMIANY</span>` : ``}
             </div>
           </div>
           <div style="text-align:right">
@@ -787,9 +831,10 @@
           </div>
         </div>
         <div style="margin-top:10px;font-size:12px">
-          <div class="${due?'text-alert':''}" style="margin-top:6px;font-weight:1000">
-            ${due ? "🔎 DO PRZEGLĄDU" : "✅ OK"}
-          </div>
+          ${isArch 
+            ? `<div style="color:var(--slate);font-weight:1000">🗄️ ZARCHIWIZOWANY</div>`
+            : `<div class="${due?'text-alert':''}" style="margin-top:6px;font-weight:1000">${due ? "🔎 DO PRZEGLĄDU" : "✅ OK"}</div>`
+          }
         </div>
       `;
       el.addEventListener("click", () => renderView("details", h.id, true));
@@ -800,8 +845,8 @@
       const empty = document.createElement("div");
       empty.className = "card text-center";
       empty.innerHTML = `
-        <div style="font-weight:1000">Brak uli w tym filtrze.</div>
-        <div class="small mt-2">Kliknij „Wyczyść”, żeby zobaczyć wszystkie.</div>
+        <div style="font-weight:1000">${Filters.archived ? "Brak uli w archiwum." : "Brak aktywnych uli."}</div>
+        <div class="small mt-2">${Filters.archived ? "" : "Dodaj ul przyciskiem + UL."}</div>
       `;
       grid.appendChild(empty);
     }
@@ -826,6 +871,16 @@
     $("hType").value  = hive.kind || "rodzina";
     $("hYear").value  = hive.year || thisYear;
     $("hNextVisit").value = hive.nextVisitDate || "";
+    
+    // ARCHIVE LOGIC
+    if (hive.isArchived) {
+        $("archiveHiveBtn").textContent = "PRZYWRÓĆ UL (AKTYWUJ)";
+        $("saveHiveMetaBtn").textContent = "ZAPISZ (UL ARCHIWALNY)";
+        $("detailsTitle").textContent += " (ARCH)";
+    } else {
+        $("archiveHiveBtn").textContent = "📦 ARCHIWIZUJ / POŁĄCZ";
+        $("saveHiveMetaBtn").textContent = "ZAPISZ METADANE ULA";
+    }
 
     // FIX: nie resetuj pól w trakcie edycji
     if (!editReviewId){
@@ -1969,6 +2024,7 @@
       if (h.kind == null) h.kind = "rodzina";
       if (h.year == null) h.year = thisYear;
       if (h.nextVisitDate == null) h.nextVisitDate = "";
+      if (h.isArchived == null) h.isArchived = false;
     });
 
     await dbSet("hives", State.hives);
@@ -2025,13 +2081,59 @@
       place,
       kind,
       year,
-      nextVisitDate: ""
+      nextVisitDate: "",
+      isArchived: false
     });
 
     await save("hives");
     closeAddHiveModal();
     renderHives();
     notify("Dodano ul!");
+  }
+
+  /* ===== Archive Hive Modal Logic ===== */
+  function openArchiveModal(){
+      $("archiveReason").value = "";
+      const ov = $("archiveHiveOverlay");
+      ov.classList.add("show");
+      ov.setAttribute("aria-hidden","false");
+  }
+  function closeArchiveModal(){
+      const ov = $("archiveHiveOverlay");
+      ov.classList.remove("show");
+      ov.setAttribute("aria-hidden","true");
+  }
+  async function confirmArchive(){
+      const reason = ($("archiveReason").value || "").trim();
+      const hive = State.hives.find(h => h.id === State.currentHive);
+      
+      if (hive) {
+          if (hive.isArchived) {
+              // Jeżeli już jest zarchiwizowany, to PRZYWRÓĆ (od-archiwizuj)
+              hive.isArchived = false;
+              // Opcjonalnie wyczyść stare notatki archiwizacji, jeśli chcesz
+              notify("Ul przywrócony do aktywnych.");
+          } else {
+              // ARCHIWIZUJ
+              hive.isArchived = true;
+              // Zapisz powód w notatce (opcjonalnie można dodać pole archiveReason do modelu)
+              if(reason) {
+                  // Dodaj wpis do przeglądów jako "Notatka o archiwizacji"
+                  State.reviews.push({ 
+                      id:uid(), 
+                      hiveId: hive.id, 
+                      visitDate: todayISO(), 
+                      note: "ARCHIWIZACJA: " + reason, 
+                      ts:Date.now() 
+                  });
+                  await save("reviews");
+              }
+              notify("Ul zarchiwizowany.");
+          }
+          await save("hives");
+          closeArchiveModal();
+          renderView("hives", null, true);
+      }
   }
 
 
@@ -2089,12 +2191,37 @@
          if(e.target === $("addHiveOverlay")) closeAddHiveModal();
       });
 
+      // ZMIANA: Obsługa modala archiwizacji
+      $("archiveHiveBtn").addEventListener("click", () => {
+          const hive = State.hives.find(h => h.id === State.currentHive);
+          if(hive && hive.isArchived) {
+              // Szybkie przywracanie bez modala (albo z prostym confirmem)
+              confirmArchive(); 
+          } else {
+              openArchiveModal();
+          }
+      });
+      $("archiveHiveClose").addEventListener("click", closeArchiveModal);
+      $("archiveHiveCancel").addEventListener("click", closeArchiveModal);
+      $("archiveHiveConfirm").addEventListener("click", confirmArchive);
+      $("archiveHiveOverlay").addEventListener("click", (e)=>{
+         if(e.target === $("archiveHiveOverlay")) closeArchiveModal();
+      });
+
 
       $("backBtn").addEventListener("click", ()=>renderView("hives", null, true));
 
       $("fltReviewBtn").addEventListener("click", ()=>{ Filters.review=!Filters.review; renderHives(); });
       $("fltQueenBtn").addEventListener("click", ()=>{ Filters.queen=!Filters.queen; renderHives(); });
-      $("fltClearBtn").addEventListener("click", ()=>{ Filters.review=false; Filters.queen=false; renderHives(); });
+      // Archive Filter Toggle
+      $("fltArchivedBtn").addEventListener("click", ()=>{ 
+          Filters.archived=!Filters.archived; 
+          // Reset other filters to avoid confusion
+          if(Filters.archived) { Filters.review=false; Filters.queen=false; }
+          renderHives(); 
+      });
+
+      $("fltClearBtn").addEventListener("click", ()=>{ Filters.review=false; Filters.queen=false; Filters.archived=false; renderHives(); });
 
       $("saveHiveMetaBtn").addEventListener("click", saveHiveMeta);
 
