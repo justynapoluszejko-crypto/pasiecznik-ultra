@@ -725,8 +725,8 @@ body::before{
               ${h.place ? `<span class="pill">📍 ${esc(h.place)}</span>` : ``}
               ${
                 h.nextVisitDate
-                  ? `<span class="pill" style="border-color:${due?'#fecaca':'var(--border)'}">⏭ ${esc(isoToPL(h.nextVisitDate))}</span>`
-                  : (due ? `<span class="pill" style="border-color:#fecaca">⏭ BRAK (DO PRZEGLĄDU)</span>` : ``)
+                  ? `<span class="pill" style="border-color:${due?'#fecaca':'var(--border)'}">⏭ Następny przegląd: ${esc(isoToPL(h.nextVisitDate))}</span>`
+                  : (due ? `<span class="pill" style="border-color:#fecaca">⏭ Następny przegląd: BRAK</span>` : ``)
               }
               <span class="pill" style="border-color:${qChange?'#fecaca':'var(--border)'}">👑 ${esc(qName)}${qAgeM!=null ? ` • ${qAgeM} mies.` : ``}</span>
               ${qChange ? `<span class="pill" style="border-color:#fecaca">⚠ DO WYMIANY</span>` : ``}
