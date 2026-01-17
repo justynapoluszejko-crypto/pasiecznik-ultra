@@ -144,7 +144,6 @@ body::before{
 </header>
 
 <main class="container">
-  <!-- PASIEKA -->
   <section id="viewHives" class="grid">
     <div class="card" style="border-left:5px solid var(--blue)">
       <div class="muted mb-2">FILTRY EKRANU GŁÓWNEGO</div>
@@ -162,7 +161,6 @@ body::before{
     <div id="hivesGrid" class="grid grid-hives"></div>
   </section>
 
-  <!-- SZCZEGÓŁY ULA -->
   <section id="viewDetails" class="hidden grid">
     <div class="card" style="border-left:6px solid var(--primary)">
       <div class="muted">UL</div>
@@ -291,7 +289,6 @@ body::before{
 
   </section>
 
-  <!-- KALENDARZ -->
   <section id="viewCalendar" class="hidden">
     <div class="flex gap-2 items-center mb-2">
       <div class="pill">📅 KALENDARZ</div>
@@ -300,7 +297,6 @@ body::before{
     <div id="calendarGrid" class="grid cols-2" style="gap:10px"></div>
   </section>
 
-  <!-- FINANSE -->
   <section id="viewFinance" class="hidden">
     <div class="card text-center" style="border-top:5px solid var(--emerald);margin-bottom:16px">
       <div class="muted">BILANS</div>
@@ -332,7 +328,6 @@ body::before{
     <div id="finList" class="grid" style="gap:10px"></div>
   </section>
 
-  <!-- MAGAZYN -->
   <section id="viewInventory" class="hidden">
     <div class="card mb-2" style="border-top:5px solid var(--slate)">
       <h3 style="margin:0 0 10px 0;font-weight:1000">Magazyn (historia stanów)</h3>
@@ -372,7 +367,6 @@ body::before{
     </div>
   </section>
 
-  <!-- WIEDZA -->
   <section id="viewKnowledge" class="hidden">
     <div class="card mb-2" style="border-top:5px solid var(--purple)">
       <h3 style="margin:0 0 10px 0;font-weight:1000">Wiedza (tematy)</h3>
@@ -393,7 +387,6 @@ body::before{
 </main>
 
 
-<!-- CONFIRM (zamiast okienek przeglądarki) -->
 <div id="confirmOverlay" class="confirm-overlay" aria-hidden="true">
   <div class="confirm-box" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
     <div class="confirm-head">
@@ -782,7 +775,7 @@ body::before{
   let editReviewId = null;
   let editFeedId = null;
   let editTreatId = null;
-let editQueenId = null;
+  let editQueenId = null;
   let editHarvId = null;
 
   function renderDetails(){
@@ -1690,6 +1683,8 @@ let editQueenId = null;
   }
 
   /* ===== Knowledge ===== */
+  let editKnowId = null; // Zmienna do śledzenia edycji
+
   function refreshTopicSelect(){
     const sel = $("knowTopic");
     sel.innerHTML = "";
@@ -1772,9 +1767,28 @@ let editQueenId = null;
     const topic = $("knowTopic").value || "Ogólne";
     const title = ($("knowTitle").value || "").trim();
     const body  = ($("knowBody").value || "").trim();
-    if (!title && !body) return alert("Wpisz tytuł lub treść.");
 
-    State.knowledge.push({ id:uid(), topic, title:title||"(bez tytułu)", body, dateTS:Date.now() });
+    if (!title && !body) return notify("Wpisz tytuł lub treść.");
+
+    if (editKnowId) {
+        // Tryb edycji
+        const n = State.knowledge.find(x => x.id === editKnowId);
+        if(n) {
+            n.topic = topic;
+            n.title = title || "(bez tytułu)";
+            n.body  = body;
+            n.dateTS = Date.now();
+        }
+        editKnowId = null;
+        
+        // Reset przycisku
+        const btn = $("addKnowBtn");
+        btn.textContent = "ZAPISZ NOTATKĘ";
+    } else {
+        // Tryb dodawania
+        State.knowledge.push({ id:uid(), topic, title:title||"(bez tytułu)", body, dateTS:Date.now() });
+    }
+    
     await save("knowledge");
 
     $("knowTitle").value = "";
@@ -1782,62 +1796,39 @@ let editQueenId = null;
     renderKnowledge();
   }
 
+  function startEditKnowledge(id){
+    const n = State.knowledge.find(x => x.id === id);
+    if (!n) return;
+    editKnowId = id;
+
+    // Wypełnij pola formularza
+    $("knowTopic").value = n.topic || "Ogólne";
+    $("knowTitle").value = n.title || "";
+    $("knowBody").value = n.body || "";
+
+    // Zmień tekst przycisku
+    const btn = $("addKnowBtn");
+    btn.textContent = "ZAPISZ ZMIANY";
+
+    // Przewiń do góry sekcji
+    $("viewKnowledge").scrollIntoView({behavior: "smooth"});
+  }
+
   async function deleteKnowledge(id){
     if (!await confirmDelete("Usunąć notatkę?")) return;
     State.knowledge = State.knowledge.filter(x => x.id !== id);
     await save("knowledge");
+    
+    // Jeśli usuwamy edytowaną, zresetuj formularz
+    if (editKnowId === id) {
+        editKnowId = null;
+        $("knowTitle").value = "";
+        $("knowBody").value = "";
+        $("addKnowBtn").textContent = "ZAPISZ NOTATKĘ";
+    }
+    
     renderKnowledge();
   }
-
-
-  
-  function editKnowledgeModal(id){
-    const n = State.knowledge.find(x => x.id === id);
-    if (!n) return;
-
-    const currentTopic = n.topic || "Ogólne";
-    const topics = [...new Set([...(State.topics||[]), currentTopic])].filter(Boolean);
-    const opts = topics
-      .map(t => `<option value="${esc(t)}" ${t === currentTopic ? 'selected' : ''}>${esc(t)}</option>`)
-      .join("");
-
-    modalOpen("Edycja notatki", `
-      <div class="row cols2">
-        <label class="help">Temat
-          <select id="mKnowTopic" class="input">${opts}</select>
-        </label>
-        <label class="help">Tytuł
-          <input id="mKnowTitle" type="text" class="input" value="${esc(n.title||"")}">
-        </label>
-      </div>
-      <label class="help">Treść
-        <textarea id="mKnowBody" class="input" style="height:150px">${esc(n.body||"")}</textarea>
-      </label>
-      <div class="small">Zmienisz temat, tytuł i treść. Po zapisie notatka zostanie zaktualizowana.</div>
-    `, async ()=>{
-      const topic = ($("mKnowTopic").value || "Ogólne").trim();
-      const title = ($("mKnowTitle").value || "").trim();
-      const body  = ($("mKnowBody").value || "").trim();
-
-      if (!title && !body) { notify("Wpisz tytuł lub treść."); return; }
-
-      n.topic = topic || "Ogólne";
-      n.title = title || "(bez tytułu)";
-      n.body  = body;
-      n.dateTS = Date.now();
-
-      // jeżeli temat nie istnieje na liście, dodaj
-      if (topic && !State.topics.includes(topic)) {
-        State.topics.push(topic);
-        await save("topics");
-      }
-
-      await save("knowledge");
-      modalClose();
-      renderKnowledge();
-    });
-  }
-
 
   /* ===== Export / Import ===== */
   async function exportBackup(){
@@ -1957,7 +1948,8 @@ let editQueenId = null;
     
     if (act === "editTreat") return startEditTreatment(id);
     if (act === "delTreat")  return deleteTreatment(id);
-if (act === "queenEdit") return startEditQueen(id);
+    
+    if (act === "queenEdit") return startEditQueen(id);
     if (act === "queenDel") return deleteQueen(id);
     if (act === "queenSetCurrent") return setCurrentQueen(id);
 
@@ -1969,8 +1961,8 @@ if (act === "queenEdit") return startEditQueen(id);
     if (act === "invDelMove") return invDeleteMove(id);
     if (act === "invDelItem") return invDeleteItem(id);
 
-    if (act === "knowEdit") return editKnowledgeModal(id);
-
+    // Zmienione wywołanie edycji notatek
+    if (act === "knowEdit") return startEditKnowledge(id);
     if (act === "knowDel") return deleteKnowledge(id);
   }
 
