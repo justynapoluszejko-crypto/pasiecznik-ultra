@@ -27,7 +27,7 @@
 
       --border:#E6DCCF;           /* ciepły obrys */
     }
-    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text);margin:0;padding-bottom:90px}
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background-color:var(--bg);background-image:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='160'%20height='138'%20viewBox='0%200%20160%20138'%3E%0A%3Cg%20fill='none'%20stroke='%23c8a03a'%20stroke-width='2'%20stroke-opacity='0.14'%3E%0A%20%20%3Cpolygon%20points='40,4%2080,27%2080,73%2040,96%200,73%200,27'/%3E%0A%20%20%3Cpolygon%20points='120,4%20160,27%20160,73%20120,96%2080,73%2080,27'/%3E%0A%20%20%3Cpolygon%20points='80,69%20120,92%20120,138%2080,161%2040,138%2040,92'/%3E%0A%20%20%3Cpolygon%20points='0,69%2040,92%2040,138%200,161%20-40,138%20-40,92'/%3E%0A%3C/g%3E%0A%3C/svg%3E");background-size:160px 138px;background-attachment:fixed;background-position:center top;color:var(--text);margin:0;padding-bottom:90px}
     .header{background:var(--primary);color:#fff;padding:12px;position:sticky;top:0;z-index:50;box-shadow:0 4px 6px -1px rgba(0,0,0,.1)}
     .header-top{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}
     .header-title{font-weight:1000;text-transform:uppercase;letter-spacing:1px;font-size:1.05rem}
@@ -1717,6 +1717,7 @@ let editQueenId = null;
                 <div class="small">${new Date(n.dateTS||Date.now()).toLocaleDateString("pl-PL")}</div>
               </div>
               <div class="flex gap-2">
+                <button class="btn btn-blue" style="padding:6px 10px" data-act="knowEdit" data-id="${esc(n.id)}">EDYTUJ</button>
                 <button class="btn btn-slate" style="padding:6px 10px" data-act="knowDel" data-id="${esc(n.id)}">USUŃ</button>
               </div>
             </div>
@@ -1758,6 +1759,44 @@ let editQueenId = null;
     State.knowledge = State.knowledge.filter(x => x.id !== id);
     await save("knowledge");
     renderKnowledge();
+  }
+
+
+  function editKnowledgeModal(id){
+    const n = State.knowledge.find(x => x.id === id);
+    if (!n) return;
+
+    const topics = [...new Set([...(State.topics||[]), n.topic||"Ogólne"])].filter(Boolean);
+    const opts = topics.map(t => `<option value="${esc(t)}" ${t=== (n.topic||"Ogólne") ? 'selected' : ''}>${esc(t)}</option>`).join("");
+
+    modalOpen("Edycja notatki", `
+      <div class="row cols2">
+        <label class="help">Temat
+          <select id="mKnowTopic" class="input">${opts}</select>
+        </label>
+        <label class="help">Tytuł
+          <input id="mKnowTitle" type="text" class="input" value="${esc(n.title||'')}">
+        </label>
+      </div>
+      <label class="help">Treść
+        <textarea id="mKnowBody" class="input" style="height:150px">${esc(n.body||'')}</textarea>
+      </label>
+      <div class="small">Zmień tytuł/treść i kliknij „Zapisz”.</div>
+    `, async ()=>{
+      const topic = ($('mKnowTopic').value || 'Ogólne').trim();
+      const title = ($('mKnowTitle').value || '').trim();
+      const body  = ($('mKnowBody').value || '').trim();
+      if (!title && !body) return alert('Wpisz tytuł lub treść.');
+
+      n.topic = topic;
+      n.title = title || '(bez tytułu)';
+      n.body  = body;
+      n.dateTS = Date.now();
+
+      await save('knowledge');
+      modalClose();
+      renderKnowledge();
+    });
   }
 
   /* ===== Export / Import ===== */
@@ -1889,6 +1928,8 @@ if (act === "queenEdit") return startEditQueen(id);
 
     if (act === "invDelMove") return invDeleteMove(id);
     if (act === "invDelItem") return invDeleteItem(id);
+
+    if (act === "knowEdit") return editKnowledgeModal(id);
 
     if (act === "knowDel") return deleteKnowledge(id);
   }
