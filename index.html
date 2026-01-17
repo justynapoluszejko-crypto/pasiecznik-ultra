@@ -196,13 +196,6 @@
       <div class="row">
         <button id="saveHiveMetaBtn" class="btn btn-blue w-full">ZAPISZ METADANE ULA</button>
       </div>
-      
-      <div class="hr" style="margin-top:20px"></div>
-      <div class="muted">ZARZĄDZANIE ULEM</div>
-      <div class="row mt-2">
-         <button id="archiveHiveBtn" class="btn btn-slate w-full">📦 ARCHIWIZUJ / POŁĄCZ</button>
-      </div>
-      <div class="small mt-2">Użyj tej opcji, gdy łączysz rodziny lub likwidujesz ul. Ul zostanie oznaczony jako nieaktywny, ale zachowasz jego historię.</div>
     </div>
 
     <details open>
@@ -311,6 +304,14 @@
         <div id="harvList" class="grid" style="gap:10px"></div>
       </div>
     </details>
+
+    <div class="card" style="border-left:6px solid var(--slate); margin-top:20px;">
+        <div class="muted">ZARZĄDZANIE ULEM</div>
+        <div class="row mt-2">
+           <button id="archiveHiveBtn" class="btn btn-slate w-full">📦 ARCHIWIZUJ / POŁĄCZ</button>
+        </div>
+        <div class="small mt-2">Użyj tej opcji, gdy łączysz rodziny lub likwidujesz ul. Ul zostanie oznaczony jako nieaktywny, ale zachowasz jego historię.</div>
+    </div>
 
   </section>
 
@@ -2024,7 +2025,6 @@
       if (h.kind == null) h.kind = "rodzina";
       if (h.year == null) h.year = thisYear;
       if (h.nextVisitDate == null) h.nextVisitDate = "";
-      if (h.isArchived == null) h.isArchived = false;
     });
 
     await dbSet("hives", State.hives);
