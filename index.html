@@ -705,7 +705,14 @@ body::before{
     filtered.forEach(h => {
       const due = needsReview(h);
       const lastRev = lastReviewDateForHive(h.id);
+
+      const q = currentQueenForHive(h.id);
       const qChange = queenNeedsChange(h.id);
+      const now = new Date();
+      const qAgeM = (q && q.year && q.month)
+        ? monthsDiff(Number(q.year), Number(q.month), now.getFullYear(), now.getMonth()+1)
+        : null;
+      const qName = (q && q.name) ? String(q.name) : "brak";
 
       const el = document.createElement("div");
       el.className = "card hive-card";
@@ -721,7 +728,8 @@ body::before{
                   ? `<span class="pill" style="border-color:${due?'#fecaca':'var(--border)'}">⏭ ${esc(isoToPL(h.nextVisitDate))}</span>`
                   : (due ? `<span class="pill" style="border-color:#fecaca">⏭ BRAK (DO PRZEGLĄDU)</span>` : ``)
               }
-              ${qChange ? `<span class="pill" style="border-color:#fecaca">👑 MATKA DO WYMIANY</span>` : ``}
+              <span class="pill" style="border-color:${qChange?'#fecaca':'var(--border)'}">👑 ${esc(qName)}${qAgeM!=null ? ` • ${qAgeM} mies.` : ``}</span>
+              ${qChange ? `<span class="pill" style="border-color:#fecaca">⚠ DO WYMIANY</span>` : ``}
             </div>
           </div>
           <div style="text-align:right">
