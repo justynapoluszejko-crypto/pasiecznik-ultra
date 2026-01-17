@@ -184,9 +184,10 @@ body::before{
       <div class="details-content">
         <div class="row cols3">
           <input id="revDate" type="date" class="input">
-          <input id="revNext" type="date" class="input" placeholder="Kolejny termin">
+          <input id="revNext" type="date" class="input" placeholder="Termin kolejnego przeglądu" title="Termin planowanego kolejnego przeglądu (pojawi się na kafelku ula)">
           <button id="revSaveBtn" class="btn btn-blue">ZAPISZ PRZEGLĄD</button>
         </div>
+        <div class="small" style="margin-top:6px"><b>Termin kolejnego przeglądu</b> jest opcjonalny — wpisz go tylko, jeśli chcesz zaplanować następny przegląd; ta data pokaże się na kafelku ula.</div>
         <textarea id="revNote" class="input" style="height:90px" placeholder="Notatka z przeglądu..."></textarea>
         <div class="small">Możesz edytować wpis: kliknij „Edytuj” przy przeglądzie.</div>
         <div id="revList" class="grid" style="gap:10px"></div>
@@ -937,7 +938,7 @@ let editQueenId = null;
     }
 
     const hive = State.hives.find(h => h.id === hiveId);
-    if (hive && nextVisitDate) hive.nextVisitDate = nextVisitDate;
+    if (hive) hive.nextVisitDate = nextVisitDate || "";
 
     await save("reviews");
     await save("hives");
@@ -945,7 +946,7 @@ let editQueenId = null;
     editReviewId = null;
     $("revNote").value = "";
     $("revDate").value = todayISO();
-    $("revNext").value = (State.hives.find(h => h.id === hiveId)?.nextVisitDate) || "";
+    $("revNext").value = "";
     renderReviews();
     renderHives();
   }
