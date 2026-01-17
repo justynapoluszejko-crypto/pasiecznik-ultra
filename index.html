@@ -83,22 +83,21 @@
     @media(min-width:700px){.row.cols2{grid-template-columns:1fr 1fr}}
     @media(min-width:900px){.row.cols3{grid-template-columns:1fr 1fr 1fr}}
   
-/* ===== TŁO: miodowo-leśne (plaster + pszczoła) ===== */
-body{position:relative}
-body::before{
-  content:"";
-  position:fixed;
-  inset:0;
-  pointer-events:none;
-  z-index:-1;
-  opacity:.10;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240' viewBox='0 0 240 240'%3E%3Cdefs%3E%3Cpattern id='p' width='120' height='104' patternUnits='userSpaceOnUse'%3E%3Cpath d='M30 2 L90 2 L118 52 L90 102 L30 102 L2 52 Z' fill='none' stroke='%23A9711C' stroke-width='2' opacity='0.55'/%3E%3Cpath d='M150 2 L210 2 L238 52 L210 102 L150 102 L122 52 Z' fill='none' stroke='%23A9711C' stroke-width='2' opacity='0.35'/%3E%3Cpath d='M90 52 L150 52 L178 102 L150 152 L90 152 L62 102 Z' fill='none' stroke='%232F5D50' stroke-width='2' opacity='0.25'/%3E%3C/pattern%3E%3C/defs%3E%3Crect width='240' height='240' fill='url(%23p)'/%3E%3Cg transform='translate(170 168)' opacity='0.45'%3E%3Cellipse cx='0' cy='0' rx='10' ry='7' fill='%23D9A441'/%3E%3Cpath d='M-8 -1 H8' stroke='%237A5C3E' stroke-width='2'/%3E%3Cpath d='M-6 3 H6' stroke='%237A5C3E' stroke-width='2'/%3E%3Ccircle cx='8' cy='-1' r='2' fill='%231F2A24'/%3E%3Cpath d='M-2 -8 C-10 -16 -16 -6 -6 -2' fill='none' stroke='%232F5D50' stroke-width='2'/%3E%3Cpath d='M2 -8 C10 -16 16 -6 6 -2' fill='none' stroke='%232F5D50' stroke-width='2'/%3E%3C/g%3E%3C/svg%3E");
-  background-repeat:repeat;
-  background-size:320px 320px;
-}
+    /* ===== TŁO: miodowo-leśne (plaster + pszczoła) ===== */
+    body{position:relative}
+    body::before{
+      content:"";
+      position:fixed;
+      inset:0;
+      pointer-events:none;
+      z-index:-1;
+      opacity:.10;
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240' viewBox='0 0 240 240'%3E%3Cdefs%3E%3Cpattern id='p' width='120' height='104' patternUnits='userSpaceOnUse'%3E%3Cpath d='M30 2 L90 2 L118 52 L90 102 L30 102 L2 52 Z' fill='none' stroke='%23A9711C' stroke-width='2' opacity='0.55'/%3E%3Cpath d='M150 2 L210 2 L238 52 L210 102 L150 102 L122 52 Z' fill='none' stroke='%23A9711C' stroke-width='2' opacity='0.35'/%3E%3Cpath d='M90 52 L150 52 L178 102 L150 152 L90 152 L62 102 Z' fill='none' stroke='%232F5D50' stroke-width='2' opacity='0.25'/%3E%3C/pattern%3E%3C/defs%3E%3Crect width='240' height='240' fill='url(%23p)'/%3E%3Cg transform='translate(170 168)' opacity='0.45'%3E%3Cellipse cx='0' cy='0' rx='10' ry='7' fill='%23D9A441'/%3E%3Cpath d='M-8 -1 H8' stroke='%237A5C3E' stroke-width='2'/%3E%3Cpath d='M-6 3 H6' stroke='%237A5C3E' stroke-width='2'/%3E%3Ccircle cx='8' cy='-1' r='2' fill='%231F2A24'/%3E%3Cpath d='M-2 -8 C-10 -16 -16 -6 -6 -2' fill='none' stroke='%232F5D50' stroke-width='2'/%3E%3Cpath d='M2 -8 C10 -16 16 -6 6 -2' fill='none' stroke='%232F5D50' stroke-width='2'/%3E%3C/g%3E%3C/svg%3E");
+      background-repeat:repeat;
+      background-size:320px 320px;
+    }
 
-
-    /* Confirm dialog (zamiast window.confirm) */
+    /* Confirm dialog */
     .confirm-overlay{position:fixed;inset:0;background:rgba(15,23,42,.55);display:none;align-items:center;justify-content:center;padding:16px;z-index:9999}
     .confirm-overlay.show{display:flex}
     .confirm-box{width:min(520px,100%);background:#fff;border-radius:18px;border:1px solid var(--border);box-shadow:0 12px 40px rgba(0,0,0,.25);overflow:hidden}
@@ -107,13 +106,22 @@ body::before{
     .confirm-body{padding:16px}
     .confirm-foot{padding:12px 16px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px}
 
-  
-    /* Toast (bez systemowych alertów) */
+    /* Toast */
     .toast{position:fixed;left:50%;bottom:110px;transform:translateX(-50%);background:#0f172a;color:#fff;
       padding:10px 14px;border-radius:14px;font-weight:900;box-shadow:0 10px 30px rgba(0,0,0,.25);
       z-index:10001;max-width:min(560px,92%);text-align:center;display:none}
     .toast.show{display:block}
 
+    /* Voice recording animation */
+    .btn-mic-active {
+        background-color: var(--danger) !important;
+        animation: pulse-red 1.5s infinite;
+    }
+    @keyframes pulse-red {
+        0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7); }
+        70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(220, 38, 38, 0); }
+        100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
+    }
   </style>
 </head>
 <body>
@@ -192,8 +200,12 @@ body::before{
           <input id="revNext" type="date" class="input" placeholder="Termin kolejnego przeglądu" title="Termin planowanego kolejnego przeglądu (pojawi się na kafelku ula)">
           <button id="revSaveBtn" class="btn btn-blue">ZAPISZ PRZEGLĄD</button>
         </div>
-        <div class="small" style="margin-top:6px"><b>Termin kolejnego przeglądu</b> jest opcjonalny — wpisz go tylko, jeśli chcesz zaplanować następny przegląd; ta data pokaże się na kafelku ula.</div>
-        <textarea id="revNote" class="input" style="height:90px" placeholder="Notatka z przeglądu..."></textarea>
+        
+        <div class="flex items-center gap-2 mt-2">
+            <button id="voiceNoteBtn" class="btn btn-slate w-full">🎤 NAGRAJ NOTATKĘ</button>
+        </div>
+        
+        <textarea id="revNote" class="input mt-2" style="height:90px" placeholder="Notatka z przeglądu (pisz lub dyktuj)..."></textarea>
         <div class="small">Możesz edytować wpis: kliknij „Edytuj” przy przeglądzie.</div>
         <div id="revList" class="grid" style="gap:10px"></div>
       </div>
@@ -1830,6 +1842,54 @@ body::before{
     renderKnowledge();
   }
 
+  function editKnowledgeModal(id){
+    const n = State.knowledge.find(x => x.id === id);
+    if (!n) return;
+
+    const currentTopic = n.topic || "Ogólne";
+    const topics = [...new Set([...(State.topics||[]), currentTopic])].filter(Boolean);
+    const opts = topics
+      .map(t => `<option value="${esc(t)}" ${t === currentTopic ? 'selected' : ''}>${esc(t)}</option>`)
+      .join("");
+
+    modalOpen("Edycja notatki", `
+      <div class="row cols2">
+        <label class="help">Temat
+          <select id="mKnowTopic" class="input">${opts}</select>
+        </label>
+        <label class="help">Tytuł
+          <input id="mKnowTitle" type="text" class="input" value="${esc(n.title||"")}">
+        </label>
+      </div>
+      <label class="help">Treść
+        <textarea id="mKnowBody" class="input" style="height:150px">${esc(n.body||"")}</textarea>
+      </label>
+      <div class="small">Zmienisz temat, tytuł i treść. Po zapisie notatka zostanie zaktualizowana.</div>
+    `, async ()=>{
+      const topic = ($("mKnowTopic").value || "Ogólne").trim();
+      const title = ($("mKnowTitle").value || "").trim();
+      const body  = ($("mKnowBody").value || "").trim();
+
+      if (!title && !body) { notify("Wpisz tytuł lub treść."); return; }
+
+      n.topic = topic || "Ogólne";
+      n.title = title || "(bez tytułu)";
+      n.body  = body;
+      n.dateTS = Date.now();
+
+      // jeżeli temat nie istnieje na liście, dodaj
+      if (topic && !State.topics.includes(topic)) {
+        State.topics.push(topic);
+        await save("topics");
+      }
+
+      await save("knowledge");
+      modalClose();
+      renderKnowledge();
+    });
+  }
+
+
   /* ===== Export / Import ===== */
   async function exportBackup(){
     const out = {
@@ -1961,7 +2021,6 @@ body::before{
     if (act === "invDelMove") return invDeleteMove(id);
     if (act === "invDelItem") return invDeleteItem(id);
 
-    // Zmienione wywołanie edycji notatek
     if (act === "knowEdit") return startEditKnowledge(id);
     if (act === "knowDel") return deleteKnowledge(id);
   }
@@ -2020,6 +2079,49 @@ body::before{
         if (!f) return;
         await importBackup(f);
       });
+
+      // VOICE NOTE LOGIC
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const micBtn = $("voiceNoteBtn");
+      
+      if (SpeechRecognition) {
+          const recognition = new SpeechRecognition();
+          recognition.lang = "pl-PL";
+          recognition.continuous = false;
+          recognition.interimResults = false;
+
+          micBtn.addEventListener("click", () => {
+              try {
+                  recognition.start();
+                  micBtn.classList.add("btn-mic-active");
+                  micBtn.textContent = "🎤 SŁUCHAM... (MÓW TERAZ)";
+              } catch(e) {
+                  console.warn("Speech recognition busy/error", e);
+              }
+          });
+
+          recognition.onend = () => {
+              micBtn.classList.remove("btn-mic-active");
+              micBtn.textContent = "🎤 NAGRAJ NOTATKĘ";
+          };
+
+          recognition.onresult = (event) => {
+              const transcript = event.results[0][0].transcript;
+              const noteBox = $("revNote");
+              const currentVal = noteBox.value.trim();
+              noteBox.value = currentVal ? (currentVal + " " + transcript) : transcript;
+          };
+          
+          recognition.onerror = (e) => {
+              console.error(e);
+              micBtn.classList.remove("btn-mic-active");
+              micBtn.textContent = "🎤 NAGRAJ NOTATKĘ";
+              notify("Błąd rozpoznawania mowy lub brak internetu.");
+          };
+      } else {
+          micBtn.style.display = "none";
+      }
+
 
       document.body.addEventListener("click", onBodyClick);
 
