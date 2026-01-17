@@ -107,6 +107,13 @@ body::before{
     .confirm-body{padding:16px}
     .confirm-foot{padding:12px 16px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px}
 
+  
+    /* Toast (bez systemowych alertów) */
+    .toast{position:fixed;left:50%;bottom:110px;transform:translateX(-50%);background:#0f172a;color:#fff;
+      padding:10px 14px;border-radius:14px;font-weight:900;box-shadow:0 10px 30px rgba(0,0,0,.25);
+      z-index:10001;max-width:min(560px,92%);text-align:center;display:none}
+    .toast.show{display:block}
+
   </style>
 </head>
 <body>
@@ -474,6 +481,18 @@ body::before{
   }
 
   const todayISO = () => new Date().toISOString().slice(0,10);
+
+  /* ===== UI toast (zamiast alertów przeglądarki) ===== */
+  let __toastTimer = null;
+  function notify(msg){
+    const el = $("toast");
+    if (!el) { console.warn(msg); return; }
+    el.textContent = String(msg || "");
+    el.classList.add("show");
+    if (__toastTimer) clearTimeout(__toastTimer);
+    __toastTimer = setTimeout(()=> el.classList.remove("show"), 2400);
+  }
+
   const thisYear = new Date().getFullYear();
 
   const isoToPL = (iso) => {
@@ -1011,7 +1030,7 @@ let editQueenId = null;
     const qty = Number($("feedQty").value);
     const note = ($("feedNote").value || "").trim();
 
-    if (!Number.isFinite(qty) || qty === 0) return alert("Podaj ilość (różną od 0).");
+    if (!Number.isFinite(qty) || qty === 0) return notify("Podaj ilość (różną od 0).");
 
     if (editFeedId){
       const f = State.feedings.find(x => x.id === editFeedId);
@@ -2020,5 +2039,8 @@ if (act === "queenEdit") return startEditQueen(id);
     navigator.serviceWorker.register("./sw.js").catch(console.warn);
   }
 </script>
+
+<div id="toast" class="toast" aria-live="polite" aria-atomic="true"></div>
+
 </body>
 </html>
