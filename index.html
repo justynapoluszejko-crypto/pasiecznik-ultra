@@ -937,11 +937,11 @@
     const newPlace = ($("hPlace").value || "").trim();
     const newNext  = ($("hNextVisit").value || "").trim();
 
-    if (!newLabel) return alert("Numer / nazwa ula nie może być pusta.");
+    if (!newLabel) return notify("Numer / nazwa ula nie może być pusta.");
 
     const newId = newLabel;
     if (newId !== oldId && State.hives.some(h => h.id === newId)){
-      return alert("Taki numer/nazwa ula już istnieje. Wpisz inny.");
+      return notify("Taki numer/nazwa ula już istnieje. Wpisz inny.");
     }
 
     hive.kind  = $("hType").value;
@@ -1028,7 +1028,7 @@
     const nextVisitDate = ($("revNext").value || "").trim();
     const note = ($("revNote").value || "").trim();
 
-    if (!visitDate) return alert("Podaj datę przeglądu.");
+    if (!visitDate) return notify("Podaj datę przeglądu.");
 
     if (editReviewId){
       const r = State.reviews.find(x => x.id === editReviewId);
@@ -1205,9 +1205,9 @@
     const type = ($("treatType").value || "").trim();
     const qty  = ($("treatQty").value || "").trim();
 
-    if (!date) return alert("Podaj datę leczenia.");
-    if (!type) return alert("Podaj rodzaj leku/środka.");
-    if (!qty)  return alert("Podaj ilość.");
+    if (!date) return notify("Podaj datę leczenia.");
+    if (!type) return notify("Podaj rodzaj leku/środka.");
+    if (!qty)  return notify("Podaj ilość.");
 
     if (editTreatId){
       const t = State.treatments.find(x => x.id === editTreatId);
@@ -1331,8 +1331,8 @@
     const gentle = ($("qGentle").value || "").trim();
     const note = ($("qNote").value || "").trim();
 
-    if (!name && (!Number.isFinite(year) || !Number.isFinite(month))) return alert("Podaj nazwę lub rocznik+miesiąc.");
-    if (month && (month < 1 || month > 12)) return alert("Miesiąc 1-12.");
+    if (!name && (!Number.isFinite(year) || !Number.isFinite(month))) return notify("Podaj nazwę lub rocznik+miesiąc.");
+    if (month && (month < 1 || month > 12)) return notify("Miesiąc 1-12.");
 
     if (editQueenId){
       const q = State.queens.find(x => x.id === editQueenId);
@@ -1440,9 +1440,9 @@
     const type = ($("harvType").value || "").trim();
     const kg = Number($("harvKg").value);
 
-    if (!date) return alert("Podaj datę.");
-    if (!type) return alert("Podaj rodzaj miodu.");
-    if (!Number.isFinite(kg) || kg <= 0) return alert("Podaj ilość > 0.");
+    if (!date) return notify("Podaj datę.");
+    if (!type) return notify("Podaj rodzaj miodu.");
+    if (!Number.isFinite(kg) || kg <= 0) return notify("Podaj ilość > 0.");
 
     if (editHarvId){
       const h = State.harvests.find(x => x.id === editHarvId);
@@ -1572,7 +1572,7 @@
     const amount = Number($("finAmount").value);
     const desc = ($("finDesc").value || "").trim();
 
-    if (!desc || !Number.isFinite(amount) || amount<=0) return alert("Podaj opis i kwotę > 0.");
+    if (!desc || !Number.isFinite(amount) || amount<=0) return notify("Podaj opis i kwotę > 0.");
 
     State.finance.push({ id:uid(), type, date, amount, desc });
     await save("finance");
@@ -1689,13 +1689,13 @@
     const delta  = Number($("invMoveDelta").value);
     const note   = ($("invMoveNote").value || "").trim();
 
-    if (!Number.isFinite(delta) || delta===0) return alert("Podaj ilość (różną od 0).");
-    if (!date) return alert("Podaj datę.");
+    if (!Number.isFinite(delta) || delta===0) return notify("Podaj ilość (różną od 0).");
+    if (!date) return notify("Podaj datę.");
 
     let itemId = selId;
 
     if (!itemId){
-      if (!newName) return alert("Wybierz produkt lub wpisz nowy.");
+      if (!newName) return notify("Wybierz produkt lub wpisz nowy.");
       const ex = State.invItems.find(x => String(x.name).toLowerCase() === newName.toLowerCase());
       if (ex) itemId = ex.id;
       else {
@@ -1722,7 +1722,7 @@
     const box = $("invQueryResult");
     box.innerHTML = "";
 
-    if (!itemId) return alert("Wybierz produkt do sprawdzenia.");
+    if (!itemId) return notify("Wybierz produkt do sprawdzenia.");
 
     const item = State.invItems.find(x => x.id === itemId);
     const qty = invCalcQtyAtDate(itemId, date);
@@ -2000,7 +2000,7 @@
   async function importBackup(file){
     const txt = await file.text();
     let parsed;
-    try { parsed = JSON.parse(txt); } catch { return alert("Błędny plik."); }
+    try { parsed = JSON.parse(txt); } catch { return notify("Błędny plik."); }
 
     if (!await confirmDialog({title:"IMPORT", message:"Nadpisać wszystkie dane w aplikacji?", confirmText:"TAK, NADPISZ", confirmClass:"btn-red", hint:"To nadpisze wszystkie dane w aplikacji."})) return;
 
@@ -2040,7 +2040,7 @@
     await dbSet("topics", State.topics);
     await dbSet("knowledge", State.knowledge);
 
-    alert("Przywrócono dane.");
+    notify("Przywrócono dane.");
     renderView("hives", null, true);
   }
 
