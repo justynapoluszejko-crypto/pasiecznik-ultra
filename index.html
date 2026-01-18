@@ -913,14 +913,15 @@
         $("saveHiveMetaBtn").textContent = "ZAPISZ METADANE ULA";
     }
 
-    // FIX: nie resetuj pól w trakcie edycji
+    // FIX: reset pola Następny przegląd (zawsze puste dla nowego wpisu)
     if (!editReviewId){
       $("revDate").value = todayISO();
-      $("revNext").value = hive.nextVisitDate || "";
+      $("revNext").value = ""; // BYŁO: hive.nextVisitDate || ""; 
       $("revNote").value = "";
     } else {
       if (!$("revDate").value) $("revDate").value = todayISO();
-      if ($("revNext").value == null) $("revNext").value = hive.nextVisitDate || "";
+      // W edycji zostawiamy to co jest
+      if ($("revNext").value == null) $("revNext").value = ""; 
     }
 
     if (!editFeedId){
@@ -1072,7 +1073,10 @@
     }
 
     const hive = State.hives.find(h => h.id === hiveId);
-    if (hive) hive.nextVisitDate = nextVisitDate || "";
+    if (hive) {
+        // ZMIANA LOGIKI: Nadpisujemy datę tym co jest w polu (nawet jeśli puste)
+        hive.nextVisitDate = nextVisitDate;
+    }
 
     await save("reviews");
     await save("hives");
@@ -2289,43 +2293,22 @@
         await importBackup(f);
       });
 
-      // VOICE NOTE LOGIC (ULTRA ROBUST + WAKE LOCK)
+      // VOICE NOTE LOGIC
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       const micBtn = $("voiceNoteBtn");
       
       if (SpeechRecognition) {
           const recognition = new SpeechRecognition();
           recognition.lang = "pl-PL";
-          recognition.continuous = true; 
+          recognition.continuous = true; // ZMIANA: Ciągłe nasłuchiwanie
           recognition.interimResults = false;
 
           let isRecording = false;
-          let isIntentionalStop = false; // NOWE: Flaga intencji użytkownika
-
-          // WAKE LOCK LOGIC
-          let wakeLock = null;
-          async function requestWakeLock() {
-            try {
-              if ('wakeLock' in navigator) {
-                wakeLock = await navigator.wakeLock.request('screen');
-              }
-            } catch (err) { console.warn("Wake Lock error:", err); }
-          }
-          async function releaseWakeLock() {
-            if (wakeLock) {
-              await wakeLock.release();
-              wakeLock = null;
-            }
-          }
 
           micBtn.addEventListener("click", () => {
               if (isRecording) {
-                  // Użytkownik klika STOP
-                  isIntentionalStop = true;
                   recognition.stop();
               } else {
-                  // Użytkownik klika START
-                  isIntentionalStop = false;
                   try {
                       recognition.start();
                   } catch(e) {
@@ -2336,26 +2319,14 @@
 
           recognition.onstart = () => {
               isRecording = true;
-              requestWakeLock(); 
               micBtn.classList.add("btn-mic-active");
               micBtn.textContent = "🎤 SŁUCHAM... (MÓW TERAZ)";
           };
 
           recognition.onend = () => {
               isRecording = false;
-              
-              if (isIntentionalStop) {
-                  // To był nasz koniec (przycisk lub komenda)
-                  micBtn.classList.remove("btn-mic-active");
-                  micBtn.textContent = "🎤 NAGRAJ NOTATKĘ (Start/Stop)";
-                  releaseWakeLock();
-              } else {
-                  // To samo się wyłączyło (cisza) -> restartujemy natychmiast!
-                  console.log("Auto-restart nagrywania...");
-                  try {
-                      recognition.start();
-                  } catch(e) { /* ignore */ }
-              }
+              micBtn.classList.remove("btn-mic-active");
+              micBtn.textContent = "🎤 NAGRAJ NOTATKĘ (Start/Stop)";
           };
 
           recognition.onresult = (event) => {
@@ -2372,8 +2343,6 @@
                       noteBox.value = currentVal ? (currentVal + " " + cleanedText) : cleanedText;
                   }
 
-                  // To jest intencjonalny stop
-                  isIntentionalStop = true;
                   recognition.stop();
                   
                   // AUTO SAVE
@@ -2390,13 +2359,8 @@
           };
           
           recognition.onerror = (e) => {
-              // Ignoruj błąd 'no-speech', bo to normalne przy ciszy przed restartem
-              if (e.error === 'no-speech') return; 
-
               console.error(e);
               isRecording = false;
-              isIntentionalStop = true; // Wymuś stop przy błędzie
-              releaseWakeLock();
               micBtn.classList.remove("btn-mic-active");
               micBtn.textContent = "🎤 NAGRAJ NOTATKĘ (Start/Stop)";
               notify("Błąd rozpoznawania mowy lub brak internetu.");
