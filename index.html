@@ -33,7 +33,6 @@
       --border:#E6DCCF;           /* ciepły obrys */
     }
     
-    /* Ogólny styl strony (bez tła heksagonów tutaj, żeby nie mylić) */
     body {
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         background-color: var(--bg);
@@ -41,7 +40,8 @@
         margin: 0;
         padding-bottom: 90px;
         -webkit-font-smoothing: antialiased;
-        overscroll-behavior: none;
+        overscroll-behavior: none; /* Blokuje "odbijanie" strony na iOS/Android */
+        touch-action: pan-y; /* Pozwala tylko na przewijanie pionowe listy */
     }
 
     .header{background:var(--primary);color:#fff;padding:12px;position:sticky;top:0;z-index:50;box-shadow:0 4px 6px -1px rgba(0,0,0,.1)}
@@ -136,7 +136,7 @@
         border: 2px solid var(--border);
         border-radius: 14px;
         overflow: hidden;
-        background: #e2e8f0; /* Kolor tła kontenera */
+        background: #e2e8f0; 
         position: relative;
     }
     .map-viewport {
@@ -144,6 +144,7 @@
         height: 100%;
         position: relative;
         overflow: hidden; 
+        /* KLUCZOWE: Blokuje scrollowanie strony w tym obszarze */
         touch-action: none; 
         cursor: grab;
     }
@@ -152,15 +153,13 @@
     }
     /* TŁO I POWIERZCHNIA W JEDNYM */
     .map-surface {
-        width: 3000px; /* Duży obszar roboczy */
+        width: 3000px;
         height: 3000px;
         position: absolute;
         top: 0;
         left: 0;
         transform-origin: 0 0;
         
-        /* KLUCZOWA ZMIANA: Tło jest teraz częścią mapy, a nie okna. */
-        /* Przesuwając mapę, przesuwasz też heksagony. */
         background-color: #6B7F3E; 
         background-image: url("data:image/svg+xml,%3Csvg width='56' height='100' viewBox='0 0 56 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M28 66L0 50L0 16L28 0L56 16L56 50L28 66L28 100' fill='none' stroke='%23D9A441' stroke-width='1' opacity='0.15'/%3E%3Cpath d='M28 0L28 34L0 50L0 84L28 100L56 84L56 50L28 34' fill='none' stroke='%23D9A441' stroke-width='1' opacity='0.15'/%3E%3C/svg%3E");
         background-size: 56px 100px;
@@ -899,22 +898,99 @@
       });
 
       // Init Zoom Logic
-      initMapZoom();
+      // Check if we already have fit the map
+      if(!mapState.fitDone){
+         fitMapToContent();
+         mapState.fitDone = true;
+      } else {
+         applyMapTransform();
+      }
+      
+      initMapControls();
+  }
+
+  function applyMapTransform(){
+      const surface = $("mapSurface");
+      surface.style.transform = `translate(${mapState.translateX}px, ${mapState.translateY}px) scale(${mapState.scale})`;
   }
   
-  function initMapZoom(){
+  function fitMapToContent(){
       const viewport = $("mapViewport");
       const surface = $("mapSurface");
+      const hives = State.hives.filter(h => !h.isArchived);
+      
+      if(!hives.length) {
+          mapState.scale = 1;
+          mapState.translateX = 0;
+          mapState.translateY = 0;
+          applyMapTransform();
+          return;
+      }
+      
+      let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+      hives.forEach(h => {
+          const x = h.mapX || 20;
+          const y = h.mapY || 20;
+          if(x < minX) minX = x;
+          if(x > maxX) maxX = x;
+          if(y < minY) minY = y;
+          if(y > maxY) maxY = y;
+      });
+      
+      // Add padding
+      const padding = 100;
+      
+      const contentW = (maxX - minX) + padding*2;
+      const contentH = (maxY - minY) + padding*2;
+      const viewW = viewport.clientWidth;
+      const viewH = viewport.clientHeight;
+      
+      // Prevent division by zero
+      if(contentW <= 0 || contentH <= 0) return;
+
+      const scaleX = viewW / contentW;
+      const scaleY = viewH / contentH;
+      const scale = Math.min(scaleX, scaleY, 1) * 0.9; 
+      
+      mapState.scale = scale;
+      // Center logic: We want (minX - padding) to be at 0 visually, then centered
+      mapState.translateX = -minX * scale + (viewW - (maxX - minX)*scale)/2; 
+      mapState.translateY = -minY * scale + (viewH - (maxY - minY)*scale)/2;
+      
+      applyMapTransform();
+  }
+  
+  function initMapControls(){
+      const viewport = $("mapViewport");
+      
+      // Re-attach listeners to avoid duplicates
+      // Simple Hack: clone node to remove listeners
+      const newViewport = viewport.cloneNode(true);
+      viewport.parentNode.replaceChild(newViewport, viewport);
+      
+      // Re-select after replace
+      const vp = $("mapViewport");
+      // We need to re-render hives into new viewport
+      // Actually easier to just attach listeners once, but here simplified for "renderMap" structure
+      
+      // Let's attach listeners to mapContainer instead which is stable
+      const container = $("mapContainer");
+      // Remove old listeners? Hard.
+      // Better strategy: check if initialized
+      if(container.dataset.init) return; 
+      container.dataset.init = "true";
+
+      const surface = $("mapSurface");
+
       let startDist = 0;
       let startScale = 1;
       let startX = 0, startY = 0;
       let isPanning = false;
 
-      // Reset
-      surface.style.transform = `translate(${mapState.translateX}px, ${mapState.translateY}px) scale(${mapState.scale})`;
+      const vPort = $("mapViewport");
 
       // --- PINCH TO ZOOM & PAN ---
-      viewport.addEventListener('touchstart', (e) => {
+      vPort.addEventListener('touchstart', (e) => {
           if (e.touches.length === 2) {
               e.preventDefault();
               startDist = Math.hypot(
@@ -922,14 +998,17 @@
                   e.touches[0].pageY - e.touches[1].pageY
               );
               startScale = mapState.scale;
-          } else if(e.touches.length === 1 && e.target === viewport) {
-               isPanning = true;
-               startX = e.touches[0].pageX - mapState.translateX;
-               startY = e.touches[0].pageY - mapState.translateY;
+          } else if(e.touches.length === 1) {
+               // Check if target is not a hive (hive has its own listener)
+               if(!e.target.closest('.map-hive')){
+                   isPanning = true;
+                   startX = e.touches[0].pageX - mapState.translateX;
+                   startY = e.touches[0].pageY - mapState.translateY;
+               }
           }
       }, {passive: false});
 
-      viewport.addEventListener('touchmove', (e) => {
+      vPort.addEventListener('touchmove', (e) => {
           if (e.touches.length === 2) {
               e.preventDefault();
               const dist = Math.hypot(
@@ -939,62 +1018,54 @@
               if (startDist > 0) {
                   const newScale = startScale * (dist / startDist);
                   mapState.scale = Math.max(0.1, Math.min(newScale, 3));
-                  surface.style.transform = `translate(${mapState.translateX}px, ${mapState.translateY}px) scale(${mapState.scale})`;
+                  applyMapTransform();
               }
           } else if(isPanning && e.touches.length === 1) {
               e.preventDefault();
-              // SIMPLE PAN LOGIC
               mapState.translateX = e.touches[0].pageX - startX;
               mapState.translateY = e.touches[0].pageY - startY;
-              surface.style.transform = `translate(${mapState.translateX}px, ${mapState.translateY}px) scale(${mapState.scale})`;
+              applyMapTransform();
           }
       }, {passive: false});
       
-      viewport.addEventListener('touchend', ()=>{ isPanning = false; });
+      vPort.addEventListener('touchend', ()=>{ isPanning = false; });
       
+      // Mouse Pan
+      let isMousePanning = false;
+      let mStartX=0, mStartY=0;
+      vPort.addEventListener('mousedown', (e)=>{
+          if(!e.target.closest('.map-hive')){
+              isMousePanning=true;
+              mStartX = e.clientX - mapState.translateX;
+              mStartY = e.clientY - mapState.translateY;
+              vPort.style.cursor = 'grabbing';
+          }
+      });
+      window.addEventListener('mousemove', (e)=>{
+          if(!isMousePanning) return;
+          e.preventDefault();
+          mapState.translateX = e.clientX - mStartX;
+          mapState.translateY = e.clientY - mStartY;
+          applyMapTransform();
+      });
+      window.addEventListener('mouseup', ()=>{
+          isMousePanning=false;
+          vPort.style.cursor = 'grab';
+      });
+
+
       // Mouse Wheel Zoom
-      viewport.addEventListener('wheel', (e) => {
+      vPort.addEventListener('wheel', (e) => {
          if(e.ctrlKey){
              e.preventDefault();
              const delta = -e.deltaY * 0.001;
              mapState.scale = Math.max(0.1, Math.min(mapState.scale + delta, 3));
-             surface.style.transform = `translate(${mapState.translateX}px, ${mapState.translateY}px) scale(${mapState.scale})`;
+             applyMapTransform();
          }
       }, {passive:false});
       
       // Fit Button
-      $("btnFitMap").onclick = () => {
-          const hives = State.hives.filter(h => !h.isArchived);
-          if(!hives.length) return;
-          
-          let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-          hives.forEach(h => {
-              const x = h.mapX || 20;
-              const y = h.mapY || 20;
-              if(x < minX) minX = x;
-              if(x > maxX) maxX = x;
-              if(y < minY) minY = y;
-              if(y > maxY) maxY = y;
-          });
-          
-          // Add padding
-          maxX += 100; maxY += 100;
-          
-          const contentW = maxX - minX + 100;
-          const contentH = maxY - minY + 100;
-          const viewW = viewport.clientWidth;
-          const viewH = viewport.clientHeight;
-          
-          const scaleX = viewW / contentW;
-          const scaleY = viewH / contentH;
-          const scale = Math.min(scaleX, scaleY, 1) * 0.9; 
-          
-          mapState.scale = scale;
-          mapState.translateX = -minX * scale + (viewW - contentW*scale)/2; 
-          mapState.translateY = -minY * scale + (viewH - contentH*scale)/2;
-          
-          surface.style.transform = `translate(${mapState.translateX}px, ${mapState.translateY}px) scale(${mapState.scale})`;
-      };
+      $("btnFitMap").onclick = fitMapToContent;
   }
 
   function initMapDrag(el, hiveData){
@@ -1002,16 +1073,24 @@
       let isDragging = false;
       let moved = false;
 
+      // Mouse/Touch Start
       const onStart = (e) => {
-          if(e.type === 'touchstart') e.preventDefault();
+          // If 2 fingers, ignore drag
+          if(e.touches && e.touches.length > 1) return;
+          
+          // Stop propagation so map panning doesn't start
+          e.stopPropagation();
+
+          if(e.type === 'touchstart') {
+              // e.preventDefault(); // Don't prevent default immediately, might be a tap
+          }
+          
           isDragging = true;
           moved = false;
-          el.classList.add("dragging");
           
           const clientX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
           const clientY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
           
-          // Calculate click offset considering current scale
           startX = clientX;
           startY = clientY;
           initialLeft = parseFloat(el.style.left) || 0;
@@ -1025,19 +1104,24 @@
 
       const onMove = (e) => {
           if(!isDragging) return;
-          if(e.type === 'touchmove') e.preventDefault(); 
           
           const clientX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
           const clientY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
           
-          // Adjust movement by scale
-          const dx = (clientX - startX) / mapState.scale;
-          const dy = (clientY - startY) / mapState.scale;
-          
-          if(Math.abs(dx) > 3 || Math.abs(dy) > 3) moved = true;
-          
-          el.style.left = (initialLeft + dx) + "px";
-          el.style.top  = (initialTop + dy) + "px";
+          // Sensitivity check (10px threshold)
+          if(Math.abs(clientX - startX) > 10 || Math.abs(clientY - startY) > 10) {
+              moved = true;
+              if(e.cancelable) e.preventDefault(); // Now we are sure it's a drag
+              el.classList.add("dragging");
+          }
+
+          if (moved) {
+              const dx = (clientX - startX) / mapState.scale;
+              const dy = (clientY - startY) / mapState.scale;
+              
+              el.style.left = (initialLeft + dx) + "px";
+              el.style.top  = (initialTop + dy) + "px";
+          }
       };
 
       const onEnd = async () => {
@@ -1050,8 +1134,10 @@
           document.removeEventListener('touchend', onEnd);
           
           if(!moved) {
+              // TAP
               renderView("details", hiveData.id, true);
           } else {
+              // DRAG END
               hiveData.mapX = parseFloat(el.style.left);
               hiveData.mapY = parseFloat(el.style.top);
               await save("hives");
@@ -1228,1541 +1314,4 @@
     $("hPlace").value = hive.place || "";
     $("hType").value  = hive.kind || "rodzina";
     $("hYear").value  = hive.year || thisYear;
-    $("hNextVisit").value = hive.nextVisitDate || "";
-    
-    // ARCHIVE LOGIC
-    if (hive.isArchived) {
-        $("archiveHiveBtn").textContent = "PRZYWRÓĆ UL (AKTYWUJ)";
-        $("saveHiveMetaBtn").textContent = "ZAPISZ (UL ARCHIWALNY)";
-        $("detailsTitle").textContent += " (ARCH)";
-    } else {
-        $("archiveHiveBtn").textContent = "📦 ARCHIWIZUJ / POŁĄCZ";
-        $("saveHiveMetaBtn").textContent = "ZAPISZ METADANE ULA";
-    }
-
-    // FIX: reset pola Następny przegląd (zawsze puste dla nowego wpisu)
-    if (!editReviewId){
-      $("revDate").value = todayISO();
-      $("revNext").value = ""; 
-      $("revNote").value = "";
-    } else {
-      if (!$("revDate").value) $("revDate").value = todayISO();
-      // W edycji zostawiamy to co jest
-      if ($("revNext").value == null) $("revNext").value = ""; 
-    }
-
-    if (!editFeedId){
-      $("feedDate").value = todayISO();
-      $("feedType").value = "syrop";
-      $("feedQty").value = "";
-      $("feedNote").value = "";
-    } else {
-      if (!$("feedDate").value) $("feedDate").value = todayISO();
-    }
-
-    if (!editQueenId){
-      $("qName").value="";
-      $("qYear").value=thisYear;
-      $("qMonth").value=new Date().getMonth()+1;
-      $("qMating").value="";
-      $("qLine").value="";
-      $("qOpalit").value="";
-      $("qGentle").value="";
-      $("qNote").value="";
-    }
-
-    if (!editHarvId){
-      $("harvDate").value = todayISO();
-      $("harvType").value="";
-      $("harvKg").value="";
-    } else {
-      if (!$("harvDate").value) $("harvDate").value = todayISO();
-    }
-
-    renderReviews();
-    renderFeedings();
-    renderTreatments();
-    renderQueens();
-    renderHarvests();
-  }
-
-  async function saveHiveMeta(){
-    const oldId = State.currentHive;
-    const hive = State.hives.find(h => h.id === oldId);
-    if (!hive) return;
-
-    const newLabel = ($("hLabel").value || "").trim();
-    const newPlace = ($("hPlace").value || "").trim();
-    const newNext  = ($("hNextVisit").value || "").trim();
-
-    if (!newLabel) return notify("Numer / nazwa ula nie może być pusta.");
-
-    const newId = newLabel;
-    if (newId !== oldId && State.hives.some(h => h.id === newId)){
-      return notify("Taki numer/nazwa ula już istnieje. Wpisz inny.");
-    }
-
-    hive.kind  = $("hType").value;
-    hive.year  = Number($("hYear").value) || thisYear;
-    hive.place = newPlace;
-    hive.nextVisitDate = newNext;
-
-    if (newId !== oldId){
-      hive.id = newId;
-      hive.label = newLabel;
-
-      State.reviews.forEach(r => { if (r.hiveId === oldId) r.hiveId = newId; });
-      State.queens.forEach(q => { if (q.hiveId === oldId) q.hiveId = newId; });
-      State.feedings.forEach(f => { if (f.hiveId === oldId) f.hiveId = newId; });
-      State.treatments.forEach(tr => { if (tr.hiveId === oldId) tr.hiveId = newId; });
-
-
-    State.treatments.forEach(tr => {
-      if (!tr.id) tr.id = uid();
-      if (!tr.ts) tr.ts = Date.now();
-      if (tr.type == null) tr.type = "";
-      if (tr.qty == null) tr.qty = "";
-    });
-      State.harvests.forEach(x => { if (x.hiveId === oldId) x.hiveId = newId; });
-
-      await save("reviews"); await save("queens"); await save("feedings"); await save("harvests");
-
-      State.currentHive = newId;
-      const p = new URLSearchParams(location.search);
-      p.set("v","details"); p.set("id", newId);
-      history.replaceState({view:"details", hiveId:newId}, "", "?" + p.toString());
-    } else {
-      hive.label = newLabel;
-    }
-
-    await save("hives");
-    renderDetails();
-    renderHives();
-  }
-
-  /* ===== Reviews ===== */
-  function renderReviews(){
-    const hiveId = State.currentHive;
-    const list = $("revList");
-    list.innerHTML = "";
-
-    const items = State.reviews.filter(r => r.hiveId === hiveId)
-      .sort((a,b) => (b.visitDate||"").localeCompare(a.visitDate||"") || (b.ts||0)-(a.ts||0));
-
-    $("reviewsCount").textContent = String(items.length);
-
-    items.forEach(r => {
-      const el = document.createElement("div");
-      el.className = "card";
-      el.style.borderLeft = "4px solid " + (r.nextVisitDate && r.nextVisitDate <= todayISO() ? "var(--danger)" : "var(--blue)");
-      el.innerHTML = `
-        <div class="flex justify-between items-center" style="gap:10px">
-          <div style="flex:1">
-            <div style="font-weight:700">${isoToPL(r.visitDate)} ${r.nextVisitDate?`• ⏭ ${isoToPL(r.nextVisitDate)}`:""}</div>
-            <div style="white-space:pre-wrap;margin-top:6px">${esc(r.note||"")}</div>
-          </div>
-          <div class="flex gap-2" style="flex-wrap:wrap;justify-content:flex-end">
-            <button class="btn btn-slate" style="padding:6px 10px" data-act="revEdit" data-id="${esc(r.id)}">EDYTUJ</button>
-            <button class="btn btn-red" style="padding:6px 10px" data-act="revDel" data-id="${esc(r.id)}">USUŃ</button>
-          </div>
-        </div>
-      `;
-      list.appendChild(el);
-    });
-
-    State.treatments.forEach(t => {
-      if (!t.id) t.id = uid();
-      if (!t.ts) t.ts = Date.now();
-      if (t.type == null) t.type = "";
-      if (t.qty == null) t.qty = "";
-      if (t.date == null) t.date = "";
-    });
-
-  }
-
-  async function saveReview(){
-    const hiveId = State.currentHive;
-    const visitDate = $("revDate").value || todayISO();
-    const nextVisitDate = ($("revNext").value || "").trim();
-    const note = ($("revNote").value || "").trim();
-
-    if (!visitDate) return notify("Podaj datę przeglądu.");
-
-    if (editReviewId){
-      const r = State.reviews.find(x => x.id === editReviewId);
-      if (!r) { editReviewId=null; return; }
-      r.visitDate = visitDate;
-      r.nextVisitDate = nextVisitDate;
-      r.note = note;
-      r.ts = Date.now();
-    } else {
-      State.reviews.push({ id:uid(), hiveId, visitDate, nextVisitDate, note, ts:Date.now() });
-    }
-
-    const hive = State.hives.find(h => h.id === hiveId);
-    if (hive) {
-        // ZMIANA LOGIKI: Nadpisujemy datę tym co jest w polu (nawet jeśli puste - wtedy kasujemy plan)
-        hive.nextVisitDate = nextVisitDate;
-    }
-
-    await save("reviews");
-    await save("hives");
-
-    editReviewId = null;
-    $("revNote").value = "";
-    $("revDate").value = todayISO();
-    $("revNext").value = "";
-    renderReviews();
-    renderHives();
-  }
-
-  function startEditReview(id){
-    const r = State.reviews.find(x => x.id === id);
-    if (!r) return;
-    editReviewId = id;
-    $("revDate").value = r.visitDate || todayISO();
-    $("revNext").value = r.nextVisitDate || "";
-    $("revNote").value = r.note || "";
-    window.scrollTo({top:0, behavior:"smooth"});
-  }
-
-  async function deleteReview(id){
-    if (!await confirmDelete("Usunąć przegląd?")) return;
-    State.reviews = State.reviews.filter(x => x.id !== id);
-    await save("reviews");
-    editReviewId = null;
-    $("revNote").value = "";
-    $("revDate").value = todayISO();
-    renderReviews();
-    renderHives();
-  }
-
-  /* ===== Feedings ===== */
-  function renderFeedings(){
-    const hiveId = State.currentHive;
-    const list = $("feedList");
-    list.innerHTML = "";
-
-    const items = State.feedings.filter(f => f.hiveId === hiveId)
-      .sort((a,b) => (b.date||"").localeCompare(a.date||"") || (b.ts||0)-(a.ts||0));
-
-    $("feedCount").textContent = String(items.length);
-
-    items.forEach(f => {
-      const el = document.createElement("div");
-      el.className = "card";
-      el.style.borderLeft = "4px solid var(--slate)";
-      el.innerHTML = `
-        <div class="flex justify-between items-center" style="gap:10px">
-          <div style="flex:1">
-            <div style="font-weight:700">${isoToPL(f.date)} • ${esc(f.type||"")}</div>
-            <div class="small">Ilość: <b>${Number(f.qty||0).toFixed(2)}</b> (kg/l)</div>
-            ${f.note ? `<div style="white-space:pre-wrap;margin-top:6px">${esc(f.note)}</div>` : ``}
-          </div>
-          <div class="flex gap-2" style="flex-wrap:wrap;justify-content:flex-end">
-            <button class="btn btn-slate" style="padding:6px 10px" data-act="feedEdit" data-id="${esc(f.id)}">EDYTUJ</button>
-            <button class="btn btn-red" style="padding:6px 10px" data-act="feedDel" data-id="${esc(f.id)}">USUŃ</button>
-          </div>
-        </div>
-      `;
-      list.appendChild(el);
-    });
-  }
-
-  async function saveFeeding(){
-    const hiveId = State.currentHive;
-    const date = $("feedDate").value || todayISO();
-    const type = $("feedType").value || "syrop";
-    const qty = Number($("feedQty").value);
-    const note = ($("feedNote").value || "").trim();
-
-    if (!Number.isFinite(qty) || qty === 0) return notify("Podaj ilość (różną od 0).");
-
-    if (editFeedId){
-      const f = State.feedings.find(x => x.id === editFeedId);
-      if (!f) { editFeedId=null; return; }
-      f.date = date; f.type = type; f.qty = qty; f.note = note; f.ts = Date.now();
-    } else {
-      State.feedings.push({ id:uid(), hiveId, date, type, qty, note, ts:Date.now() });
-    }
-
-    await save("feedings");
-    clearFeedingEdit();
-    $("feedDate").value = todayISO();
-    renderFeedings();
-  }
-
-  function startEditFeeding(id){
-    const f = State.feedings.find(x => x.id === id);
-    if (!f) return;
-    editFeedId = id;
-    $("feedDate").value = f.date || todayISO();
-    $("feedType").value = f.type || "syrop";
-    $("feedQty").value = f.qty ?? "";
-    $("feedNote").value = f.note || "";
-  }
-
-  function clearFeedingEdit(){
-    editFeedId = null;
-    $("feedType").value = "syrop";
-    $("feedQty").value = "";
-    $("feedNote").value = "";
-  }
-
-  async function deleteFeeding(id){
-    if (!await confirmDelete("Usunąć karmienie?")) return;
-    State.feedings = State.feedings.filter(x => x.id !== id);
-    await save("feedings");
-    clearFeedingEdit();
-    $("feedDate").value = todayISO();
-    renderFeedings();
-  }
-
-
-  /* ===== Treatments ===== */
-  function renderTreatments(){
-    const hiveId = State.currentHive;
-    const list = $("treatList");
-    const cnt = $("treatCount");
-    if (!list) return;
-    list.innerHTML = "";
-
-    const items = State.treatments
-      .filter(t => t.hiveId === hiveId)
-      .sort((a,b) => (b.date||"").localeCompare(a.date||"") || (b.ts||0)-(a.ts||0));
-
-    if (cnt) cnt.textContent = items.length ? (items.length + " wpis.") : "0";
-
-    if (!items.length){
-      list.innerHTML = `<div class="card text-center"><div style="font-weight:700">Brak leczeń.</div><div class="small mt-2">Dodaj pierwszy wpis leczenia powyżej.</div></div>`;
-      return;
-    }
-
-    items.forEach(t => {
-      const el = document.createElement("div");
-      el.className = "card";
-      el.style.borderLeft = "4px solid var(--danger)";
-      el.innerHTML = `
-        <div class="kv">
-          <div>
-            <div style="font-weight:700">💊 ${isoToPL(t.date)} • ${esc(t.type||"—")}</div>
-            <div class="small" style="margin-top:6px">Ilość: <b>${esc(t.qty||"—")}</b></div>
-          </div>
-          <div class="flex gap-1" style="justify-content:flex-end;flex-wrap:wrap">
-            <button class="btn btn-blue tinybtn" data-act="editTreat" data-id="${esc(t.id)}">EDYTUJ</button>
-            <button class="btn btn-slate tinybtn" data-act="delTreat" data-id="${esc(t.id)}">USUŃ</button>
-          </div>
-        </div>
-      `;
-      list.appendChild(el);
-    });
-  }
-
-  
-  /* ===== Leczenie (formularz: dodaj / edytuj) ===== */
-  async function addTreatment(){
-    const hiveId = State.currentHive;
-    const date = ($("treatDate").value || "").trim();
-    const type = ($("treatType").value || "").trim();
-    const qty  = ($("treatQty").value || "").trim();
-
-    if (!date) return notify("Podaj datę leczenia.");
-    if (!type) return notify("Podaj rodzaj leku/środka.");
-    if (!qty)  return notify("Podaj ilość.");
-
-    if (editTreatId){
-      const t = State.treatments.find(x => x.id === editTreatId);
-      if (t){
-        t.date = date;
-        t.type = type;
-        t.qty  = qty;
-        t.ts   = Date.now();
-      }
-      editTreatId = null;
-
-      const btn = $("treatSaveBtn");
-      btn.textContent = "ZAPISZ LECZENIE";
-      btn.classList.remove("btn-blue");
-      btn.classList.add("btn-red");
-    } else {
-      State.treatments.push({ id:uid(), hiveId, date, type, qty, ts:Date.now() });
-    }
-
-    await save("treatments");
-
-    $("treatType").value = "";
-    $("treatQty").value = "";
-    renderTreatments();
-  }
-
-  function startEditTreatment(id){
-    const t = State.treatments.find(x => x.id === id);
-    if (!t) return;
-    editTreatId = id;
-
-    $("treatDate").value = t.date || todayISO();
-    $("treatType").value = t.type || "";
-    $("treatQty").value  = t.qty  || "";
-
-    const btn = $("treatSaveBtn");
-    btn.textContent = "ZAPISZ ZMIANY";
-    btn.classList.remove("btn-red");
-    btn.classList.add("btn-blue");
-
-    const details = $("treatList")?.closest("details");
-    if (details) details.open = true;
-  }
-
-  async function deleteTreatment(id){
-    if (!await confirmDelete("Usunąć wpis leczenia?")) return;
-    State.treatments = State.treatments.filter(t => t.id !== id);
-    await save("treatments");
-
-    // jeśli usuwałaś właśnie edytowany wpis, wyjdź z trybu edycji
-    if (editTreatId === id){
-      editTreatId = null;
-      const btn = $("treatSaveBtn");
-      if (btn){
-        btn.textContent = "ZAPISZ LECZENIE";
-        btn.classList.remove("btn-blue");
-        btn.classList.add("btn-red");
-      }
-    }
-
-    renderTreatments();
-    renderHives();
-  }
-
-/* ===== Queens ===== */
-  function renderQueens(){
-    const hiveId = State.currentHive;
-    const list = $("queenList");
-    list.innerHTML = "";
-
-    const items = State.queens.filter(q => q.hiveId === hiveId)
-      .sort((a,b) => (b.isCurrent?1:0)-(a.isCurrent?1:0) || (b.ts||0)-(a.ts||0));
-
-    $("queenCount").textContent = String(items.length);
-
-    const now = new Date();
-    items.forEach(q => {
-      const ageM = (q.year && q.month) ? monthsDiff(Number(q.year), Number(q.month), now.getFullYear(), now.getMonth()+1) : null;
-      const warn = (ageM != null && ageM >= 24);
-      const el = document.createElement("div");
-      el.className = "card";
-      el.style.borderLeft = "4px solid " + (warn ? "var(--danger)" : "var(--purple)");
-      el.innerHTML = `
-        <div class="flex justify-between items-center" style="gap:10px">
-          <div style="flex:1">
-            <div style="font-weight:700">
-              ${q.isCurrent ? "✅ AKTUALNA • " : ""}${esc(q.name||"(bez nazwy)")}
-              ${q.year?` • ${esc(q.year)}/${String(q.month||"").padStart(2,"0")}`:""}
-            </div>
-            <div class="small">
-              ${ageM!=null ? `Wiek: <b>${ageM}</b> mies.` : "Wiek: —"}
-              ${warn ? ` • <span style="color:var(--danger);font-weight:700">MATKA DO WYMIANY</span>` : ``}
-            </div>
-            <div class="small" style="margin-top:6px">
-              ${q.mating?`Unasiennianie: <b>${esc(q.mating)}</b> • `:""}
-              ${q.line?`Linia/Hodowca: <b>${esc(q.line)}</b> • `:""}
-              ${q.opalit?`Opalitka: <b>${esc(q.opalit)}</b>`:""}
-            </div>
-            ${q.gentle?`<div class="small">Łagodność: <b>${esc(q.gentle)}</b></div>`:""}
-            ${q.note?`<div style="white-space:pre-wrap;margin-top:6px">${esc(q.note)}</div>`:""}
-          </div>
-          <div class="flex gap-2" style="flex-wrap:wrap;justify-content:flex-end">
-            <button class="btn btn-blue" style="padding:6px 10px" data-act="queenSetCurrent" data-id="${esc(q.id)}">USTAW AKTUALNĄ</button>
-            <button class="btn btn-slate" style="padding:6px 10px" data-act="queenEdit" data-id="${esc(q.id)}">EDYTUJ</button>
-            <button class="btn btn-red" style="padding:6px 10px" data-act="queenDel" data-id="${esc(q.id)}">USUŃ</button>
-          </div>
-        </div>
-      `;
-      list.appendChild(el);
-    });
-  }
-
-  async function saveQueen(){
-    const hiveId = State.currentHive;
-    const name = ($("qName").value || "").trim();
-    const year = Number($("qYear").value);
-    const month = Number($("qMonth").value);
-    const mating = ($("qMating").value || "").trim();
-    const line = ($("qLine").value || "").trim();
-    const opalit = ($("qOpalit").value || "").trim();
-    const gentle = ($("qGentle").value || "").trim();
-    const note = ($("qNote").value || "").trim();
-
-    if (!name && (!Number.isFinite(year) || !Number.isFinite(month))) return notify("Podaj nazwę lub rocznik+miesiąc.");
-    if (month && (month < 1 || month > 12)) return notify("Miesiąc 1-12.");
-
-    if (editQueenId){
-      const q = State.queens.find(x => x.id === editQueenId);
-      if (!q) { editQueenId=null; return; }
-      q.name = name || q.name;
-      q.year = Number.isFinite(year) ? year : q.year;
-      q.month = Number.isFinite(month) ? month : q.month;
-      q.mating = mating; q.line = line; q.opalit = opalit; q.gentle = gentle; q.note = note;
-      q.ts = Date.now();
-    } else {
-      State.queens.push({
-        id:uid(), hiveId,
-        name: name || "(bez nazwy)",
-        year: Number.isFinite(year) ? year : null,
-        month: Number.isFinite(month) ? month : null,
-        mating, line, opalit, gentle, note,
-        isCurrent: false,
-        ts: Date.now()
-      });
-    }
-
-    await save("queens");
-    clearQueenEdit();
-    renderQueens();
-    renderHives();
-  }
-
-  function startEditQueen(id){
-    const q = State.queens.find(x => x.id === id);
-    if (!q) return;
-    editQueenId = id;
-    $("qName").value = q.name || "";
-    $("qYear").value = q.year ?? "";
-    $("qMonth").value = q.month ?? "";
-    $("qMating").value = q.mating || "";
-    $("qLine").value = q.line || "";
-    $("qOpalit").value = q.opalit || "";
-    $("qGentle").value = q.gentle || "";
-    $("qNote").value = q.note || "";
-  }
-
-  function clearQueenEdit(){
-    editQueenId = null;
-    $("qName").value="";
-    $("qYear").value=thisYear;
-    $("qMonth").value=new Date().getMonth()+1;
-    $("qMating").value="";
-    $("qLine").value="";
-    $("qOpalit").value="";
-    $("qGentle").value="";
-    $("qNote").value="";
-  }
-
-  async function deleteQueen(id){
-    if (!await confirmDelete("Usunąć wpis o matce?")) return;
-    State.queens = State.queens.filter(x => x.id !== id);
-    await save("queens");
-    clearQueenEdit();
-    renderQueens();
-    renderHives();
-  }
-
-  async function setCurrentQueen(id){
-    const hiveId = State.currentHive;
-    State.queens.forEach(q => { if (q.hiveId === hiveId) q.isCurrent = (q.id === id); });
-    await save("queens");
-    renderQueens();
-    renderHives();
-  }
-
-  /* ===== Harvests ===== */
-  function renderHarvests(){
-    const hiveId = State.currentHive;
-    const list = $("harvList");
-    list.innerHTML = "";
-
-    const items = State.harvests.filter(x => x.hiveId === hiveId)
-      .sort((a,b) => (b.date||"").localeCompare(a.date||"") || (b.ts||0)-(a.ts||0));
-
-    $("harvCount").textContent = String(items.length);
-
-    items.forEach(h => {
-      const el = document.createElement("div");
-      el.className = "card";
-      el.style.borderLeft = "4px solid var(--orange)";
-      el.innerHTML = `
-        <div class="flex justify-between items-center" style="gap:10px">
-          <div style="flex:1">
-            <div style="font-weight:700">${isoToPL(h.date)} • ${esc(h.type||"")}</div>
-            <div class="small">Ilość: <b>${Number(h.kg||0).toFixed(2)}</b> kg</div>
-          </div>
-          <div class="flex gap-2" style="flex-wrap:wrap;justify-content:flex-end">
-            <button class="btn btn-slate" style="padding:6px 10px" data-act="harvEdit" data-id="${esc(h.id)}">EDYTUJ</button>
-            <button class="btn btn-red" style="padding:6px 10px" data-act="harvDel" data-id="${esc(h.id)}">USUŃ</button>
-          </div>
-        </div>
-      `;
-      list.appendChild(el);
-    });
-  }
-
-  async function saveHarvest(){
-    const hiveId = State.currentHive;
-    const date = $("harvDate").value || todayISO();
-    const type = ($("harvType").value || "").trim();
-    const kg = Number($("harvKg").value);
-
-    if (!date) return notify("Podaj datę.");
-    if (!type) return notify("Podaj rodzaj miodu.");
-    if (!Number.isFinite(kg) || kg <= 0) return notify("Podaj ilość > 0.");
-
-    if (editHarvId){
-      const h = State.harvests.find(x => x.id === editHarvId);
-      if (!h) { editHarvId=null; return; }
-      h.date=date; h.type=type; h.kg=kg; h.ts=Date.now();
-    } else {
-      State.harvests.push({ id:uid(), hiveId, date, type, kg, ts:Date.now() });
-    }
-
-    await save("harvests");
-    clearHarvestEdit();
-    $("harvDate").value = todayISO();
-    renderHarvests();
-  }
-
-  function startEditHarvest(id){
-    const h = State.harvests.find(x => x.id === id);
-    if (!h) return;
-    editHarvId = id;
-    $("harvDate").value = h.date || todayISO();
-    $("harvType").value = h.type || "";
-    $("harvKg").value = h.kg ?? "";
-  }
-
-  function clearHarvestEdit(){
-    editHarvId = null;
-    $("harvType").value="";
-    $("harvKg").value="";
-  }
-
-  async function deleteHarvest(id){
-    if (!await confirmDelete("Usunąć miodobranie?")) return;
-    State.harvests = State.harvests.filter(x => x.id !== id);
-    await save("harvests");
-    clearHarvestEdit();
-    $("harvDate").value = todayISO();
-    renderHarvests();
-  }
-
-  /* ===== Calendar ===== */
-  function ensureCalendarYear(y){ if (!State.calendar[y]) State.calendar[y] = {}; }
-
-  function renderCalendar(){
-    const months = ["Styczeń","Luty","Marzec","Kwiecień","Maj","Czerwiec","Lipiec","Sierpień","Wrzesień","Październik","Listopad","Grudzień"];
-    const yearSel = $("calYear");
-
-    if (!yearSel.options.length){
-      for (let y=2022;y<=2029;y++){
-        const o=document.createElement("option");
-        o.value=String(y); o.textContent=String(y);
-        yearSel.appendChild(o);
-      }
-    }
-
-    const current = yearSel.value || String(thisYear);
-    yearSel.value = (Number(current)>=2022 && Number(current)<=2029) ? current : String(thisYear);
-
-    ensureCalendarYear(yearSel.value);
-
-    const grid = $("calendarGrid");
-    grid.innerHTML = "";
-
-    months.forEach((m,idx) => {
-      const card = document.createElement("div");
-      card.className = "card";
-      card.innerHTML = `<div style="font-weight:700;color:var(--success);margin-bottom:6px">${m} ${yearSel.value}</div>`;
-      const area = document.createElement("textarea");
-      area.className="input";
-      area.style.height="75px";
-      area.value = State.calendar[yearSel.value][idx] || "";
-      area.addEventListener("change", async (e) => {
-        ensureCalendarYear(yearSel.value);
-        State.calendar[yearSel.value][idx] = e.target.value;
-        await save("calendar");
-      });
-      card.appendChild(area);
-      grid.appendChild(card);
-    });
-
-    yearSel.onchange = () => renderCalendar();
-  }
-
-  /* ===== Finance ===== */
-  function renderFinance(){
-    const list = $("finList");
-    list.innerHTML = "";
-
-    let inc=0, exp=0;
-    const items = [...State.finance].sort((a,b) => (b.date||"").localeCompare(a.date||""));
-
-    items.forEach(f => {
-      if (f.type === "income") inc += Number(f.amount||0);
-      else exp += Number(f.amount||0);
-
-      const el = document.createElement("div");
-      el.className = "card";
-      el.style.borderLeft = "4px solid " + (f.type==="income" ? "var(--success)" : "var(--danger)");
-      el.innerHTML = `
-        <div class="flex justify-between items-center">
-          <div>
-            <div style="font-weight:700">${esc(f.desc)}</div>
-            <div class="small">${isoToPL(f.date)} • ${f.type==="income"?"Przychód":"Wydatek"}</div>
-          </div>
-          <div style="text-align:right">
-            <div style="font-weight:700;color:${f.type==="income"?"var(--success)":"var(--danger)"}">
-              ${f.type==="income"?"+":"-"}${Number(f.amount||0).toFixed(2)} zł
-            </div>
-            <div class="flex gap-2" style="justify-content:flex-end;margin-top:8px">
-              <button class="btn btn-slate" style="padding:6px 10px" data-act="finDel" data-id="${esc(f.id)}">USUŃ</button>
-            </div>
-          </div>
-        </div>
-      `;
-      list.appendChild(el);
-    });
-
-    $("finInc").textContent = inc.toFixed(2);
-    $("finExp").textContent = exp.toFixed(2);
-    const bal = inc-exp;
-    $("finBalance").textContent = bal.toFixed(2) + " PLN";
-    $("finBalance").style.color = bal>=0 ? "var(--success)" : "var(--danger)";
-  }
-
-  async function addFinance(){
-    const type = $("finType").value;
-    const date = $("finDate").value || todayISO();
-    const amount = Number($("finAmount").value);
-    const desc = ($("finDesc").value || "").trim();
-
-    if (!desc || !Number.isFinite(amount) || amount<=0) return notify("Podaj opis i kwotę > 0.");
-
-    State.finance.push({ id:uid(), type, date, amount, desc });
-    await save("finance");
-
-    $("finAmount").value = "";
-    $("finDesc").value = "";
-    renderFinance();
-  }
-
-  async function deleteFinance(id){
-    if (!await confirmDelete("Usunąć wpis w finansach?")) return;
-    State.finance = State.finance.filter(x => x.id !== id);
-    await save("finance");
-    renderFinance();
-  }
-
-  /* ===== Inventory ===== */
-  function invCalcQtyAtDate(itemId, isoDate){
-    const d = isoDate || todayISO();
-    return State.invMoves
-      .filter(m => m.itemId === itemId && (m.date||"") <= d)
-      .reduce((s,m) => s + (Number(m.delta)||0), 0);
-  }
-
-  function invCalcCurrentQty(itemId){
-    return State.invMoves
-      .filter(m => m.itemId === itemId)
-      .reduce((s,m) => s + (Number(m.delta)||0), 0);
-  }
-
-  function refreshInvSelectors(){
-    const items = [...State.invItems].sort((a,b) => String(a.name).localeCompare(String(b.name)));
-    const sel  = $("invItemSel");
-    const qsel = $("invQueryItem");
-
-    sel.innerHTML  = `<option value="">Wybierz produkt…</option>`;
-    qsel.innerHTML = `<option value="">Wybierz produkt…</option>`;
-
-    items.forEach(it => {
-      const o=document.createElement("option");
-      o.value=it.id; o.textContent=it.name;
-      sel.appendChild(o);
-
-      const o2=document.createElement("option");
-      o2.value=it.id; o2.textContent=it.name;
-      qsel.appendChild(o2);
-    });
-  }
-
-  function renderInventory(){
-    refreshInvSelectors();
-    $("invMoveDate").value  = $("invMoveDate").value  || todayISO();
-    $("invQueryDate").value = $("invQueryDate").value || todayISO();
-
-    const list = $("invList");
-    list.innerHTML = "";
-
-    const items = [...State.invItems].sort((a,b) => String(a.name).localeCompare(String(b.name)));
-    if (!items.length){
-      list.innerHTML = `
-        <div class="card text-center">
-          <div style="font-weight:700">Brak produktów w magazynie.</div>
-          <div class="small mt-2">Dodaj pierwszy ruch (np. zakup).</div>
-        </div>
-      `;
-      return;
-    }
-
-    for (const it of items){
-      const qty = invCalcCurrentQty(it.id);
-      const el = document.createElement("div");
-      el.className = "card";
-      el.style.borderLeft = "4px solid var(--slate)";
-
-      const lastMoves = State.invMoves
-        .filter(m => m.itemId === it.id)
-        .sort((a,b) => (b.date||"").localeCompare(a.date||"") || (b.ts||0)-(a.ts||0))
-        .slice(0,6);
-
-      el.innerHTML = `
-        <div class="flex justify-between items-center" style="gap:10px">
-          <div style="flex:1">
-            <div style="font-weight:700">${esc(it.name)}</div>
-            <div class="small">Aktualnie: <b>${qty.toFixed(2)}</b></div>
-          </div>
-          <div class="flex gap-2 items-center" style="flex-wrap:wrap;justify-content:flex-end">
-            <button class="btn btn-slate" style="padding:6px 10px" data-act="invDelItem" data-id="${esc(it.id)}">USUŃ</button>
-          </div>
-        </div>
-        <div class="hr"></div>
-        <div class="small">Ostatnie ruchy:</div>
-        <div style="display:grid;gap:6px;margin-top:8px">
-          ${
-            lastMoves.length ? lastMoves.map(m => `
-              <div class="flex justify-between items-center" style="gap:10px">
-                <div class="small" style="flex:1"><b>${isoToPL(m.date)}</b> • ${esc(m.note||"—")}</div>
-                <div style="font-weight:700;color:${Number(m.delta)>=0?'var(--success)':'var(--danger)'}">
-                  ${Number(m.delta)>=0?'+':''}${Number(m.delta||0).toFixed(2)}
-                </div>
-                <button class="btn btn-slate" style="padding:6px 10px" data-act="invDelMove" data-id="${esc(m.id)}">✕</button>
-              </div>
-            `).join("") : `<div class="small">Brak ruchów.</div>`
-          }
-        </div>
-      `;
-      list.appendChild(el);
-    }
-  }
-
-  async function invAddMove(){
-    const selId  = $("invItemSel").value;
-    const newName = ($("invNewName").value || "").trim();
-    const date   = $("invMoveDate").value || todayISO();
-    const delta  = Number($("invMoveDelta").value);
-    const note   = ($("invMoveNote").value || "").trim();
-
-    if (!Number.isFinite(delta) || delta===0) return notify("Podaj ilość (różną od 0).");
-    if (!date) return notify("Podaj datę.");
-
-    let itemId = selId;
-
-    if (!itemId){
-      if (!newName) return notify("Wybierz produkt lub wpisz nowy.");
-      const ex = State.invItems.find(x => String(x.name).toLowerCase() === newName.toLowerCase());
-      if (ex) itemId = ex.id;
-      else {
-        itemId = uid();
-        State.invItems.push({ id:itemId, name:newName });
-        await save("invItems");
-      }
-    }
-
-    State.invMoves.push({ id:uid(), itemId, date, delta, note, ts:Date.now() });
-    await save("invMoves");
-
-    $("invMoveDelta").value = "";
-    $("invMoveNote").value = "";
-    $("invNewName").value = "";
-    $("invItemSel").value = "";
-
-    renderInventory();
-  }
-
-  function invQuery(){
-    const itemId = $("invQueryItem").value;
-    const date = $("invQueryDate").value || todayISO();
-    const box = $("invQueryResult");
-    box.innerHTML = "";
-
-    if (!itemId) return notify("Wybierz produkt do sprawdzenia.");
-
-    const item = State.invItems.find(x => x.id === itemId);
-    const qty = invCalcQtyAtDate(itemId, date);
-
-    const moves = State.invMoves
-      .filter(m => m.itemId === itemId && (m.date||"") <= date)
-      .sort((a,b) => (b.date||"").localeCompare(a.date||"") || (b.ts||0)-(a.ts||0))
-      .slice(0,15);
-
-    box.innerHTML = `
-      <div class="card" style="border-left:4px solid var(--blue);padding:12px">
-        <div class="muted">WYNIK</div>
-        <div style="font-weight:700;font-size:20px;margin-top:6px">${esc(item?.name || "")}</div>
-        <div class="small" style="margin-top:6px">Stan na dzień <b>${isoToPL(date)}</b>:</div>
-        <div style="font-weight:700;font-size:26px;margin-top:6px;color:var(--blue)">${qty.toFixed(2)}</div>
-        <div class="hr"></div>
-        <div class="small"><b>Ruchy do tego dnia</b> (ostatnie 15):</div>
-        <div style="display:grid;gap:6px;margin-top:8px">
-          ${
-            moves.length ? moves.map(m => `
-              <div class="flex justify-between items-center" style="gap:10px">
-                <div class="small" style="flex:1"><b>${isoToPL(m.date)}</b> • ${esc(m.note||"—")}</div>
-                <div style="font-weight:700;color:${Number(m.delta)>=0?'var(--success)':'var(--danger)'}">
-                  ${Number(m.delta)>=0?'+':''}${Number(m.delta||0).toFixed(2)}
-                </div>
-              </div>
-            `).join("") : `<div class="small">Brak ruchów do tego dnia.</div>`
-          }
-        </div>
-      </div>
-    `;
-  }
-
-  async function invDeleteMove(id){
-    if (!await confirmDelete("Usunąć ruch?")) return;
-    State.invMoves = State.invMoves.filter(x => x.id !== id);
-    await save("invMoves");
-    renderInventory();
-  }
-
-  async function invDeleteItem(id){
-    const it = State.invItems.find(x => x.id === id);
-    if (!it) return;
-    if (!await confirmDialog({title:"USUWANIE", message:`Usunąć produkt "${it.name}" oraz całą historię ruchów?`, confirmText:"TAK, USUŃ", confirmClass:"btn-red"})) return;
-    State.invItems = State.invItems.filter(x => x.id !== id);
-    State.invMoves = State.invMoves.filter(x => x.itemId !== id);
-    await save("invItems");
-    await save("invMoves");
-    renderInventory();
-  }
-
-  /* ===== Knowledge ===== */
-  let editKnowId = null; // Zmienna do śledzenia edycji
-
-  function refreshTopicSelect(){
-    const sel = $("knowTopic");
-    sel.innerHTML = "";
-    (State.topics.length ? State.topics : ["Ogólne"]).forEach(t => {
-      const o=document.createElement("option");
-      o.value=t; o.textContent=t;
-      sel.appendChild(o);
-    });
-  }
-
-  function renderKnowledge(){
-    refreshTopicSelect();
-    const wrap = $("knowList");
-    wrap.innerHTML = "";
-
-    const byTopic = {};
-    for (const n of State.knowledge){
-      const t = n.topic || "Ogólne";
-      if (!byTopic[t]) byTopic[t]=[];
-      byTopic[t].push(n);
-    }
-
-    const topics = [...new Set([...State.topics, ...Object.keys(byTopic)])].filter(Boolean);
-
-    topics.forEach(t => {
-      const items = (byTopic[t] || []).sort((a,b) => (b.dateTS||0)-(a.dateTS||0));
-      const sec = document.createElement("div");
-      sec.className = "card";
-      sec.style.borderLeft = "4px solid var(--purple)";
-      sec.innerHTML = `
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
-          <div style="font-weight:700;color:var(--purple)">${esc(t)}</div>
-          <div class="small">${items.length} not.</div>
-        </div>
-      `;
-
-      if (!items.length){
-        const p=document.createElement("div");
-        p.className="small";
-        p.style.marginTop="8px";
-        p.textContent="Brak notatek w tym temacie.";
-        sec.appendChild(p);
-      } else {
-        items.forEach(n => {
-          const item=document.createElement("div");
-          item.style.marginTop="10px";
-          item.style.paddingTop="10px";
-          item.style.borderTop="1px solid var(--border)";
-          item.innerHTML = `
-            <div class="flex justify-between items-center">
-              <div>
-                <div style="font-weight:700">${esc(n.title||"(bez tytułu)")}</div>
-                <div class="small">${new Date(n.dateTS||Date.now()).toLocaleDateString("pl-PL")}</div>
-              </div>
-              <div class="flex gap-2">
-                <button class="btn btn-blue" style="padding:6px 10px" data-act="knowEdit" data-id="${esc(n.id)}">EDYTUJ</button>
-                <button class="btn btn-slate" style="padding:6px 10px" data-act="knowDel" data-id="${esc(n.id)}">USUŃ</button>
-              </div>
-            </div>
-            <div style="white-space:pre-wrap;margin-top:6px">${esc(n.body||"")}</div>
-          `;
-          sec.appendChild(item);
-        });
-      }
-
-      wrap.appendChild(sec);
-    });
-  }
-
-  async function addTopic(){
-    const t = ($("knowNewTopic").value || "").trim();
-    if (!t) return;
-    if (!State.topics.includes(t)) State.topics.push(t);
-    await save("topics");
-    $("knowNewTopic").value = "";
-    renderKnowledge();
-  }
-
-  async function addKnowledge(){
-    const topic = $("knowTopic").value || "Ogólne";
-    const title = ($("knowTitle").value || "").trim();
-    const body  = ($("knowBody").value || "").trim();
-
-    if (!title && !body) return notify("Wpisz tytuł lub treść.");
-
-    if (editKnowId) {
-        // Tryb edycji
-        const n = State.knowledge.find(x => x.id === editKnowId);
-        if(n) {
-            n.topic = topic;
-            n.title = title || "(bez tytułu)";
-            n.body  = body;
-            n.dateTS = Date.now();
-        }
-        editKnowId = null;
-        
-        // Reset przycisku
-        const btn = $("addKnowBtn");
-        btn.textContent = "ZAPISZ NOTATKĘ";
-    } else {
-        // Tryb dodawania
-        State.knowledge.push({ id:uid(), topic, title:title||"(bez tytułu)", body, dateTS:Date.now() });
-    }
-    
-    await save("knowledge");
-
-    $("knowTitle").value = "";
-    $("knowBody").value = "";
-    renderKnowledge();
-  }
-
-  function startEditKnowledge(id){
-    const n = State.knowledge.find(x => x.id === id);
-    if (!n) return;
-    editKnowId = id;
-
-    // Wypełnij pola formularza
-    $("knowTopic").value = n.topic || "Ogólne";
-    $("knowTitle").value = n.title || "";
-    $("knowBody").value = n.body || "";
-
-    // Zmień tekst przycisku
-    const btn = $("addKnowBtn");
-    btn.textContent = "ZAPISZ ZMIANY";
-
-    // Przewiń do góry sekcji
-    $("viewKnowledge").scrollIntoView({behavior: "smooth"});
-  }
-
-  async function deleteKnowledge(id){
-    if (!await confirmDelete("Usunąć notatkę?")) return;
-    State.knowledge = State.knowledge.filter(x => x.id !== id);
-    await save("knowledge");
-    
-    // Jeśli usuwamy edytowaną, zresetuj formularz
-    if (editKnowId === id) {
-        editKnowId = null;
-        $("knowTitle").value = "";
-        $("knowBody").value = "";
-        $("addKnowBtn").textContent = "ZAPISZ NOTATKĘ";
-    }
-    
-    renderKnowledge();
-  }
-
-  function editKnowledgeModal(id){
-    const n = State.knowledge.find(x => x.id === id);
-    if (!n) return;
-
-    const currentTopic = n.topic || "Ogólne";
-    const topics = [...new Set([...(State.topics||[]), currentTopic])].filter(Boolean);
-    const opts = topics
-      .map(t => `<option value="${esc(t)}" ${t === currentTopic ? 'selected' : ''}>${esc(t)}</option>`)
-      .join("");
-
-    modalOpen("Edycja notatki", `
-      <div class="row cols2">
-        <label class="help">Temat
-          <select id="mKnowTopic" class="input">${opts}</select>
-        </label>
-        <label class="help">Tytuł
-          <input id="mKnowTitle" type="text" class="input" value="${esc(n.title||"")}">
-        </label>
-      </div>
-      <label class="help">Treść
-        <textarea id="mKnowBody" class="input" style="height:150px">${esc(n.body||"")}</textarea>
-      </label>
-      <div class="small">Zmienisz temat, tytuł i treść. Po zapisie notatka zostanie zaktualizowana.</div>
-    `, async ()=>{
-      const topic = ($("mKnowTopic").value || "Ogólne").trim();
-      const title = ($("mKnowTitle").value || "").trim();
-      const body  = ($("mKnowBody").value || "").trim();
-
-      if (!title && !body) { notify("Wpisz tytuł lub treść."); return; }
-
-      n.topic = topic || "Ogólne";
-      n.title = title || "(bez tytułu)";
-      n.body  = body;
-      n.dateTS = Date.now();
-
-      // jeżeli temat nie istnieje na liście, dodaj
-      if (topic && !State.topics.includes(topic)) {
-        State.topics.push(topic);
-        await save("topics");
-      }
-
-      await save("knowledge");
-      modalClose();
-      renderKnowledge();
-    });
-  }
-
-
-  /* ===== Export / Import ===== */
-  async function exportBackup(){
-    const out = {
-      meta:{ app:"Pasiecznik ULTRA", exportedAt:new Date().toISOString() },
-      data:{
-        hives: State.hives,
-        reviews: State.reviews,
-        queens: State.queens,
-        feedings: State.feedings,
-        treatments: State.treatments,
-        harvests: State.harvests,
-        calendar: State.calendar,
-        finance: State.finance,
-        invItems: State.invItems,
-        invMoves: State.invMoves,
-        topics: State.topics,
-        knowledge: State.knowledge
-      }
-    };
-
-    const blob = new Blob([JSON.stringify(out, null, 2)], {type:"application/json"});
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "pasiecznik_backup_" + new Date().toLocaleDateString("pl-PL").replaceAll("/","-") + ".json";
-    a.click();
-  }
-
-  async function importBackup(file){
-    const txt = await file.text();
-    let parsed;
-    try { parsed = JSON.parse(txt); } catch { return notify("Błędny plik."); }
-
-    if (!await confirmDialog({title:"IMPORT", message:"Nadpisać wszystkie dane w aplikacji?", confirmText:"TAK, NADPISZ", confirmClass:"btn-red", hint:"To nadpisze wszystkie dane w aplikacji."})) return;
-
-    const data = parsed.data || parsed;
-
-    State.hives     = data.hives     || [];
-    State.reviews   = data.reviews   || [];
-    State.queens    = data.queens    || [];
-    State.feedings  = data.feedings  || [];
-    State.treatments = data.treatments || [];
-    State.harvests  = data.harvests  || [];
-    State.calendar  = data.calendar  || {};
-    State.finance   = data.finance   || [];
-    State.invItems  = data.invItems  || [];
-    State.invMoves  = data.invMoves  || [];
-    State.topics    = data.topics    || ["Ogólne"];
-    State.knowledge = data.knowledge || [];
-
-    State.hives.forEach(h => {
-      if (h.label == null) h.label = h.id;
-      if (h.place == null) h.place = "";
-      if (h.kind == null) h.kind = "rodzina";
-      if (h.year == null) h.year = thisYear;
-      if (h.nextVisitDate == null) h.nextVisitDate = "";
-    });
-
-    await dbSet("hives", State.hives);
-    await dbSet("reviews", State.reviews);
-    await dbSet("queens", State.queens);
-    await dbSet("feedings", State.feedings);
-    await dbSet("treatments", State.treatments);
-    await dbSet("harvests", State.harvests);
-    await dbSet("calendar", State.calendar);
-    await dbSet("finance", State.finance);
-    await dbSet("invItems", State.invItems);
-    await dbSet("invMoves", State.invMoves);
-    await dbSet("topics", State.topics);
-    await dbSet("knowledge", State.knowledge);
-
-    notify("Przywrócono dane.");
-    renderView("hives", null, true);
-  }
-
-  /* ===== Add Hive NEW (Modal) ===== */
-  function openAddHiveModal(){
-    $("newHiveLabel").value = "";
-    $("newHiveYear").value = String(thisYear);
-    $("newHivePlace").value = "";
-    $("newHiveType").value = "rodzina";
-
-    const ov = $("addHiveOverlay");
-    ov.classList.add("show");
-    ov.setAttribute("aria-hidden","false");
-  }
-
-  function closeAddHiveModal(){
-    const ov = $("addHiveOverlay");
-    ov.classList.remove("show");
-    ov.setAttribute("aria-hidden","true");
-  }
-
-  async function saveNewHive(){
-    const label = ($("newHiveLabel").value || "").trim();
-    if (!label) return notify("Podaj numer/nazwę ula.");
-
-    const id = label;
-    if (State.hives.some(h => h.id === id)){
-      return notify("Taki ul już istnieje!");
-    }
-
-    const year = Number($("newHiveYear").value) || thisYear;
-    const place = ($("newHivePlace").value || "").trim();
-    const kind = $("newHiveType").value;
-
-    State.hives.push({
-      id,
-      label: id,
-      place,
-      kind,
-      year,
-      nextVisitDate: "",
-      isArchived: false,
-      mapX: 20, // Domyślna pozycja na mapie
-      mapY: 20
-    });
-
-    await save("hives");
-    closeAddHiveModal();
-    renderHives();
-    notify("Dodano ul!");
-  }
-
-  /* ===== Archive Hive Modal Logic ===== */
-  function openArchiveModal(){
-      $("archiveReason").value = "";
-      const ov = $("archiveHiveOverlay");
-      ov.classList.add("show");
-      ov.setAttribute("aria-hidden","false");
-  }
-  function closeArchiveModal(){
-      const ov = $("archiveHiveOverlay");
-      ov.classList.remove("show");
-      ov.setAttribute("aria-hidden","true");
-  }
-  async function confirmArchive(){
-      const reason = ($("archiveReason").value || "").trim();
-      const hive = State.hives.find(h => h.id === State.currentHive);
-      
-      if (hive) {
-          if (hive.isArchived) {
-              // Jeżeli już jest zarchiwizowany, to PRZYWRÓĆ (od-archiwizuj)
-              hive.isArchived = false;
-              // Opcjonalnie wyczyść stare notatki archiwizacji, jeśli chcesz
-              notify("Ul przywrócony do aktywnych.");
-          } else {
-              // ARCHIWIZUJ
-              hive.isArchived = true;
-              // Zapisz powód w notatce (opcjonalnie można dodać pole archiveReason do modelu)
-              if(reason) {
-                  // Dodaj wpis do przeglądów jako "Notatka o archiwizacji"
-                  State.reviews.push({ 
-                      id:uid(), 
-                      hiveId: hive.id, 
-                      visitDate: todayISO(), 
-                      note: "ARCHIWIZACJA: " + reason, 
-                      ts:Date.now() 
-                  });
-                  await save("reviews");
-              }
-              notify("Ul zarchiwizowany.");
-          }
-          await save("hives");
-          closeArchiveModal();
-          renderView("hives", null, true);
-      }
-  }
-
-
-  /* ===== Global click delegation ===== */
-  async function onBodyClick(e){
-    const b = e.target.closest("[data-act]");
-    if (!b) return;
-    const act = b.getAttribute("data-act");
-    const id = b.getAttribute("data-id");
-
-    if (act === "revEdit") return startEditReview(id);
-    if (act === "revDel") return deleteReview(id);
-
-    if (act === "feedEdit") return startEditFeeding(id);
-    if (act === "feedDel") return deleteFeeding(id);
-
-    
-    if (act === "editTreat") return startEditTreatment(id);
-    if (act === "delTreat")  return deleteTreatment(id);
-    
-    if (act === "queenEdit") return startEditQueen(id);
-    if (act === "queenDel") return deleteQueen(id);
-    if (act === "queenSetCurrent") return setCurrentQueen(id);
-
-    if (act === "harvEdit") return startEditHarvest(id);
-    if (act === "harvDel") return deleteHarvest(id);
-
-    if (act === "finDel") return deleteFinance(id);
-
-    if (act === "invDelMove") return invDeleteMove(id);
-    if (act === "invDelItem") return invDeleteItem(id);
-
-    if (act === "knowEdit") return startEditKnowledge(id);
-    if (act === "knowDel") return deleteKnowledge(id);
-  }
-
-  /* ===== START ===== */
-  document.addEventListener("DOMContentLoaded", async () => {
-    try{
-      await openDB();
-      await loadAll();
-
-      $("topNav").addEventListener("click",(e)=>{
-        const btn = e.target.closest("button[data-view]");
-        if (!btn) return;
-        renderView(btn.dataset.view, null, true);
-      });
-
-      // ZMIANA: Obsługa nowego modala dodawania ula
-      $("addHiveBtn").addEventListener("click", openAddHiveModal);
-      $("addHiveClose").addEventListener("click", closeAddHiveModal);
-      $("addHiveCancel").addEventListener("click", closeAddHiveModal);
-      $("addHiveSave").addEventListener("click", saveNewHive);
-      $("addHiveOverlay").addEventListener("click", (e)=>{
-         if(e.target === $("addHiveOverlay")) closeAddHiveModal();
-      });
-
-      // ZMIANA: Obsługa modala archiwizacji
-      $("archiveHiveBtn").addEventListener("click", () => {
-          const hive = State.hives.find(h => h.id === State.currentHive);
-          if(hive && hive.isArchived) {
-              // Szybkie przywracanie bez modala (albo z prostym confirmem)
-              confirmArchive(); 
-          } else {
-              openArchiveModal();
-          }
-      });
-      $("archiveHiveClose").addEventListener("click", closeArchiveModal);
-      $("archiveHiveCancel").addEventListener("click", closeArchiveModal);
-      $("archiveHiveConfirm").addEventListener("click", confirmArchive);
-      $("archiveHiveOverlay").addEventListener("click", (e)=>{
-         if(e.target === $("archiveHiveOverlay")) closeArchiveModal();
-      });
-
-
-      $("backBtn").addEventListener("click", ()=>renderView("hives", null, true));
-
-      $("fltReviewBtn").addEventListener("click", ()=>{ Filters.review=!Filters.review; renderHives(); });
-      $("fltQueenBtn").addEventListener("click", ()=>{ Filters.queen=!Filters.queen; renderHives(); });
-      // Archive Filter Toggle
-      $("fltArchivedBtn").addEventListener("click", ()=>{ 
-          Filters.archived=!Filters.archived; 
-          // Reset other filters to avoid confusion
-          if(Filters.archived) { Filters.review=false; Filters.queen=false; }
-          renderHives(); 
-      });
-
-      $("fltClearBtn").addEventListener("click", ()=>{ Filters.review=false; Filters.queen=false; Filters.archived=false; renderHives(); });
-
-      $("saveHiveMetaBtn").addEventListener("click", saveHiveMeta);
-
-      $("revSaveBtn").addEventListener("click", saveReview);
-
-      $("feedSaveBtn").addEventListener("click", saveFeeding);
-      $("feedClearBtn").addEventListener("click", ()=>{ clearFeedingEdit(); });
-
-      // Leczenie
-      $("treatSaveBtn").addEventListener("click", addTreatment);
-      $("treatClearBtn").addEventListener("click", ()=>{ $("treatType").value=""; $("treatQty").value=""; editTreatId=null; const btn=$("treatSaveBtn"); btn.textContent="ZAPISZ LECZENIE"; btn.classList.remove("btn-blue"); btn.classList.add("btn-red"); });
-
-      $("queenSaveBtn").addEventListener("click", saveQueen);
-      $("queenClearBtn").addEventListener("click", ()=>{ clearQueenEdit(); });
-
-      $("harvSaveBtn").addEventListener("click", saveHarvest);
-      $("harvClearBtn").addEventListener("click", ()=>{ clearHarvestEdit(); });
-
-      $("addFinBtn").addEventListener("click", addFinance);
-      $("finDate").value = todayISO();
-
-      $("invAddMoveBtn").addEventListener("click", invAddMove);
-      $("invQueryBtn").addEventListener("click", invQuery);
-      $("invMoveDate").value = todayISO();
-      $("invQueryDate").value = todayISO();
-
-      $("addTopicBtn").addEventListener("click", addTopic);
-      $("addKnowBtn").addEventListener("click", addKnowledge);
-
-      $("exportBtn").addEventListener("click", exportBackup);
-      $("importFile").addEventListener("change", async (e)=>{
-        const f = e.target.files?.[0];
-        e.target.value="";
-        if (!f) return;
-        await importBackup(f);
-      });
-
-      // VOICE NOTE LOGIC (ULTRA ROBUST + WAKE LOCK)
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      const micBtn = $("voiceNoteBtn");
-      
-      if (SpeechRecognition) {
-          const recognition = new SpeechRecognition();
-          recognition.lang = "pl-PL";
-          recognition.continuous = true; 
-          recognition.interimResults = false;
-
-          let isRecording = false;
-          let isIntentionalStop = false; // NOWE: Flaga intencji użytkownika
-
-          // WAKE LOCK LOGIC
-          let wakeLock = null;
-          async function requestWakeLock() {
-            try {
-              if ('wakeLock' in navigator) {
-                wakeLock = await navigator.wakeLock.request('screen');
-              }
-            } catch (err) { console.warn("Wake Lock error:", err); }
-          }
-          async function releaseWakeLock() {
-            if (wakeLock) {
-              await wakeLock.release();
-              wakeLock = null;
-            }
-          }
-
-          micBtn.addEventListener("click", () => {
-              if (isRecording) {
-                  // Użytkownik klika STOP
-                  isIntentionalStop = true;
-                  recognition.stop();
-              } else {
-                  // Użytkownik klika START
-                  isIntentionalStop = false;
-                  try {
-                      recognition.start();
-                  } catch(e) {
-                      console.warn("Speech recognition busy/error", e);
-                  }
-              }
-          });
-
-          recognition.onstart = () => {
-              isRecording = true;
-              requestWakeLock(); 
-              micBtn.classList.add("btn-mic-active");
-              micBtn.textContent = "🎤 SŁUCHAM... (MÓW TERAZ)";
-          };
-
-          recognition.onend = () => {
-              isRecording = false;
-              
-              if (isIntentionalStop) {
-                  // To był nasz koniec (przycisk lub komenda)
-                  micBtn.classList.remove("btn-mic-active");
-                  micBtn.textContent = "🎤 NAGRAJ NOTATKĘ (Start/Stop)";
-                  releaseWakeLock();
-              } else {
-                  // To samo się wyłączyło (cisza) -> restartujemy natychmiast!
-                  console.log("Auto-restart nagrywania...");
-                  try {
-                      recognition.start();
-                  } catch(e) { /* ignore */ }
-              }
-          };
-
-          recognition.onresult = (event) => {
-              const lastResultIdx = event.results.length - 1;
-              const transcript = event.results[lastResultIdx][0].transcript.trim();
-              
-              // Sprawdzenie komendy kończącej
-              if (transcript.toLowerCase().includes("koniec nagrywania") || transcript.toLowerCase().includes("koniec notatki")) {
-                  const cleanedText = transcript.replace(/koniec nagrywania|koniec notatki/gi, "").trim();
-                  
-                  const noteBox = $("revNote");
-                  const currentVal = noteBox.value.trim();
-                  if (cleanedText) {
-                      noteBox.value = currentVal ? (currentVal + " " + cleanedText) : cleanedText;
-                  }
-
-                  // To jest intencjonalny stop
-                  isIntentionalStop = true;
-                  recognition.stop();
-                  
-                  // AUTO SAVE
-                  setTimeout(() => {
-                      $("revSaveBtn").click();
-                      notify("Zapisano głosem!");
-                  }, 500);
-                  return;
-              }
-
-              const noteBox = $("revNote");
-              const currentVal = noteBox.value.trim();
-              noteBox.value = currentVal ? (currentVal + " " + transcript) : transcript;
-          };
-          
-          recognition.onerror = (e) => {
-              // Ignoruj błąd 'no-speech', bo to normalne przy ciszy przed restartem
-              if (e.error === 'no-speech') return; 
-
-              console.error(e);
-              isRecording = false;
-              isIntentionalStop = true; // Wymuś stop przy błędzie
-              releaseWakeLock();
-              micBtn.classList.remove("btn-mic-active");
-              micBtn.textContent = "🎤 NAGRAJ NOTATKĘ (Start/Stop)";
-              notify("Błąd rozpoznawania mowy lub brak internetu.");
-          };
-      } else {
-          micBtn.style.display = "none";
-      }
-
-
-      document.body.addEventListener("click", onBodyClick);
-
-      const p = new URLSearchParams(location.search);
-      const v = p.get("v") || "hives";
-      const id = p.get("id");
-      if (v === "details" && id) renderView("details", id, false);
-      else renderView(v, null, false);
-
-    } catch(err){
-      console.error(err);
-      document.body.innerHTML = `<h1 style="color:red;padding:16px">Błąd aplikacji: ${esc(err?.message||String(err))}</h1>`;
-    }
-  });
-
-})();
-</script>
-
-<script>
-  if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("./sw.js").catch(console.warn);
-  }
-</script>
-
-<div id="toast" class="toast" aria-live="polite" aria-atomic="true"></div>
-
-</body>
-</html>
+    $("hNextVisit").value = hive.nextVisitDate
