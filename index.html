@@ -33,17 +33,14 @@
       --border:#E6DCCF;           /* ciepły obrys */
     }
     
+    /* Ogólny styl strony (bez tła heksagonów tutaj, żeby nie mylić) */
     body {
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-        background-color:var(--bg);
-        background-image: url("data:image/svg+xml,%3Csvg width='56' height='100' viewBox='0 0 56 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M28 66L0 50L0 16L28 0L56 16L56 50L28 66L28 100' fill='none' stroke='%23D9A441' stroke-width='1' opacity='0.15'/%3E%3Cpath d='M28 0L28 34L0 50L0 84L28 100L56 84L56 50L28 34' fill='none' stroke='%23D9A441' stroke-width='1' opacity='0.15'/%3E%3C/svg%3E");
-        background-size: 56px 100px; 
-        background-attachment:fixed;
-        color:var(--text);
-        margin:0;
-        padding-bottom:90px;
+        background-color: var(--bg);
+        color: var(--text);
+        margin: 0;
+        padding-bottom: 90px;
         -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
         overscroll-behavior: none;
     }
 
@@ -132,42 +129,42 @@
         100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
     }
 
-    /* MAPA STYLES - FIX FOR MOBILE PANNING */
+    /* MAPA STYLES - FIXED COORDINATES SYSTEM */
     .map-container {
         width: 100%;
-        height: 75vh; /* Trochę wyższa */
+        height: 75vh;
         border: 2px solid var(--border);
         border-radius: 14px;
         overflow: hidden;
-        background: #fff;
+        background: #e2e8f0; /* Kolor tła kontenera */
         position: relative;
     }
     .map-viewport {
         width: 100%;
         height: 100%;
-        background-color: #6B7F3E; 
-        background-image: 
-            radial-gradient(#5a6d33 15%, transparent 16%),
-            radial-gradient(#5a6d33 15%, transparent 16%);
-        background-size: 20px 20px;
-        background-position: 0 0, 10px 10px;
         position: relative;
         overflow: hidden; 
-        /* KLUCZOWE: Wyłącza domyślne przewijanie strony wewnątrz mapy */
         touch-action: none; 
         cursor: grab;
     }
     .map-viewport:active {
         cursor: grabbing;
     }
+    /* TŁO I POWIERZCHNIA W JEDNYM */
     .map-surface {
-        width: 0; 
-        height: 0;
+        width: 3000px; /* Duży obszar roboczy */
+        height: 3000px;
         position: absolute;
         top: 0;
         left: 0;
-        /* Centrum transformacji */
         transform-origin: 0 0;
+        
+        /* KLUCZOWA ZMIANA: Tło jest teraz częścią mapy, a nie okna. */
+        /* Przesuwając mapę, przesuwasz też heksagony. */
+        background-color: #6B7F3E; 
+        background-image: url("data:image/svg+xml,%3Csvg width='56' height='100' viewBox='0 0 56 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M28 66L0 50L0 16L28 0L56 16L56 50L28 66L28 100' fill='none' stroke='%23D9A441' stroke-width='1' opacity='0.15'/%3E%3Cpath d='M28 0L28 34L0 50L0 84L28 100L56 84L56 50L28 34' fill='none' stroke='%23D9A441' stroke-width='1' opacity='0.15'/%3E%3C/svg%3E");
+        background-size: 56px 100px;
+        background-repeat: repeat;
     }
     .map-hive {
         position: absolute;
@@ -176,7 +173,6 @@
         align-items: center;
         z-index: 10;
         cursor: grab;
-        /* Elementy ula nie powinny blokować zdarzeń mapy, chyba że są kliknięte */
         touch-action: none; 
         user-select: none;
     }
@@ -1015,6 +1011,7 @@
           const clientX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
           const clientY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
           
+          // Calculate click offset considering current scale
           startX = clientX;
           startY = clientY;
           initialLeft = parseFloat(el.style.left) || 0;
