@@ -33,7 +33,7 @@
       --border:#E6DCCF;           /* ciepły obrys */
     }
     
-    /* Ogólny styl strony (bez tła heksagonów tutaj, żeby nie mylić) */
+    /* Ogólny styl strony */
     body {
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         background-color: var(--bg);
@@ -101,6 +101,10 @@
     .muted{color:#64748b;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:1px}
     .small{font-size:12px;color:#64748b;font-weight:500}
     .hr{height:1px;background:var(--border);margin:10px 0}
+    .row{display:grid;grid-template-columns:1fr;gap:10px}
+    @media(min-width:700px){.row.cols2{grid-template-columns:1fr 1fr}}
+    @media(min-width:900px){.row.cols3{grid-template-columns:1fr 1fr 1fr}}
+    
     .lbl { display:block; font-size:11px; font-weight:700; color:#64748b; margin-bottom:4px; text-transform:uppercase;}
 
     /* Confirm dialog */
@@ -136,7 +140,7 @@
         border: 2px solid var(--border);
         border-radius: 14px;
         overflow: hidden;
-        background: #e2e8f0; /* Kolor tła kontenera */
+        background: #e2e8f0; 
         position: relative;
     }
     .map-viewport {
@@ -152,15 +156,12 @@
     }
     /* TŁO I POWIERZCHNIA W JEDNYM */
     .map-surface {
-        width: 3000px; /* Duży obszar roboczy */
+        width: 3000px; 
         height: 3000px;
         position: absolute;
         top: 0;
         left: 0;
         transform-origin: 0 0;
-        
-        /* KLUCZOWA ZMIANA: Tło jest teraz częścią mapy, a nie okna. */
-        /* Przesuwając mapę, przesuwasz też heksagony. */
         background-color: #6B7F3E; 
         background-image: url("data:image/svg+xml,%3Csvg width='56' height='100' viewBox='0 0 56 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M28 66L0 50L0 16L28 0L56 16L56 50L28 66L28 100' fill='none' stroke='%23D9A441' stroke-width='1' opacity='0.15'/%3E%3Cpath d='M28 0L28 34L0 50L0 84L28 100L56 84L56 50L28 34' fill='none' stroke='%23D9A441' stroke-width='1' opacity='0.15'/%3E%3C/svg%3E");
         background-size: 56px 100px;
@@ -295,7 +296,7 @@
               <div class="map-hint">Dwa palce: Zoom. Jeden palec: Przesuń.</div>
               <div class="map-viewport" id="mapViewport">
                   <div class="map-surface" id="mapSurface">
-                      </div>
+                  </div>
               </div>
               <div class="map-controls">
                   <button id="btnFitMap" class="btn-map" title="Cała pasieka">🔍</button>
@@ -922,7 +923,10 @@
                   e.touches[0].pageY - e.touches[1].pageY
               );
               startScale = mapState.scale;
-          } else if(e.touches.length === 1 && e.target === viewport) {
+          } else if(e.touches.length === 1) {
+               // FIX: Allow pan only if NOT touching a hive
+               if (e.target.closest('.map-hive')) return;
+               
                isPanning = true;
                startX = e.touches[0].pageX - mapState.translateX;
                startY = e.touches[0].pageY - mapState.translateY;
@@ -1004,6 +1008,7 @@
 
       const onStart = (e) => {
           if(e.type === 'touchstart') e.preventDefault();
+          e.stopPropagation(); // Stop map panning
           isDragging = true;
           moved = false;
           el.classList.add("dragging");
@@ -1966,10 +1971,10 @@
 
   function refreshInvSelectors(){
     const items = [...State.invItems].sort((a,b) => String(a.name).localeCompare(String(b.name)));
-    const sel  = $("invItemSel");
+    const sel  = $("invItemSel");
     const qsel = $("invQueryItem");
 
-    sel.innerHTML  = `<option value="">Wybierz produkt…</option>`;
+    sel.innerHTML  = `<option value="">Wybierz produkt…</option>`;
     qsel.innerHTML = `<option value="">Wybierz produkt…</option>`;
 
     items.forEach(it => {
@@ -1985,7 +1990,7 @@
 
   function renderInventory(){
     refreshInvSelectors();
-    $("invMoveDate").value  = $("invMoveDate").value  || todayISO();
+    $("invMoveDate").value  = $("invMoveDate").value  || todayISO();
     $("invQueryDate").value = $("invQueryDate").value || todayISO();
 
     const list = $("invList");
@@ -2044,11 +2049,11 @@
   }
 
   async function invAddMove(){
-    const selId  = $("invItemSel").value;
+    const selId  = $("invItemSel").value;
     const newName = ($("invNewName").value || "").trim();
-    const date   = $("invMoveDate").value || todayISO();
-    const delta  = Number($("invMoveDelta").value);
-    const note   = ($("invMoveNote").value || "").trim();
+    const date   = $("invMoveDate").value || todayISO();
+    const delta  = Number($("invMoveDelta").value);
+    const note   = ($("invMoveNote").value || "").trim();
 
     if (!Number.isFinite(delta) || delta===0) return notify("Podaj ilość (różną od 0).");
     if (!date) return notify("Podaj datę.");
@@ -2219,7 +2224,7 @@
   async function addKnowledge(){
     const topic = $("knowTopic").value || "Ogólne";
     const title = ($("knowTitle").value || "").trim();
-    const body  = ($("knowBody").value || "").trim();
+    const body  = ($("knowBody").value || "").trim();
 
     if (!title && !body) return notify("Wpisz tytuł lub treść.");
 
@@ -2229,7 +2234,7 @@
         if(n) {
             n.topic = topic;
             n.title = title || "(bez tytułu)";
-            n.body  = body;
+            n.body  = body;
             n.dateTS = Date.now();
         }
         editKnowId = null;
@@ -2309,13 +2314,13 @@
     `, async ()=>{
       const topic = ($("mKnowTopic").value || "Ogólne").trim();
       const title = ($("mKnowTitle").value || "").trim();
-      const body  = ($("mKnowBody").value || "").trim();
+      const body  = ($("mKnowBody").value || "").trim();
 
       if (!title && !body) { notify("Wpisz tytuł lub treść."); return; }
 
       n.topic = topic || "Ogólne";
       n.title = title || "(bez tytułu)";
-      n.body  = body;
+      n.body  = body;
       n.dateTS = Date.now();
 
       // jeżeli temat nie istnieje na liście, dodaj
@@ -2367,17 +2372,17 @@
 
     const data = parsed.data || parsed;
 
-    State.hives     = data.hives     || [];
-    State.reviews   = data.reviews   || [];
-    State.queens    = data.queens    || [];
-    State.feedings  = data.feedings  || [];
+    State.hives     = data.hives     || [];
+    State.reviews   = data.reviews   || [];
+    State.queens    = data.queens    || [];
+    State.feedings  = data.feedings  || [];
     State.treatments = data.treatments || [];
-    State.harvests  = data.harvests  || [];
-    State.calendar  = data.calendar  || {};
-    State.finance   = data.finance   || [];
-    State.invItems  = data.invItems  || [];
-    State.invMoves  = data.invMoves  || [];
-    State.topics    = data.topics    || ["Ogólne"];
+    State.harvests  = data.harvests  || [];
+    State.calendar  = data.calendar  || {};
+    State.finance   = data.finance   || [];
+    State.invItems  = data.invItems  || [];
+    State.invMoves  = data.invMoves  || [];
+    State.topics    = data.topics    || ["Ogólne"];
     State.knowledge = data.knowledge || [];
 
     State.hives.forEach(h => {
@@ -2757,9 +2762,9 @@
 </script>
 
 <script>
-  if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("./sw.js").catch(console.warn);
-  }
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("./sw.js").catch(console.warn);
+  }
 </script>
 
 <div id="toast" class="toast" aria-live="polite" aria-atomic="true"></div>
