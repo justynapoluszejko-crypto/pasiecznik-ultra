@@ -101,10 +101,6 @@
     .muted{color:#64748b;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:1px}
     .small{font-size:12px;color:#64748b;font-weight:500}
     .hr{height:1px;background:var(--border);margin:10px 0}
-    .row{display:grid;grid-template-columns:1fr;gap:10px}
-    @media(min-width:700px){.row.cols2{grid-template-columns:1fr 1fr}}
-    @media(min-width:900px){.row.cols3{grid-template-columns:1fr 1fr 1fr}}
-    
     .lbl { display:block; font-size:11px; font-weight:700; color:#64748b; margin-bottom:4px; text-transform:uppercase;}
 
     /* Confirm dialog */
@@ -538,6 +534,12 @@
   <section id="viewKnowledge" class="hidden">
     <div class="card mb-2" style="border-top:5px solid var(--purple)">
       <h3 style="margin:0 0 10px 0;font-weight:700">Wiedza (tematy)</h3>
+      
+      <div class="card mb-2" style="border-left:4px solid var(--purple); padding:10px; display:flex; align-items:center; gap:10px; margin-bottom:15px; box-shadow:none; border:1px solid var(--border); border-left:4px solid var(--purple);">
+         <span style="font-size:18px">🔍</span>
+         <input id="knowSearch" type="text" class="input" placeholder="Szukaj w notatkach..." style="border:none; outline:none; font-weight:600; width:100%; padding:0;">
+      </div>
+
       <div class="row cols2">
         <input id="knowNewTopic" type="text" placeholder="Nowy temat (np. Odkłady)" class="input">
         <button id="addTopicBtn" class="btn" style="background:var(--purple)">DODAJ TEMAT</button>
@@ -1971,10 +1973,10 @@
 
   function refreshInvSelectors(){
     const items = [...State.invItems].sort((a,b) => String(a.name).localeCompare(String(b.name)));
-    const sel  = $("invItemSel");
+    const sel  = $("invItemSel");
     const qsel = $("invQueryItem");
 
-    sel.innerHTML  = `<option value="">Wybierz produkt…</option>`;
+    sel.innerHTML  = `<option value="">Wybierz produkt…</option>`;
     qsel.innerHTML = `<option value="">Wybierz produkt…</option>`;
 
     items.forEach(it => {
@@ -1990,7 +1992,7 @@
 
   function renderInventory(){
     refreshInvSelectors();
-    $("invMoveDate").value  = $("invMoveDate").value  || todayISO();
+    $("invMoveDate").value  = $("invMoveDate").value  || todayISO();
     $("invQueryDate").value = $("invQueryDate").value || todayISO();
 
     const list = $("invList");
@@ -2049,11 +2051,11 @@
   }
 
   async function invAddMove(){
-    const selId  = $("invItemSel").value;
+    const selId  = $("invItemSel").value;
     const newName = ($("invNewName").value || "").trim();
-    const date   = $("invMoveDate").value || todayISO();
-    const delta  = Number($("invMoveDelta").value);
-    const note   = ($("invMoveNote").value || "").trim();
+    const date   = $("invMoveDate").value || todayISO();
+    const delta  = Number($("invMoveDelta").value);
+    const note   = ($("invMoveNote").value || "").trim();
 
     if (!Number.isFinite(delta) || delta===0) return notify("Podaj ilość (różną od 0).");
     if (!date) return notify("Podaj datę.");
@@ -2140,8 +2142,8 @@
     renderInventory();
   }
 
-  /* ===== Knowledge ===== */
-  let editKnowId = null; // Zmienna do śledzenia edycji
+  /* ===== Knowledge (WITH SEARCH) ===== */
+  let editKnowId = null; 
 
   function refreshTopicSelect(){
     const sel = $("knowTopic");
@@ -2158,6 +2160,9 @@
     const wrap = $("knowList");
     wrap.innerHTML = "";
 
+    // SEARCH LOGIC
+    const term = $("knowSearch") ? $("knowSearch").value.trim().toLowerCase() : "";
+
     const byTopic = {};
     for (const n of State.knowledge){
       const t = n.topic || "Ogólne";
@@ -2168,7 +2173,19 @@
     const topics = [...new Set([...State.topics, ...Object.keys(byTopic)])].filter(Boolean);
 
     topics.forEach(t => {
-      const items = (byTopic[t] || []).sort((a,b) => (b.dateTS||0)-(a.dateTS||0));
+      let items = (byTopic[t] || []).sort((a,b) => (b.dateTS||0)-(a.dateTS||0));
+
+      // FILTERING
+      if (term) {
+        items = items.filter(n => 
+           (n.title && n.title.toLowerCase().includes(term)) || 
+           (n.body && n.body.toLowerCase().includes(term)) ||
+           (t.toLowerCase().includes(term))
+        );
+        // If topic has no matching items, skip it (unless topic name itself matches)
+        if (items.length === 0 && !t.toLowerCase().includes(term)) return;
+      }
+
       const sec = document.createElement("div");
       sec.className = "card";
       sec.style.borderLeft = "4px solid var(--purple)";
@@ -2183,7 +2200,7 @@
         const p=document.createElement("div");
         p.className="small";
         p.style.marginTop="8px";
-        p.textContent="Brak notatek w tym temacie.";
+        p.textContent = term ? "Brak wyników w tym temacie." : "Brak notatek w tym temacie.";
         sec.appendChild(p);
       } else {
         items.forEach(n => {
@@ -2224,7 +2241,7 @@
   async function addKnowledge(){
     const topic = $("knowTopic").value || "Ogólne";
     const title = ($("knowTitle").value || "").trim();
-    const body  = ($("knowBody").value || "").trim();
+    const body  = ($("knowBody").value || "").trim();
 
     if (!title && !body) return notify("Wpisz tytuł lub treść.");
 
@@ -2234,7 +2251,7 @@
         if(n) {
             n.topic = topic;
             n.title = title || "(bez tytułu)";
-            n.body  = body;
+            n.body  = body;
             n.dateTS = Date.now();
         }
         editKnowId = null;
@@ -2288,53 +2305,6 @@
     renderKnowledge();
   }
 
-  function editKnowledgeModal(id){
-    const n = State.knowledge.find(x => x.id === id);
-    if (!n) return;
-
-    const currentTopic = n.topic || "Ogólne";
-    const topics = [...new Set([...(State.topics||[]), currentTopic])].filter(Boolean);
-    const opts = topics
-      .map(t => `<option value="${esc(t)}" ${t === currentTopic ? 'selected' : ''}>${esc(t)}</option>`)
-      .join("");
-
-    modalOpen("Edycja notatki", `
-      <div class="row cols2">
-        <label class="help">Temat
-          <select id="mKnowTopic" class="input">${opts}</select>
-        </label>
-        <label class="help">Tytuł
-          <input id="mKnowTitle" type="text" class="input" value="${esc(n.title||"")}">
-        </label>
-      </div>
-      <label class="help">Treść
-        <textarea id="mKnowBody" class="input" style="height:150px">${esc(n.body||"")}</textarea>
-      </label>
-      <div class="small">Zmienisz temat, tytuł i treść. Po zapisie notatka zostanie zaktualizowana.</div>
-    `, async ()=>{
-      const topic = ($("mKnowTopic").value || "Ogólne").trim();
-      const title = ($("mKnowTitle").value || "").trim();
-      const body  = ($("mKnowBody").value || "").trim();
-
-      if (!title && !body) { notify("Wpisz tytuł lub treść."); return; }
-
-      n.topic = topic || "Ogólne";
-      n.title = title || "(bez tytułu)";
-      n.body  = body;
-      n.dateTS = Date.now();
-
-      // jeżeli temat nie istnieje na liście, dodaj
-      if (topic && !State.topics.includes(topic)) {
-        State.topics.push(topic);
-        await save("topics");
-      }
-
-      await save("knowledge");
-      modalClose();
-      renderKnowledge();
-    });
-  }
-
 
   /* ===== Export / Import ===== */
   async function exportBackup(){
@@ -2372,17 +2342,17 @@
 
     const data = parsed.data || parsed;
 
-    State.hives     = data.hives     || [];
-    State.reviews   = data.reviews   || [];
-    State.queens    = data.queens    || [];
-    State.feedings  = data.feedings  || [];
+    State.hives     = data.hives     || [];
+    State.reviews   = data.reviews   || [];
+    State.queens    = data.queens    || [];
+    State.feedings  = data.feedings  || [];
     State.treatments = data.treatments || [];
-    State.harvests  = data.harvests  || [];
-    State.calendar  = data.calendar  || {};
-    State.finance   = data.finance   || [];
-    State.invItems  = data.invItems  || [];
-    State.invMoves  = data.invMoves  || [];
-    State.topics    = data.topics    || ["Ogólne"];
+    State.harvests  = data.harvests  || [];
+    State.calendar  = data.calendar  || {};
+    State.finance   = data.finance   || [];
+    State.invItems  = data.invItems  || [];
+    State.invMoves  = data.invMoves  || [];
+    State.topics    = data.topics    || ["Ogólne"];
     State.knowledge = data.knowledge || [];
 
     State.hives.forEach(h => {
@@ -2618,6 +2588,11 @@
 
       $("addTopicBtn").addEventListener("click", addTopic);
       $("addKnowBtn").addEventListener("click", addKnowledge);
+      
+      // SEARCH LISTENER
+      $("knowSearch").addEventListener("input", (e) => {
+         renderKnowledge();
+      });
 
       $("exportBtn").addEventListener("click", exportBackup);
       $("importFile").addEventListener("change", async (e)=>{
@@ -2627,7 +2602,7 @@
         await importBackup(f);
       });
 
-      // VOICE NOTE LOGIC (ULTRA ROBUST + WAKE LOCK)
+      // VOICE NOTE LOGIC
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       const micBtn = $("voiceNoteBtn");
       
@@ -2638,7 +2613,7 @@
           recognition.interimResults = false;
 
           let isRecording = false;
-          let isIntentionalStop = false; // NOWE: Flaga intencji użytkownika
+          let isIntentionalStop = false; 
 
           // WAKE LOCK LOGIC
           let wakeLock = null;
@@ -2658,11 +2633,9 @@
 
           micBtn.addEventListener("click", () => {
               if (isRecording) {
-                  // Użytkownik klika STOP
                   isIntentionalStop = true;
                   recognition.stop();
               } else {
-                  // Użytkownik klika START
                   isIntentionalStop = false;
                   try {
                       recognition.start();
@@ -2683,12 +2656,10 @@
               isRecording = false;
               
               if (isIntentionalStop) {
-                  // To był nasz koniec (przycisk lub komenda)
                   micBtn.classList.remove("btn-mic-active");
                   micBtn.textContent = "🎤 NAGRAJ NOTATKĘ (Start/Stop)";
                   releaseWakeLock();
               } else {
-                  // To samo się wyłączyło (cisza) -> restartujemy natychmiast!
                   console.log("Auto-restart nagrywania...");
                   try {
                       recognition.start();
@@ -2700,7 +2671,6 @@
               const lastResultIdx = event.results.length - 1;
               const transcript = event.results[lastResultIdx][0].transcript.trim();
               
-              // Sprawdzenie komendy kończącej
               if (transcript.toLowerCase().includes("koniec nagrywania") || transcript.toLowerCase().includes("koniec notatki")) {
                   const cleanedText = transcript.replace(/koniec nagrywania|koniec notatki/gi, "").trim();
                   
@@ -2710,11 +2680,9 @@
                       noteBox.value = currentVal ? (currentVal + " " + cleanedText) : cleanedText;
                   }
 
-                  // To jest intencjonalny stop
                   isIntentionalStop = true;
                   recognition.stop();
                   
-                  // AUTO SAVE
                   setTimeout(() => {
                       $("revSaveBtn").click();
                       notify("Zapisano głosem!");
@@ -2728,12 +2696,11 @@
           };
           
           recognition.onerror = (e) => {
-              // Ignoruj błąd 'no-speech', bo to normalne przy ciszy przed restartem
               if (e.error === 'no-speech') return; 
 
               console.error(e);
               isRecording = false;
-              isIntentionalStop = true; // Wymuś stop przy błędzie
+              isIntentionalStop = true; 
               releaseWakeLock();
               micBtn.classList.remove("btn-mic-active");
               micBtn.textContent = "🎤 NAGRAJ NOTATKĘ (Start/Stop)";
@@ -2762,9 +2729,9 @@
 </script>
 
 <script>
-  if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("./sw.js").catch(console.warn);
-  }
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("./sw.js").catch(console.warn);
+  }
 </script>
 
 <div id="toast" class="toast" aria-live="polite" aria-atomic="true"></div>
