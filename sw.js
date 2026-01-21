@@ -1,78 +1,55 @@
-/* Pasiecznik ULTRA – Service Worker (GitHub Pages friendly)
-   - względne ścieżki (./)
-   - usuwa stare cache
-   - nawigacja (HTML) = network-first (zawsze próbuje pobrać najnowszą wersję)
-*/
+const CACHE_NAME = 'pasiecznik-ultra-v4-mapa'; // Zmieniłem wersję, aby wymusić aktualizację
 
-const CACHE_VERSION = "v11"; // <- zwiększaj, gdy chcesz wymusić odświeżenie na wszystkich
-const CACHE_NAME = `pasiecznik-ultra-${CACHE_VERSION}`;
-
-const ASSETS = [
-  "./",
-  "./index.html",
-  "./manifest.webmanifest",
-  "./sw.js",
-  "./icon-192.png",
-  "./icon-512.png",
+// Lista plików do zapisania w pamięci telefonu (Offline)
+const urlsToCache = [
+  './',
+  './index.html',
+  './manifest.webmanifest',
+  // Jeśli masz ikony, odkomentuj poniższe linie (usuń // na początku):
+  // './icon-192.png',
+  // './icon-512.png'
 ];
 
-self.addEventListener("install", (event) => {
-  self.skipWaiting();
+// 1. Instalacja: Pobiera pliki do pamięci
+self.addEventListener('install', (event) => {
+  self.skipWaiting(); // Wymusza natychmiastowe przejęcie kontroli przez nowy SW
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS)).catch(() => {})
+    caches.open(CACHE_NAME)
+      .then((cache) => {
+        console.log('Otwarto cache');
+        return cache.addAll(urlsToCache);
+      })
   );
 });
 
-self.addEventListener("activate", (event) => {
+// 2. Aktywacja: Usuwa stare wersje aplikacji (sprzątanie)
+self.addEventListener('activate', (event) => {
   event.waitUntil(
-    (async () => {
-      const keys = await caches.keys();
-      await Promise.all(keys.map((k) => (k !== CACHE_NAME ? caches.delete(k) : null)));
-      await self.clients.claim();
-    })()
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((cacheName) => {
+          if (cacheName !== CACHE_NAME) {
+            console.log('Usuwanie starego cache:', cacheName);
+            return caches.delete(cacheName);
+          }
+        })
+      );
+    })
   );
+  self.clients.claim(); // Przejmuje kontrolę nad wszystkimi otwartymi kartami
 });
 
-// Network-first dla nawigacji (index.html), cache-first dla reszty
-self.addEventListener("fetch", (event) => {
-  const req = event.request;
-  const url = new URL(req.url);
-
-  // ignoruj inne domeny
-  if (url.origin !== self.location.origin) return;
-
-  // NAWIGACJA (otwieranie aplikacji / przełączanie widoków)
-  if (req.mode === "navigate" || (req.headers.get("accept") || "").includes("text/html")) {
-    event.respondWith(
-      (async () => {
-        try {
-          const fresh = await fetch(req, { cache: "no-store" });
-          const cache = await caches.open(CACHE_NAME);
-          cache.put("./index.html", fresh.clone());
-          return fresh;
-        } catch (e) {
-          const cached = await caches.match("./index.html");
-          return cached || Response.error();
-        }
-      })()
-    );
-    return;
-  }
-
-  // ASSETY: cache-first (szybko), a w tle aktualizacja gdy się uda
+// 3. Pobieranie (Fetch): Działa offline
+self.addEventListener('fetch', (event) => {
   event.respondWith(
-    (async () => {
-      const cached = await caches.match(req);
-      if (cached) return cached;
-
-      try {
-        const fresh = await fetch(req);
-        const cache = await caches.open(CACHE_NAME);
-        cache.put(req, fresh.clone());
-        return fresh;
-      } catch (e) {
-        return cached || Response.error();
-      }
-    })()
+    caches.match(event.request)
+      .then((response) => {
+        // Jeśli plik jest w cache (np. w lesie), zwróć go
+        if (response) {
+          return response;
+        }
+        // Jeśli nie, pobierz z internetu
+        return fetch(event.request);
+      })
   );
 });
