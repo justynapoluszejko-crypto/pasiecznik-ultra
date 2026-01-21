@@ -9,7 +9,7 @@
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
   <style>
     :root{
@@ -102,6 +102,11 @@
     .small{font-size:12px;color:#64748b;font-weight:500}
     .hr{height:1px;background:var(--border);margin:10px 0}
     .lbl { display:block; font-size:11px; font-weight:700; color:#64748b; margin-bottom:4px; text-transform:uppercase;}
+
+    /* Knowledge Typography */
+    .know-topic-header { font-size: 18px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; color: var(--purple); }
+    .know-note-title { font-size: 15px; font-weight: 700; color: var(--text); }
+    .know-note-body { font-size: 14px; color: #475569; white-space: pre-wrap; margin-top: 6px; }
 
     /* Confirm dialog */
     .confirm-overlay{position:fixed;inset:0;background:rgba(15,23,42,.55);display:none;align-items:center;justify-content:center;padding:16px;z-index:9999}
@@ -2191,7 +2196,7 @@
       sec.style.borderLeft = "4px solid var(--purple)";
       sec.innerHTML = `
         <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
-          <div style="font-weight:700;color:var(--purple)">${esc(t)}</div>
+          <div class="know-topic-header">${esc(t)}</div>
           <div class="small">${items.length} not.</div>
         </div>
       `;
@@ -2211,7 +2216,7 @@
           item.innerHTML = `
             <div class="flex justify-between items-center">
               <div>
-                <div style="font-weight:700">${esc(n.title||"(bez tytułu)")}</div>
+                <div class="know-note-title">${esc(n.title||"(bez tytułu)")}</div>
                 <div class="small">${new Date(n.dateTS||Date.now()).toLocaleDateString("pl-PL")}</div>
               </div>
               <div class="flex gap-2">
@@ -2219,7 +2224,7 @@
                 <button class="btn btn-slate" style="padding:6px 10px" data-act="knowDel" data-id="${esc(n.id)}">USUŃ</button>
               </div>
             </div>
-            <div style="white-space:pre-wrap;margin-top:6px">${esc(n.body||"")}</div>
+            <div class="know-note-body">${esc(n.body||"")}</div>
           `;
           sec.appendChild(item);
         });
@@ -2303,6 +2308,53 @@
     }
     
     renderKnowledge();
+  }
+
+  function editKnowledgeModal(id){
+    const n = State.knowledge.find(x => x.id === id);
+    if (!n) return;
+
+    const currentTopic = n.topic || "Ogólne";
+    const topics = [...new Set([...(State.topics||[]), currentTopic])].filter(Boolean);
+    const opts = topics
+      .map(t => `<option value="${esc(t)}" ${t === currentTopic ? 'selected' : ''}>${esc(t)}</option>`)
+      .join("");
+
+    modalOpen("Edycja notatki", `
+      <div class="row cols2">
+        <label class="help">Temat
+          <select id="mKnowTopic" class="input">${opts}</select>
+        </label>
+        <label class="help">Tytuł
+          <input id="mKnowTitle" type="text" class="input" value="${esc(n.title||"")}">
+        </label>
+      </div>
+      <label class="help">Treść
+        <textarea id="mKnowBody" class="input" style="height:150px">${esc(n.body||"")}</textarea>
+      </label>
+      <div class="small">Zmienisz temat, tytuł i treść. Po zapisie notatka zostanie zaktualizowana.</div>
+    `, async ()=>{
+      const topic = ($("mKnowTopic").value || "Ogólne").trim();
+      const title = ($("mKnowTitle").value || "").trim();
+      const body  = ($("mKnowBody").value || "").trim();
+
+      if (!title && !body) { notify("Wpisz tytuł lub treść."); return; }
+
+      n.topic = topic || "Ogólne";
+      n.title = title || "(bez tytułu)";
+      n.body  = body;
+      n.dateTS = Date.now();
+
+      // jeżeli temat nie istnieje na liście, dodaj
+      if (topic && !State.topics.includes(topic)) {
+        State.topics.push(topic);
+        await save("topics");
+      }
+
+      await save("knowledge");
+      modalClose();
+      renderKnowledge();
+    });
   }
 
 
