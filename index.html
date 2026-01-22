@@ -103,10 +103,26 @@
     .hr{height:1px;background:var(--border);margin:10px 0}
     .lbl { display:block; font-size:11px; font-weight:700; color:#64748b; margin-bottom:4px; text-transform:uppercase;}
 
-    /* Knowledge Typography */
-    .know-topic-header { font-size: 18px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; color: var(--purple); }
-    .know-note-title { font-size: 15px; font-weight: 700; color: var(--text); }
-    .know-note-body { font-size: 14px; color: #475569; white-space: pre-wrap; margin-top: 6px; }
+    /* === TYPOGRAFIA WIEDZY (TO BYŁO, ALE NIEUŻYWANE) === */
+    .know-topic-header { 
+        font-size: 18px; 
+        font-weight: 800; 
+        letter-spacing: 0.5px; 
+        text-transform: uppercase; 
+        color: var(--purple); 
+    }
+    .know-note-title { 
+        font-size: 15px; 
+        font-weight: 700; 
+        color: var(--text); 
+    }
+    .know-note-body { 
+        font-size: 13px; 
+        color: #475569; 
+        white-space: pre-wrap; 
+        margin-top: 6px; 
+        line-height: 1.4;
+    }
 
     /* Confirm dialog */
     .confirm-overlay{position:fixed;inset:0;background:rgba(15,23,42,.55);display:none;align-items:center;justify-content:center;padding:16px;z-index:9999}
@@ -2213,6 +2229,8 @@
           item.style.marginTop="10px";
           item.style.paddingTop="10px";
           item.style.borderTop="1px solid var(--border)";
+          
+          // UŻYTE NOWE KLASY CSS DLA TYTUŁU I TREŚCI
           item.innerHTML = `
             <div class="flex justify-between items-center">
               <div>
